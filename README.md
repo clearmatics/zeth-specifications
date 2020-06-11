@@ -76,3 +76,7 @@ Defined in the [chapters](./chapters) folder.
 *Note:* If the names of the chapters, sections, subsections and other environments become intractably too long, we can use a "compressed" form, as long as one makes sure to keep the naming meaningful and consistent. Do this responsibly.
 
 E.g. `\label{introduction:notations}` can become `\label{intro:notations}`, which implies that `\label{introduction:notations:mysubsection}` becomes `\label{intro:notations:mysubsec}`.
+
+----------------
+
+Please refer to the [general latex document contribution guide](./contribute.md) for further notes.
