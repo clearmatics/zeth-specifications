@@ -1,0 +1,133 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{zk-SNARKs}\label{preliminaries:zk-snark}
+
+In this section we introduce notions necessary to understand zero-knowledge proofs, define properties crucial for them, and introduce zkSNARKs.
+We refer the reader to~\cref{instantiation:zksnark} in which we describe the zkSNARK scheme used in \zeth{}.
+
+\subsection{Preliminary definitions}
+
+\paragraph{$\npol$ class of languages.}
+Since the considered proof systems are designed to work with languages in $\npol$ we begin with defining this class. Intuitively, a language $\LANG$ belongs to $\npol$ if for each element $\priminputs$ from the language there is a short witness $\auxinputs$ that allows to efficiently\footnote{Informally we say that an algorithm is efficient if it runs in time polynomial in the size of its inputs.} verify that in fact $\priminputs \in \LANG$.
+
+\begin{definition}[$\npol$ class of languages]
+  We say that a language $\LANG$ belongs to a class $\npol$ if there exist a polynomial $p$ and a Turing machine $\TM$ such that for every primary input $\priminputs \in \bin^{*}$, $\priminputs \in \LANG$ iff there exists an auxiliary input $\auxinputs$ such that $\TM$ accepts the pair $(\priminputs, \auxinputs)$ in time at most $p(\len {\priminputs})$.
+
+  The set of all pairs $(\priminputs, \auxinputs)$ acceptable by $\TM$ constitutes an \emph{$\npol$ relation} $\REL$ corresponding to the language $\LANG$.
+\end{definition}
+
+\paragraph{Non-interactive zero knowledge.}
+A non-interactive zero-knowledge proof system $\nizk$ for an $\npol$ language $\LANG$ is a tuple of four algorithms $\nizk = (\kgen, \prover, \verifier, \simulator)$. $\nizk$ for a language $\LANG$ and instance $\priminputs \in \LANG$ allows a party, called prover and denoted by $\prover$, to convince another party, called verifier and denoted by $\verifier$, that $\priminputs \in \LANG$.
+
+Without loss of generality, we focus on zk-proof systems that are universal, that is, are able to work with any given $\npol$ relation $\REL$. To that end, we define a \emph{relation generator} $\RELGEN$ that on input $\secparam$ (i.e.~the security parameter represented in unary) outputs an $\npol$ relation $\REL$. We assume that the security parameter $\secpar$ can be easily deducted from $\REL$.
+
+We require from a $\nizk$ to have three substantial properties:
+\begin{description}
+  \item[Completeness] that assures that an honest prover, who proves that $\priminputs \in \LANG$ succeeds, i.e.~gets his proof accepted by the verifier $\verifier$.
+  Formally we require that for any $\secpar$, $\REL \gets \RELGEN(\secparam)$, $(\priminputs, \auxinputs) \in \REL$
+  \[
+    \condprob{\verifier (\REL, \srs, \priminputs, \prover(\REL, \srs, \priminputs, \auxinputs))}{
+    \begin{aligned}
+      \REL \gets \RELGEN(\secparam);\\
+      (\srs, \td) \gets \kgen(\REL, \secparam)
+    \end{aligned}
+    } = 1\enspace.
+  \]
+  \item[Computational soundness] which states that in case $\priminputs \not\in \LANG$ the verifier accepts the proof for $\priminputs$ with negligible probability only.
+  Formally we require that for any $\secpar$, $\REL \gets \RELGEN(\secparam)$, $(\priminputs, \auxinputs) \in \REL$ and $\ppt$ adversary $\adv$
+  \[
+    \condprob{\verifier (\REL, \srs, \priminputs, \pi) }{
+    \begin{aligned}
+      \REL \gets \RELGEN(\secparam); \\
+      (\srs, \td) \gets \kgen(\REL, \secparam); \\
+      (\priminputs, \pi) \gets \adv(\REL, \srs)
+    \end{aligned}
+    } \leq \negl.
+  \]
+
+  \item[Zero knowledge] assures that the verifier learns from a proof nothing except the veracity of the proven statement. More precisely we require that there exist a $\ppt$ algorithm $\simulator$ and negligible function $\eta (\secpar)$ such that for every adversary $\adv$ and security parameter $\secpar$
+  \begin{multline*}
+    \abs*{\condprob{\adv (\REL, \pi) = 1}{%
+    \begin{aligned}
+      \REL \gets \RELGEN (\secparam);\\
+      (\srs, \td) \gets \kgen(\REL, \secparam); \\
+      (\priminputs, \auxinputs) \gets \adv(\REL, \srs); \\
+      \pi \gets \simulator (\REL, \srs, \td, \priminputs)
+    \end{aligned}
+    } - \\
+    \condprob{\adv (\REL, \pi) = 1}{%
+    \begin{aligned}
+      \REL \gets \RELGEN (\secparam);\\
+      (\srs, \td) \gets \kgen(\REL, \secparam); \\
+      (\priminputs, \auxinputs) \gets \adv(\REL, \srs); \\
+      \pi \gets \prover (\REL, \srs, \priminputs, \auxinputs)
+    \end{aligned}
+    }
+    } \leq \eta (\secpar).
+  \end{multline*}
+  We say that $\nizk$ is \emph{perfectly} zero-knowledge if $\eta = 0$.
+\end{description}
+
+We note that the existence of the simulator which by using the trapdoor is able to make a proof for a false statement (i.e.~for $\priminputs \not\in \LANG$) makes the whole zk-proof system vulnerable to adversaries that also know the trapdoor. More precisely, an adversary who knows a trapdoor $\td$ can break the soundness property. This vulnerability comes with each SRS-based $\nizk$ (for languages in $\npol$). Thus in the real-life deployment of a SRS-based $\nizk$ it has to be enforced that nobody learns the trapdoor.
+
+A zkSNARK scheme, denoted $\zksnark$, is a special type of $\nizk$ which is equipped with two more properties.
+First, zkSNARKs are arguments \emph{of knowledge}, as such they have to follow a stronger definition of soundness, called \emph{knowledge soundness}.
+
+\begin{description}
+  \item[Knowledge soundness] assures that if a prover provided a proof $\pi$ for a statement $\priminputs$ acceptable to a verifier, then she knows the corresponding auxiliary input $\auxinputs$. More precisely, we require that for each security parameter $\secpar$, $\REL \gets \RELGEN (\secparam)$, and malicious $\ppt$ prover $\adv$ there exists a machine $\ext_\adv$, called extractor, that given access to randomness $r$ used by $\adv$ and its inputs, \emph{extracts} the auxiliary input $\auxinputs$ from $\adv$; that is:
+  \[
+    \condprob{
+    \begin{aligned}
+      \lnot (\REL(\priminputs, \auxinputs)) \land \\
+      \verifier (\REL, \srs, \priminputs, \pi)
+    \end{aligned}
+    }{
+    \begin{aligned}
+      \REL \gets \RELGEN (\secparam); \\
+      (\srs, \td) \gets \kgen(\REL, \secparam); \\
+      (\priminputs, \pi) \gets \adv(\REL, \srs; r);\\
+      \auxinputs \gets \ext_\adv (\REL, \srs; r)
+    \end{aligned}
+    } \leq \negl.
+  \]
+\end{description}
+
+Second, zkSNARKs are \emph{succinct}, and so we require that proofs produced by $\zksnark.\prover$ are short, i.e.~sublinear to the size of the primary and auxiliary inputs.
+
+\subsection{Computation representation --- Arithmetization}
+
+In \zeth{} the sender shows that the transaction is correct by arguing (in zero knowledge, i.e.~hiding private inputs) about correctness of evaluation of some predefined predicate. This predicate ensures that the soundness of the blockchain system is not violated, i.e.~the zk-proof is used to prove that a transaction follows the ``rules of the system'' without disclosing its attributes. The proof system \zeth{} uses operates on an algebraic representation of the ``predicate to prove''. Informally, representing the computation, to generate a proof of computational integrity for, as a set of algebraic constraints is called ``arithmetization''.
+One of such representations are Quadratic Arithmetic Programs (QAP)~\cite{GGPR13}, which, following~\cite{groth2016size}, is used in $\zeth$. This representation is considered one of the most efficient for a general arithmetic circuits.
+
+\paragraph{QAP (R1CS).}
+Let $\CRKT$ be an arithmetic circuit of fan-in $2$ over $\FFx{p}$.
+The number of multiplication gates in $\CRKT$ is denoted by $\constno$. Likewise, the number of all wires in $\CRKT$ is denoted by $\inpno$.
+
+Before we formally introduce the QAP relation $\RELQAP$ we provide some intuitions behind it.
+First, we observe that the circuit $\CRKT$ can be be represented by three matrices $\vec{A}, \vec{B}, \vec{C}$ all in $\FFx{p}^{\constno \times \inpno + 1}$ such that
+the $i$-th row in matrix $\vec{A}$ (and $\vec{B}$) denotes left (and right) input to the $i$-th multiplication gate, which is also the $k$-th input to the circuit. That is for a circuit evaluation $z \in \FFx{p}^{\inpno + 1}$ the left input for the $i$-th gate is $\sum_{j = 0}^{\inpno} A_{i j} z_{j}$ and the right input is $\sum_{j = 0}^{\inpno} B_{i j} z_{j}$.
+Furthermore, entry $\vec{C_{i k}}$ contains the output of $i$-th multiplication gate that is $k$-th input to the circuit.
+
+Second, for the sake of efficiency we represent each matrix as a sequence of polynomials. Each matrix's column is represented by a polynomial in $\FFx{p}[X]$ such that the column's $i$-th input equals polynomial's evaluation at $\omega^{i}$ --- the $i$-th primitive root of unity modulo $p$. More precisely, we define polynomials:
+\begin{itemize}
+  \item $u_j (X)$, for $j \in \range{0}{\inpno}$, such that $u_j (\omega^{i}) = \vec{A}_{i j}$;
+  \item $v_j (X)$, for $j \in \range{0}{\inpno}$, such that $v_j (\omega^{i}) = \vec{B}_{i j}$;
+  \item $w_j (X)$, for $j \in \range{0}{\inpno}$, such that $w_j (\omega^{i}) = \vec{C}_{i j}$.
+\end{itemize}
+
+We consider inputs from $1$ to $\inpnoprim$ public (primary input), for some $\inpnoprim \leq \inpno$. The rest of the inputs is considered private (auxiliary input). The QAP relation $\RELQAP$ is defined as follows:
+\[
+\RELQAP = \left\{ (\priminputs, \auxinputs) \left\vert
+    \begin{aligned}
+    & a_0 = 1; \priminputs = (a_1, \ldots, a_\inpnoprim) \in \FFx{p}^{\inpnoprim};\\
+    &\auxinputs = (a_{\inpnoprim + 1}, \ldots, a_{\inpno}) \in \FFx{p}^{\inpno - \inpnoprim};\\
+    & \sum_{j = 0}^{\inpno} a_j u_j (X) \cdot \sum_{j = 0}^{\inpno} a_j v_j (X) =
+    \sum_{j = 0}^{\inpno} a_j w_j (X)
+    \end{aligned}
+    \right.
+\right\}.
+\]
+
+\begin{notebox}
+    Importantly, we note that efficient computation on standard hardware may not necessarily lead to an efficient QAP representation. As such, a function can be very efficient to evaluate on a standard computer, but very slow to evaluate in QAP form.
+\end{notebox}

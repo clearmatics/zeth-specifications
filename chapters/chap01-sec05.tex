@@ -1,0 +1,26 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Security Assumptions}\label{preliminaries:sec-assumptions}
+
+\begin{definition}[Discrete Log (\dlog) based on Bellare and Shoup~\cite{bellare2007two}]
+Let $\gset$ denote a group whose order $p$ is prime and written over $\secpar$ bits. We let $\log_{\ggen}(h)$ denote the discrete logarithm of $h$ in the basis $\ggen$. We assume $\gset$, $p$ are fixed and known to all parties. Let us denote the advantage of a \ppt~adversary $\adv$ in attacking the discrete logarithm problem as follows,
+\[
+    \advantage{\dlog}{\gset, \adv}[] = \prob{\ggen \sample \gset^{*},\ x \sample \FFx{p},\ x' \gets \adv(\groupenc{1}, \groupenc{x}):\ \groupenc{x'}{} = \groupenc{x}}
+\]
+We say that the $\dlog$ is hard in $\gset$ if and only if $\advantage{\dlog}{\adv}$ is negligible.
+\end{definition}
+
+\begin{definition}[One More Discrete Log ($\omdlog$) based on Paillier and Vergnaud~\cite{paillier2005discrete}]\label{preliminaries:def:om-dlog}
+Let $\gset$ denote a group whose order $p$ is prime and written over $\secpar$ bits. We let $\log_{\ggen}(h)$ denote the discrete logarithm of $h$ in the basis $\ggen$.
+    A \ppt~adversary \adv~solving the \omdlog~is given $\queryBound+1$ random group elements as well as a limited access to a discrete logarithm oracle $\oracleDLog{\ggen}(\queryBound)$. \adv~is allowed to query this oracle at most $\queryBound$ times, thus obtaining the discrete logarithm of $\queryBound$ group elements of his choice with respect to a fixed base $\ggen$. Eventually, \adv~must output the $\queryBound+1$ discrete logarithms. Let us denote the advantage of a \ppt~adversary $\adv$ in attacking the one more discrete logarithm problem as follows,
+\[
+    \advantage{\omdlog}{\adv} = \prob{
+        \begin{array}{c}
+            \ggen \sample \gset^{*},\ \indexedset{\groupenc{r_i}{}}{i \in [\queryBound+1]} \sample \gset^{\queryBound+1}, \\
+            \indexedset{r'_i}{i \in [\queryBound+1]} \gets \adv^{\oracleDLog{\ggen}(\queryBound)}(\groupenc{1}, \indexedset{\groupenc{r_i}{}}{i \in [\queryBound+1]}): \\
+            \forall i \leq \queryBound+1,\ r'_i = \log_\ggen(\groupenc{r_i}{}) \\
+        \end{array}
+    }
+\]
+We say that the $\omdlog$ is hard in $\gset$ if and only if $\advantage{\omdlog}{\adv}$ is negligible.
+\end{definition}

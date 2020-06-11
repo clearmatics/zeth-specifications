@@ -1,0 +1,83 @@
+\documentclass[11pt,letterpaper,oneside]{report}
+
+% Import the configuration files
+\input{./config/packages.tex}
+\input{./config/macros.tex}
+\graphicspath{{./images/}}
+
+% Make a nomenclature to introduce notations
+% See: https://www.overleaf.com/learn/latex/Nomenclatures
+\usepackage{nomencl}
+\makenomenclature%
+\renewcommand{\nomname}{Notations}
+\usepackage{etoolbox}
+\renewcommand\nomgroup[1]{%
+    \item[\bfseries
+    \ifstrequal{#1}{A}{Basic mathematical notations}{%
+    \ifstrequal{#1}{B}{Algorithmic notations}{%
+    \ifstrequal{#1}{C}{Cryptography notations}{%
+    \ifstrequal{#1}{D}{Zeth notations}{%
+    \ifstrequal{#1}{E}{Ethereum notations}{%
+    \ifstrequal{#1}{F}{Constants}{%
+    \ifstrequal{#1}{G}{Other Symbols}{}}}}}}}%
+]}
+\newcommand{\nomunit}[1]{%
+\renewcommand{\nomentryend}{\hspace*{\fill}#1}}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{secproof}{Security Proof}
+\newtheorem{example}{Example}
+
+\mathchardef\mhyphen="2D
+\providecommand{\keywords}[1]{\textbf{\textit{Keywords---}} #1}
+
+\newcommand{\secfix}[1]{\textcolor{red}{#1}} % Security fix
+\newcommand{\veryimportant}[1]{\textcolor{orange}{#1}} % Security fix
+\newcommand{\optimiz}[1]{\textcolor{blue}{#1}} % optimization
+
+% Render the glossary
+\input{glossary.tex}
+\input{acronyms.tex}
+\makeglossaries%
+
+\title{Zeth Protocol Specification}
+\author{Clearmatics Cryptography R\&D}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+    This document specifies the Zeth protocol with various security fixes and performance improvements from the initial design~\cite{zethpaper}.
+
+\keywords{Ethereum, Zerocash, Zcash, financial-privacy, zero-knowledge proofs, Zeth, privacy-preserving state transitions}
+\end{abstract}
+
+\tableofcontents
+
+\mbox{}
+\input{notations}
+\printnomenclature%
+
+% Import the various chapters composing the document
+\input{chap00-changelog.tex}
+\newpage
+
+\input{chapters/chap01-base} % Preliminaries
+\input{chapters/chap02-base} % Zeth protocol (abstract protocol)
+\input{chapters/chap03-base} % Primitive instantiations (concrete protocol)
+\input{chapters/chap04-base} % Implementation details and further considerations
+
+\appendix
+\input{appendices/appendix-base}
+
+\glsaddall%
+\printglossaries%
+
+\bibliographystyle{alpha}
+\bibliography{references}
+
+\end{document}

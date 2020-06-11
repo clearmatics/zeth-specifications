@@ -1,0 +1,23 @@
+% !TEX root = ./malleability.tex
+
+% Glossary
+
+% Example of a glossary entry:
+%   \newglossaryentry{label}
+%   {
+%       name=label,
+%       description={Description of the label}
+%   }
+% See: https://www.overleaf.com/learn/latex/Glossaries
+
+\newglossaryentry{joinsplit}
+{
+    name=joinsplit,
+    description={Set of \jsin input \zethnotes, and \jsout output \zethnotes as well as the public values \vin and \vout used in a $\tx_\mix$ transaction}
+}
+
+\newglossaryentry{joinsplit-eq}
+{
+    name=joinsplit equation,
+    description={Equation that checks that the sum of the values of the $\sendtx$ algorithm of $\dapscheme$ is equal to the sum of the values of its outputs. This equations checks that the \gls{joinsplit} is ``balanced'' and thus, that no value is created while creating new \zethnotes}
+}

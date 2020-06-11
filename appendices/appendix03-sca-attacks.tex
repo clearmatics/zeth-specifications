@@ -1,0 +1,105 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\chapter{Side-Channel Attacks and Information Leaks}\label{appendix:sca-attacks}
+
+The following subsections describe several side-channel attacks and possible weaknesses that implementors should be aware of and attempt to mitigate.
+
+We consider cases in which the attacker is able to observe the RPC communications between \zeth{} client software, and Ethereum P2P nodes. This situation may occur if an observer is able to monitor the network traffic between the Ethereum node and the \zeth{} client software, or if the Ethereum node itself is compromised.
+
+\begin{notebox}
+In this discussion, we do not consider adversaries with physical access to the machine running the client software. Such adversaries could make precise measurements of timing, power-consumption or other physical quantities that could reveal fine-grained details of the operations being carried out by the software, or the data it is operating on. Protecting against attacks of this kind often involves implementation techniques such as: avoiding branches based on private data, using only predictable memory access patterns, and adding ``noise'' to the information leaked on certain side-channels. We leave consideration of these attacks and prevention methods for a future discussion.
+\end{notebox}
+
+\section{Counterfeit Data}\label{appendix:sca-attacks:counterfeit-data}
+
+Malicious Ethereum nodes or attackers able to compromise the network, have the opportunity to send invalid data to RPC clients. This could be used to inject invalid data into the client's record of state, which could prevent it from generating valid $\mix$ calls or allow it to be identified in the future. In general, data from any remote host should be treated as malicious, unless accompanied by evidence that convinces the client of its authenticity.
+
+In the case of Ethereum event logs (the main source of data used to track the on-chain state - see:~\cref{client-security:syncing} for details), clients \MUST{} leverage the consensus evidence and block headers to verify that log data it receives is genuine and has been committed to the blockchain. See:~\cref{sssec:ethereum-events} for further information about how such data is secured.
+
+\section{Data Leaked during Synchronization}\label{appendix:sca-attacks:synchronization}
+
+In order to receive private payments and keep client data up-to-date, \zeth{} client software must scan the blockchain and process \emph{all} the event data emitted by $\mixer$ during $\mix$ calls (as described in~\cref{client-security:syncing}). There are several issues to consider when determining exactly how and when this ``synchronization'' takes place.
+
+Client implementations that only connect to the RPC endpoint in response to user input, or in preparation for performing a \mix{} call, may leak information. Observers may deduce that such client are likely to be the recipient of a recent or upcoming transaction, or that they may be about to perform a \mix{} call.
+
+Similarly, payment provider software that only listens for events when awaiting a transaction, and remains disconnected otherwise, may reveal that it is the recipient of an upcoming transaction, and possibly \emph{which} transaction or block it was paid by (based on when it stops listening).
+
+Further, consider wallet software that performs RPC operations to explicitly wait for the Ethereum transaction corresponding to a specific \mix{} call. (This most likely to be for transactions it has sent, to inform the user and update the wallet state once payment is complete, but could possibly happen on the receiver if he somehow knows the ID of the transaction of interest - e.g. via off-chain communication with the sender).  If such a \emph{wait} procedure is implemented by querying the state of a specific transaction by its ID, or by listening for blocks \emph{until} the transaction of interest is received, the connected Ethereum node may infer that this client is interested in the transaction, and likely to be the sender or recipient.
+
+Consider a client which periodically connects to some Ethereum node and requests all relevant data from the last block it saw, up to the latest block available. Each client will have information up to some block $n$ (where $n$ varies per client), and $n$ is known to the Ethereum node that served the client.  The client could then potentially be identified by $n$ (even if it hides its IP for each connection) since a client that connects and queries \zeth~transactions from block $n + 1$ reveals that it is one of the clients who synced up to block $n$ when it last connected.
+
+Note that, if the client always broadcasts the mix transaction via this same Ethereum node, then the Ethereum node may already deduce that the client is the sender. However, implementations may wish to use techniques (such as sending transactions from other nodes or hiding their IP address in other way) to obfuscate any relationship between transactions and the clients that originated them.
+
+\section{Queries on Successful Decryption}\label{appendix:sca-attacks:successful-decryption}
+
+The event data emitted by $\mixer$ contains the note data for new commitments, encrypted using a key derived from the recipients public key. As described in~\cref{zeth-protocol:zeth-receive}, clients scan the blockchain for these events and attempt to decrypt the ciphertext using their secret decryption keys. If they are successful, they are the recipient of the note and can try to parse the plaintext to extract the secret note data.
+
+When decryption is successful and the note data has been extracted from the plaintext (we discuss parsing failure in~\cref{appendix:sca-attacks:invalid-ciphertext}), clients \MUST{} check that this note data does indeed open the commitment for the note.
+
+A naive implementation of this check could query the state of $\mixer$ via RPC to check the relevant entry in the set of commitments. However, this would reveal to an observer that the client had successfully decrypted and parsed the corresponding ciphertext, and was therefore the recipient of that note.
+
+For this reason, the protocol specifies that $\mixer$ \MUST{} emit events informing clients of new commitment values and locations in the Merkle tree. Clients \MUST{} consume \emph{all} such data to maintain their view of contract state (as described in~\cref{appendix:sca-attacks:synchronization}). Further, clients \MUST{} attempt to decrypt \emph{all} ciphertexts and, for successful decryptions, \MUST{} verify that the plaintext opens the note's commitment. This avoids the need for any extra RPC queries that would reveal which ciphertexts were successfully decrypted.
+
+\section{Invalid Ciphertext}\label{appendix:sca-attacks:invalid-ciphertext}
+
+The attack described in~\cite[Section 4.2.1]{tramerremote} illustrates the importance of correctly handling invalid data in client software. A so-called ``REJECT Attack'' is described whereby an attacker creates a $\mix$ call with specially crafted ciphertext. The ciphertext can be successfully decrypted by the correct recipient, (that is, the plaintext note is encrypted with an encryption key derived from the recipients public key), but the corresponding plaintext is invalid and cannot be parsed correctly by the recipient.
+
+\begin{notebox}
+Note that the above is possible because the plaintext is not verified either by the $\RELCIRC$ circuit, or by the contract (which is unable to decrypt it). Hence, \zeth{} allows such transactions with malicious ciphertexts to be accepted by the \mixer{} contract, and clients must handle this case with care.
+\end{notebox}
+
+In the case described in~\cite{tramerremote}, there is no distinction between wallet and the underlying P2P nodes.  Before a fix was applied (see:~\cite{zcash-remote-sca-fix-announcement}), nodes explicitly rejected transactions of the above form, proving to their peers that they were able to decrypt the ciphertext and were therefore the intended recipient.
+
+In \zeth{}, P2P nodes and wallet software are separated, so there will be no explicit rejection of the transaction. However, careless error handling (such as exceptions which causes the RPC connection to be closed) could potentially be detected by the connected Ethereum node. As in the ``REJECT Attack'', this reveals that the connected RPC client is the intended recipient of a transaction, and the owner of the corresponding encryption key.
+
+\section{Using (and Retrieving) Nullifiers}\label{appendix:sca-attacks:nullifiers}
+
+Any non-trivial wallet implementation will need to track which of the user's \zeth{} notes have been spent, and which are still available. Naturally, the wallet software could mark the notes as it broadcasts transactions that spend them. However, this approach is subject to several problems.
+
+Firstly, for each note spent, the client software must record the ID of the spending transaction, in order to track it and confirm that it is accepted into a block. Once each spending transaction is accepted the client can finally mark the appropriate \zeth{} notes as ``spent''. This requires significant complexity in order to asynchronously mark the notes, and to deal with the issues described in~\cref{appendix:sca-attacks:synchronization}.
+
+Secondly, this approach does not support multiple wallets using the same key, or wallets being restored from \zeth{} addresses. A user that wishes to rebuild his wallet (see the discussion in~\cref{client-security:wallet-backup-and-recovery}), or check for any spending activity by other wallets, would not be able to do so by simply scanning the blockchain.
+
+By using the nullifiers passed to $\mix$ calls, clients can determine the availability of notes in a more robust way. That is, to determine whether a note is spent or available, the client can compute the nullifier and check whether that nullifier has been seen by the $\mixer$ contract.
+
+In a similar way to~\cref{appendix:sca-attacks:successful-decryption}, queries to $\mixer$ for specific nullifiers reveals to observers that the client was the sender of any previous or future transaction that generates such a nullifier. To mitigate this, $\mixer$ \MUST{} include nullifier values in the event data it emits, and clients \SHOULD{} use this to track which of their notes are spent. This \MUST{} happen as part of the regular sync operation, so that no extra RPC traffic is generated and observers cannot distinguish between clients that do and do not recognize any given nullifier. Note that this approach also supports tracking spent notes from multiple wallets, and rebuilding wallets by re-syncing the blockchain.
+
+\section{Proof Generation}\label{appendix:sca-attacks:proof-generation}
+
+Generation of the zero-knowledge proofs, required for valid $\mix$ calls, is a very computationally intensive process. In itself, the proof generation does not require any communication with external parties, and so may not directly leak information about the client, but implementors should consider some indirect ways in which information may be leaked.
+
+Implementors may also wish to consider the possible indirect impact of proof generation on the RPC channel. For example, a client that ``waits'' for proof generation without servicing the RPC connection may fail to respond to, or take significantly longer to respond to, new log events, allowing the connected Ethereum node to deduce that it is generating a proof and therefore likely to be the sender of an upcoming transaction.
+
+\begin{notebox}
+As stated in the introduction to this chapter, this discussion does not consider general timing attacks. We mention this extreme case, of a client that completely stalls during proof generation, only to illustrate how a poor implementation may leak information to its RPC peer.
+\end{notebox}
+
+In the case where proof generation is carried out on some external host, or by an external process on the same host, there may be a risk of network traffic or other IPC traffic being observed. An observer able to detect that a given client is communicating with a prover process can reliably deduce that it will be the sender of an upcoming transaction.
+
+An observer able to see the content of the communication between the wallet and prover process will also gain knowledge of the auxiliary inputs to the proof (including the data required to spend the input notes and secret attributes of the output notes).  It is therefore important to secure any such connection, protect any prover process from being maliciously modified or observed, and to ensure that wallets only communicate with trusted processes.
+
+\section{Simple Mixer Calls}
+
+The public parameters to a $\mix$ call can reveal information about the nature of a transaction, even though they do not reveal recipient details or note amounts. For example, a $\mix$ call in which $\inp{\mix}.\primInp.\vout == 0$ and $\inp{\mix}.\primInp.\vin \neq 0$ may indicate a simple ``deposit'' of funds into the mixer.  Similarly, if both $\inp{\mix}.\primInp.\vout$ and $\inp{\mix}.\primInp.\vin$ are zero, the transaction must be spending only notes already within $\mixer$, into new notes.  Finally, if $\inp{\mix}.\primInp.\vin == 0$ and $\inp{\mix}.\primInp.\vout \neq 0$, the sender may be performing a simple ``withdrawal'' of funds from some existing notes.
+
+A $\mix$ call can combine all of the above logical operations in a single transaction. That is, it can deposit value into the mixer, spend existing notes, create new notes, and withdraw value from $\mixer$ at the same time.  Combining logical operations in this way makes it much more difficult for observer to attribute a specific purpose to the $\mix$ call.
+
+Clients can also perform \mix{} calls in which $\vin = \vout = 0$ and 0-valued notes are created from other 0-valued notes. Such ``dummy'' self-payments can further obfuscate the activity of a wallet, by adding ``noise'' to the system. Note, however, that the gas cost for such transactions must still be paid.
+
+Wallet implementations \SHOULD{} encourage the use of these complex calls where possible, either via the user interface or by automatically adding complexity to transactions, and \SHOULD{} support features such as adding ``noise''\footnote{By randomly scheduling dummy payments, for instance} if the user wishes to pay for extra protection of this kind.
+
+\subsection{Small Anonymity Sets}
+
+Until there is a large number of commitments and users of the mixer, it may be easy for an observer to infer some of the private data that is intended to be hidden by mixer calls.
+
+In the simple case, if there are very few commitments in $\mixer$'s Merkle tree, an attacker has a small list of candidate commitments that are being spent by subsequent $\mix$ calls. Similarly, if the number of distinct Ethereum addresses that have been used to call $\mixer$ is very small, observers can trace the original source of funds subsequently withdrawn, to a small set of original depositors.
+
+Client software may wish to track metrics about the $\mixer$ state, and either prevent certain actions or design the user interface to discourage users\footnote{By, for example, displaying warning messages and/or asking the user for confirmation} from creating transactions whose features can be identified with high probability.
+
+\begin{itemize}
+\item \textbf{Number of Commitments.} If there is a low absolute number of commitments, clearly any non-zero output must spend one of these. (Although we note that only \vout{} can be publicly known to be non-zero).
+\item \textbf{Number of Unspent Commitments.} If $\cardinality{Comms} - \cardinality{Nulls}$ is small, and a new commitment is created and then spent, observers can deduce that there is a high chance that the spend operation targeted the new commitment.
+\item \textbf{Number of Ethereum Addresses.} While very few distinct addresses (or groups of addresses that are not associated) have used the contract, observers can deduce that subsequent \mix{} calls are likely to spend commitments created by clients associated with one of this small set of addresses.
+\end{itemize}
+
+The set of Ethereum addresses that have interacted with the contract can leak data in other ways. An Ethereum address that withdraws value from the contract, but has not previously been used to make a \mix{} call (or a \mix{} call that deposits value into \mixer), must have been the recipient of zeth notes created by a previous depositor. The details may not be directly available to an observer, but this is another example of information which could be combined with other leaked data to infer connections between entities and transactions.

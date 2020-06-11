@@ -1,0 +1,74 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Client Security Considerations}\label{client-security}
+
+In this section we consider some details of client \emph{wallet} software that manages user's private and public keys, \zeth{} notes, and interacts with the $\mixer$ contract.
+
+Due to the processing and storage requirements involved, we consider it impractical for all \zeth{} client implementations to include dedicated Ethereum nodes (miners or archivers) to be run on the same host as the wallet. Therefore, in order to interact with the Ethereum network, wallet software must communicate with external Ethereum P2P nodes via their RPC channel, and must assume that these nodes are completely of the wallet's control. From a security standpoint, connected Ethereum nodes should therefore be considered untrusted, and in particular the details of all RPC calls and responses should be considered publicly visible. Note that even if the connected Ethereum node itself is not malicious, 3rd parties able to see network traffic may also be able to gain an insight into the RPC communication of a specific \zeth{} client.
+
+\begin{notebox}
+    Note that there are several possible models besides the fully untrusted Ethereum node. Organizations or individuals could host one or more ``trusted'' Ethereum nodes, which clients can securely connect to (if they trust the host). This centralization would represent a security trade-off. From the point of view of clients it would create a single point of trust, and for potential malicious observers or attackers it would represent a valuable target.
+\end{notebox}
+
+In what follows we focus on preventing data leaks through network traffic. We do not consider adversaries with physical access to the machine running the wallet (see:~\cref{appendix:sca-attacks}).
+
+\subsection{Syncing and Waiting}\label{client-security:syncing}
+
+\zeth{} clients must periodically synchronize with the latest state of the blockchain. This is necessary to keep track of the data held by the $\mixer$ contract, and to detect notes received by the user of the wallet, storing them for future transactions.
+
+Clients should synchronize with Ethereum nodes in such as way that information is not leaked. As such:
+\begin{enumerate}
+    \item Clients \MUST{} use consensus evidence and block headers to verify all data they receive from Ethereum nodes.
+    \item Clients \MUST{} locally store all $\mixer$ state they require in order to function.
+    \item Clients \MUST{} obtain all such information by ``synchronizing'' with the Ethereum blockchain and parsing relevant events emitted by $\mixer$. Clients and \MUSTNOT{} query the $\mixer$ state via RPC.
+    \item Clients \SHOULD{} take steps to avoid being identified while synchronizing (see:~\cref{appendix:sca-attacks:synchronization}. For example, clients \SHOULD{} vary the set of Ethereum nodes that they connect to, and \SHOULDNOT{} always sync from the block following the last one that they processed.
+    \item Clients \SHOULDNOT{} re-request blocks or transaction receipts that are of particular interest to them.
+    \item Clients \SHOULDNOT{} make any RPC calls or change their externally visible behavior in response to blocks or transaction receipts that are of interest to them.
+\end{enumerate}
+
+\subsubsection{Use of Contract Queries}\label{client-security:syncing:client-queries}
+
+We suggest that clients \SHOULDNOT{} directly query the contract state, for the reasons discussed in~\cref{appendix:sca-attacks:synchronization} and~\cref{appendix:sca-attacks:successful-decryption} (and consequently,~\cref{contract-security} suggests that the \mixer{} contract should, as far as possible, not expose public methods). The operation of the protocol does not require such queries, and they introduce a risk that some client implementations will leak information by using them.
+
+Implementors may have application-specific requirements for public \mixer{} methods, but should be aware of possible risks associated with introducing them. See:~\cref{client-security:wallet-backup-and-recovery} for an possible example of this.
+
+\subsection{Note Management}\label{client-security:syncing:note-management}
+
+$\mix$ calls on the $\mixer$ contract emit log events containing new commitment values, nullifiers, the new Merkle root and the secret data for new notes (encrypted using a key derived from the recipients public key). As clients synchronize with the latest state of the blockchain, they \MUST{} read these events and correctly process the data within.
+
+\begin{enumerate}
+    \item Clients \MUST{} process the $\mixEventDType$ event for every $\mix$ transaction, in the order in which they are appear in the blockchain.
+    \item Clients implementing spending functionality \MUST{} use commitment values in events to track the state of the Merkle tree. The Merkle tree state will be used to generate Merkle paths for future transactions, and \MUST{} be made available to the client without the need to query the contract. (Note that not all commitments must necessarily be persisted - see \cref{implementation:efficiency}).
+    \item Clients that can receive notes \MUST{} attempt to decrypt the ciphertexts for every transaction (see \cref{zeth-receive:decrypt}).
+    \item Clients \MUSTNOT{} perform any network-related action, including closing the RPC connection, dependent on successful / unsuccessful decryption of ciphertexts (see \cref{appendix:sca-attacks:successful-decryption}).
+    \item Clients that can receive notes \MUST{} attempt to parse any successfully decrypted plaintext (that is, ensure it is well-formed as in \cref{zeth-receive:parse-plaintext}).
+    \item Clients \MUSTNOT{} perform any network-related action, including closing the connection, dependent on successful / unsuccessful parsing (see \cref{appendix:sca-attacks:invalid-ciphertext}).
+    \item Clients that can receive notes \MUST{} verify that successfully parsed plaintext data is the opening of the corresponding commitment in the transaction (see \cref{zeth-receive:check-note-data}).
+    \item Clients \MUSTNOT{} perform any network-related action, including closing the connection, dependent on whether the parsed note data is the opening of the corresponding commitment (see \cref{appendix:sca-attacks:invalid-ciphertext}).
+    \item Clients \MUST{} confirm that, after adding the new commitments, the local representation of the Merkle tree of commitments has a root consistent with the event data.
+    \item Clients \SHOULD{} record data related to valid decrypted notes. This will be required in order to spend the notes in a future transaction.
+    \item Clients implementing spending functionality \SHOULD{} process all nullifiers in $\mix$ transaction events, checking for any corresponding notes previously recorded. Any such note should be marked as spent.
+\end{enumerate}
+
+\subsection{Prepare Arguments for Mix Transaction}
+
+Clients \MUSTNOT{} query Ethereum nodes while generating any arguments to a $\mix$ call. In particular, Merkle paths \MUST{} be calculated using the clients representation of the Merkle tree of commitments that was constructed by parsing events.
+
+Where the zero-knowledge proof is generated by some external process, clients \MUST{} put in place sufficient security schemes to ensure that:
+\begin{itemize}
+    \item they are communicating with an authentic proof generation process (not a man-in-the-middle), and
+    \item data sent to and from the proving process cannot be observed in transit by a third party, and
+    \item the proof has been generated for the correct witness.
+\end{itemize}
+
+Without these safe-guards, the operation of the system and the secret data required to spend the input notes may be compromised.  See:~\cref{appendix:sca-attacks:proof-generation}.
+
+\subsection{Wallet Backup and Recovery}\label{client-security:wallet-backup-and-recovery}
+
+Wallets are expected to rely on locally stored data such as \zeth~note secret values, key data, information about the \mixer state, etc.  If such data is lost, it can be reconstructed by replaying all \mixer~events from the creation of \mixer, \emph{if the user's Zeth secret address is available}. As well as note data (recovered by decrypting the ciphertext from event logs), nullifiers (also emitted to the event logs) reveal which of the users notes has been spent.
+
+Thereby, given only the user's Zeth secret address the full wallet state should be recoverable, although this operation may be computationally expensive and time consuming. To support this operation, implementors may consider making an exception to the guidance in~\cref{client-security:syncing:client-queries} by introducing a public method on \mixer{} to return a snapshot of the \emph{entire} contract state. The intention being to avoid the need to parse the entire \mixer{} history. Such a query would not be for specific commitments or nullifiers, and so the amount of information leaked is limited and may be considered acceptable.  However, the utility of this ``snapshot'' approach may be limited in most realistic situations.
+
+Firstly, $\mixer$ may not trivially support a query returning the full set of nullifiers, without some significant storage overhead. This is because nullifiers are most naturally stored as a Solidity map, which cannot be enumerated efficiently. Clients must also iterate through the full contract history attempting decrypt every ciphertext in the event logs, in order to recover the user's \zeth~notes they may contain. Thereby, while some simple clients (e.g. payment verifiers) may not require historical nullifier or note data, iteration through the \mixer{} history seems unavoidable for recovery in most realistic cases.
+
+Although wallets \SHOULD{} support recovery from key data alone, it is preferable to avoid such expensive operations. Wallets \SHOULD{} support backing up sufficient data to allow recovery in a ``reasonable'' amount of time. Naturally, the definition of ``reasonable'' here and the nature of the costs involved will depend heavily on the specific use-cases being targeted by the implementation.

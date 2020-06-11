@@ -1,0 +1,134 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Instantiating the \prf{}s, \comm~and \crh{}s}\label{instantiation:prf-comm-crh}
+
+%We use a one-time Schnorr-based signature scheme by Bellare and Shoup~\cite{bellare2007two} (see:~\cref{ss:ot-schnorr}) with \sha{256} as collision resistant hash function and the subgroup of prime order $\rBN$ of \BNCurve~(see:~\cref{ssec:notations}). As such, we have $\sk \in \FFx{\rBN}^2$ (written over $2 \cdot 32$ bytes), $\vk \in \gset^2$ (uncompressed, written over $4 \cdot 32$ bytes) and $\sigma \in \FFx{\rBN}$. This signature scheme is \sufcma~which is stronger than \ufcma, hence the security requirement is fulfilled.
+
+The functions \crhhsig{} and \crhots{} are instantiated with \sha{256}~\cite{fips1804} which we assume to be collision resistant. Furthermore, $\comm$, $\prfpk{}{x}$, $\prfrho{}{x}$, $\prfaddr{}{x}$, and $\prfnf{}{x}$ are all instantiated with \blake{2}{}'s hash function optimized for 32-bit platforms, \blake{2s}{}, which we prove in the Weakly Ideal Cipher Model~\cite{luykx2016security} to be from a family of PRF and collision resistant functions. The Weakly Ideal Cipher model assumes that \blake{2}{}'s underlying block cipher is ideal, has a distinguisher but no structural weaknesses (see:~\ref{appendix:blake:proofs}). In addition to that, and to ensure that the functions $\prfpk{}{x}$, $\prfrho{}{x}$, $\prfaddr{}{x}$, and $\prfnf{}{x}$ compute images lying in different domains, we use different message prefixes (or ``domain separators'') for the $\prf{}s$ inputs. This approach ensures that the $\apk_{i}$'s, $\nf{i}$'s, $\rrho_{i}$'s, and $\htag{i}$'s have independent distributions from a \ppt{} adversary point of view.
+
+\begin{notebox}
+    It is important to note that, for this approach to be secure, the hash function used needs to be secure against \emph{chosen-prefix collisions attacks}~\cite{md5-collision}.
+\end{notebox}
+
+Furthermore, we take:
+\begin{itemize}
+    \item $\noterLen, \askLen, \phiLen = \blakeCompLen$
+\end{itemize}
+
+\subsection{Blake2 primitive}\label{instantiation:prf-comm-crh:blake}
+
+\blake{}{}~\cite{aumasson2008sha} is a hash family that was presented as a candidate at the \sha{3} competition. \blake{2}{} is the next iteration of the family which has been further optimized to achieve higher throughput thanks to some optimizations and by being less conservative on its security\footnote{The authors increased the number of rounds of \blake{}{} for the \sha{3} competition to be more conservative on security. They however showed afterwards that this change was not ``meaningfully more secure'' and thus reverted it for \blake{2}{} (see:~\cite[Section 2.1]{aumasson2013blake2}).}. \blake{}{} and \blake{2}{} are based on the \chacha{} stream cipher~\cite{bernstein2008chacha} composed with the \haifa{} framework~\cite{biham2007framework}. \chacha{} defined over 20 rounds, as used in \blake{2}{}, is deemed secure and a PRF based on today's cryptanalysis~\cite{procter2014security,choudhuri2016differential}. \blake{2}{} is specified in RFC-7693~\cite{blakecompietf} and licensed under CC0. \blake{2s}{} is an instantiation of \blake{2}{} optimized for 32-bit platforms. As such, to reason about the security of \blake{2s}{} we prove the security of \blake{2}{}.
+
+\paragraph*{Blake Security}
+
+\blake{}{} security has been heavily scrutinized through the \sha{3} competition~\cite{vidali2010collisions, ming2010security, andreeva2010security, alshaikhli2012comparison, andreeva2012security, andreeva2012provable, homsirikamol2012security}. \blake{2}{} has also been thoroughly cryptanalyzed independently~\cite{guo2014analysis, hao2014boomerang, espitau2015higher, neves2019observation}. For $n$-bit long digests/outputs, the hash and compression functions present $n/2$-bit of collision resistance and $n$-bit of pre-image resistance, immunity to length extension, and indifferentiability from a random oracle~\cite{aumasson2013blake2}. They have furthermore been demonstrated secure in the Weakly Ideal Cipher Model~\cite{luykx2016security} (WICM, see~\cref{appendix:blake:secmod:WICM}). More particularly, Luykx et al.~show that \blake{2}{}, is indifferentiable from a random oracle in this model and is a PRF.
+
+\begin{notebox}
+	We assume that the encryption scheme used in the \blake{2}{} underlying compression function --- which is derived from \chacha{20} --- has no exploitable structural behavior. More precisely, that this encryption scheme behaves like a weak ideal cipher. We provide proofs in this model.
+\end{notebox}
+
+We use that result in~\cref{appendix:blake:proofs} to show the collision resistance. We also prove that, given that \blake{2}{} is collision resistant and a PRF, $\blake{2}{r \concat x}$ is computationally binding and computationally hiding commitment scheme for input $x$ and randomness $r$.
+
+\subsection{Commitment scheme}\label{instantiation:prf-comm-crh:comm}
+
+We define our commitment scheme as follows,
+\begin{align*}
+	& \comm.\setup &&: \smallset{\secparam\ s.t\ \secpar \in \NN} \to \BB^{*} \\
+	& \comm.\commit{}{} &&: \left( \BB^\prfAddrOutLen \times \BB^\prfRhoOutLen \times \BB^\zvalueLen \right ) \times \BB^\noterLen \to \FFx{\rBN}
+\end{align*}
+
+We instantiate the commitment scheme with $\blake{2s}{}$ as follows,
+\begin{align*}
+	\pparams &= \comm.\setup(\secparam)\ (\text{corresponds to \blake{2s}{}'s constant } \blakePB{}\ \text{and}\ \rBN) \\
+	\cm{} &= \comm.\commit{\msg = (\apk, \rrho, \notev)}{\noter} \\
+	&= \decode{\blake{2s}{\noter \concat \apk \concat \rrho \concat \notev}}{\NN} \pmod{\rBN}
+\end{align*}
+
+\begin{remark}
+We set the commitment digest length in the parameter block $\blakePB{}$~\cite{blakecompietf}.
+\end{remark}
+
+\subsubsection{Security proof.}\label{instantiation:prf-comm-crh:comm:sec-proof}
+
+The commitment scheme defined above is computationally hiding and binding in the WICM, see~\cref{appendix:blake:full-comm}. However, because of the modulo $\rBN$ operation, the scheme is only $(\bnFieldBitLen / 2)$-bit binding.
+
+\subsection{PRFs}\label{instantiation:prf-comm-crh:prf}
+
+We show in this section how we instantiate the \prf{}s with Blake primitives. As a reminder, the \prf{}s are defined as follows,
+\begin{align*}
+ 	& \prfaddr{}{} : \BB^\askLen \times \smallset{0} \to \BB^\prfAddrOutLen \\
+	& \prfpk{}{} : \left ( \BB^\askLen \times  [\jsin] \right ) \times \BB^\crhhsigOutLen \to \BB^\prfPkOutLen \\
+	& \prfnf{}{} : \BB^\askLen  \times \BB^\prfRhoOutLen \to \BB^\prfNfOutLen \\
+	& \prfrho{}{} :\left ( \BB^\phiLen \times  [\jsout] \right ) \times \BB^\crhhsigOutLen  \to \BB^\prfRhoOutLen
+\end{align*}
+
+As we instantiate the \prf{s} with \blake{2s}{}, we have,
+\begin{align*}
+	\prfAddrOutLen, \prfNfOutLen, \prfPkOutLen,  \prfRhoOutLen = \blakeCompLen
+\end{align*}
+
+To ensure that the \prf{}s have independent distributions, we first introduce tagging functions $\tagfunction^x$ which truncate and preppend with a distinct tag the \prf{}s key. We have,
+\begin{align*}
+	& \tagaddr{} : \BB^\askLen \to \BB^\blakeCompLen \\
+	& \tagpk{}{} : \BB^\askLen \times [\jsin] \to \BB^\blakeCompLen  \\
+	& \tagnf{} : \BB^\askLen \to \BB^\blakeCompLen \\
+	& \tagrho{}{} : \BB^\phiLen \times [\jsout] \to \BB^\blakeCompLen
+\end{align*}
+
+The tagging functions are instantiated as follows,
+\begin{align*}
+	\tagaddr{\auxinputs.\jsins{i}.\ask} &= \taggedaddr \\
+	&= (1) \concat {(1)}^{\ceil{\frac{\jsmax}{2}}} \concat (0,0) \concat \trunc{\auxinputs.\jsins{i}.\ask}{\blakeCompLen-3-\ceil{\frac{\jsmax}{2}}} \\
+	%
+	\tagnf{\auxinputs.\jsins{i}.\ask} &= \taggednf \\
+	&= (1) \concat {(1)}^{\ceil{\frac{\jsmax}{2}}} \concat (1,0) \concat \trunc{\auxinputs.\jsins{i}.\ask}{\blakeCompLen-3-\ceil{\frac{\jsmax}{2}}} \\
+	%
+	\tagpk{i}{\auxinputs.\jsins{i}.\ask} &= \taggedpk \\
+	&= (0) \concat \pad{\encode{i}{\NN}}{\ceil{\frac{\jsmax}{2}}} \concat (0,0) \concat \trunc{\auxinputs.\jsins{i}.\ask}{\blakeCompLen-3-\ceil{\frac{\jsmax}{2}}} \\
+	%
+	\tagrho{j}{\auxinputs.\pphi} &= \taggedrho \\
+	&= (0) \concat \pad{\encode{j}{\NN}}{\ceil{\frac{\jsmax}{2}}} \concat (1,0) \concat \trunc{\auxinputs.\pphi}{\blakeCompLen-3-\ceil{\frac{\jsmax}{2}}}
+\end{align*}
+
+We now present how the \prf{}s are instantiated,
+\begin{align*}
+	\prfaddr{\auxinputs.\jsins{i}.\ask}{0} &= \auxinputs.\jsins{i}.\znote.\apk \\
+	&= \blake{2s}{\tagaddr{\auxinputs.\jsins{i}.\ask} \concat \pad{0}{\blakeCompLen}} \\
+	%
+	\prfnf{\auxinputs.\jsins{i}.\ask}{\auxinputs.\jsins{i}.\rho} &= \priminputs.\nfs{i} \\
+	&= \blake{2s}{\tagnf{\auxinputs.\jsins{i}.\ask} \concat \auxinputs.\jsins{i}.\znote.\rho} \\
+	%
+	\prfpk{\auxinputs.\jsins{i}.\ask}{i, \priminputs.\hsig} &= \priminputs.\htags{i} \\
+	&= \blake{2s}{\tagpk{i}{\auxinputs.\jsins{i}.\ask} \concat \priminputs.\hsig} \\
+	%
+	\prfrho{\auxinputs.\pphi}{j, \priminputs.\hsig} &= \auxinputs.\znotes{j}.\rrho \\
+	&= \blake{2s}{\tagrho{j}{\auxinputs.\pphi} \concat \priminputs.\hsig}
+\end{align*}
+
+\begin{remark}
+	We set the \prf{}s' output length in the \blake{2s}{}'s parameter block $\blakePB{}$.
+\end{remark}
+
+\subsubsection{Security proof.}\label{instantiation:prf-comm-crh:prf:sec-proof}
+
+The functions defined above are collision resistant and PRFs in the WICM, see~\cref{appendix:blake:proofs}.
+Because of the tagging functions, the security parameter of the \prf{}s becomes $\secpar = \blakeCompLen/2 - \jsmax/4 - 3/2$.
+
+\subsection{Collision Resistant Hashes}\label{instantiation:prf-comm-crh:crh}
+We instantiate in this section the collision resistant hash functions $\crhhsig{}$ and $\crhots{}$ with \sha{256}. As a consequence, we have,
+\[
+    \crhhsigOutLen = \crhotsOutLen = \shaTwoDigestLen
+\]
+
+\paragraph*{\sha{256} Security}
+SHA-256 (Secure Hash Algorithm 256) is a hash function designed by the National Security Agency (NSA) in 2001. It is based on the Merkle–Damgård structure, the Davies–Meyer compression function construct~\cite[Function f5 in Figure 3]{black2002black} and the classified SHACAL-2 block cipher.
+
+Collision attacks have been thoroughly studied by the research community~\cite{sanadhya2008new,mendel2011finding}. The best attacks at this day, are second-order differential attack by Lamberger et al.~\cite{lamberger2011higher} on the SHA-256 compression function reduced to 46 out of 64 rounds.
+
+Many researchers~\cite{isobe2009preimage,aoki2009preimages} have also studied preimage attacks on SHA-256 with reduced rounds. Guo et al.~\cite{guo2010advanced} in particular were among the first to use the meet in the middle strategy~\cite{aoki2009meet} and achieved more efficient ones on 42-step SHA-256. Khovratovich et al.~in 2012~\cite{khovratovich2012bicliques} have so far presented the best preimage attacks, on 45-round and 52-round SHA-256 as well as a 52-round attack on the SHA-256 compression function.
+
+Li et al.~have published in 2012~\cite{li2012converting} a noteworthy paper on converting meet in the middle preimage attack into pseudo collision attack. Using preimage attacks by bicliques, they found pseudo collisions  attacks on 52 steps of SHA-256.
+
+\begin{lemma}
+	\sha{256} is $128$-bit collision resistant.
+\end{lemma}

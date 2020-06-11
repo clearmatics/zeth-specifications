@@ -1,0 +1,13 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Encryption of the notes}\label{implementation:encryption}
+
+In this section we give some remarks concerning the implementation of the \zeth{} encryption scheme, described in \cref{instantiation:enc}. As noted, there are several details in the specification of the underlying primitives which can impact security if not carefully implemented. The following list is by no means exhaustive but includes several details noted during development of the proof-of-concept system.
+
+\begin{itemize}
+    \item Private keys for \curve{25519} \MUST{} be randomly generated as $32$ bytes where the first byte is a multiple of $8$, and the last byte takes a value between $64$ and $127$ (inclusive). Further details are given in~\cite{bernstein2006curve25519}, including an example algorithm for generation. Implementations \MUST{} take care to ensure that their code, or any external libraries they rely upon, correctly perform this step.
+    \item A similar observation holds for \polymac{1305} in which the $r$ component of the \mac{} key $(r, s)$ \MUST{} be \emph{clamped} in a specific way (see~\cref{instantiation:enc:enc-sch}). This step is also essential and \MUST{} be performed.
+    \item In the implementation of the \chacha{} stream cipher, correct use of the \emph{key}, \emph{counter} and \emph{nonce} \MUST{} be ensured in order to adhere to the standard and guarantee the appropriate security properties.
+\end{itemize}
+
+During the proof-of-concept implementation it was not obvious that the cryptography library\footnote{\url{https://cryptography.io/en/latest/}} adhered to the specifications with respect to the above points. In particular, it was not clear whether key clamping was performed at generation time and/or when performing operations, and the interface to the \chacha{} cipher accepted a different set of input parameters (namely \emph{key} and \emph{nonce} with no \emph{counter}). This left some ambiguity about the responsibility for clamping, and whether the \chacha{} block data would be updated as described in the specification. Details of how this was resolved are given in the proof-of-concept encryption code, which may prove a useful reference for implementors\footnote{see: \url{https://github.com/clearmatics/zeth/blob/v0.4/client/zeth/encryption.py}}.

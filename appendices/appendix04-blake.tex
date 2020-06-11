@@ -1,0 +1,249 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\chapter{Security proofs of Blake2}\label{appendix:blake}
+
+This appendix proves the collision resistance, PRF-ness, binding and hiding properties of the \blake{2}{} hash function in the Weakly Ideal Cipher model (WICM, see~\cite{luykx2016security}). The proofs use definitions and results of Luykx et al.~\cite{luykx2016security}, regarding the indifferentiability of \blake{2}{} and a random oracle in the Weakly Ideal Cipher Model (WICM). Assuming \blake{2s}{} is as secure as \blake{2}{}, these results may be applied to \blake{2s}{}.
+
+\section{Security model of Blake2}\label{appendix:blake:secmod}
+
+The security analysis treats \blake{2}{} as hash function built on top of a block-cipher-based compression function in the WICM (which derives from the Ideal Cipher Model). In this section, we present the WICM and prove that Blake2 is a collision resistant PRF, and thus a commitment scheme.
+
+\subsection{Weakly Ideal Cipher Model}\label{appendix:blake:secmod:WICM}
+
+The research community believes that Blake’s underlying block cipher has no known weaknesses and could reasonably be modeled as an ideal cipher~\cite[Section 2.1]{luykx2016security}. However, Blake2 admits weak keys with a specific structure~\cite[Section 2.1]{luykx2016security}. Blake2 is therefore more appropriately analysed in the WICM, which is an extension of the Ideal Cipher Model that represents a block cipher as a set of independent random permutations~\cite{holenstein2011equivalence}. The WICM may also be viewed as a specialization for Blake2 of the Weak Cipher Model~\cite{mennink2015impact}, which aims to be realistic by modeling particular characteristics, invariants or properties a block cipher may have.
+
+A number of definitions in what follows are quoted directly from Luykx et al.~\cite{luykx2016security}.
+
+\paragraph{The Weakly Ideal Cipher Model.}
+
+Let \weakSet and \strongSet be the following partition of $\BB^{2 \cdot \ol}$ into weak and strong sets, where $w$ is the word length ($16 \cdot w = 2 \cdot \ol$):
+\begin{align*}
+    \weakSet &= \smallset{aaaabbbbccccdddd \in \BB^{2 \cdot \ol}\ |\ a, b, c, d \in \BB^w} \\
+    \strongSet &= \BB^{2 \cdot \ol} \setminus \weakSet
+\end{align*}
+
+Let $\blockSet(2 \cdot \ol, 2 \cdot \ol)$ denote the set of all block ciphers $\Enc{}: \BB^{2 \cdot \ol}\times \BB^{2 \cdot \ol} \rightarrow \BB^{2 \cdot \ol}$. Define $\blockSet^{*}(2 \cdot \ol, 2 \cdot \ol)$ as the set of all block ciphers $\Enc \in \blockSet(2 \cdot \ol, 2 \cdot \ol)$ with the additional restriction that $E(k_w,\cdot)$ is \weakSet- and \strongSet-subspace invariant for all keys $k_w \in \keyspace_{weak}$. That is, inputs in \weakSet map to \weakSet, and likewise for \strongSet. Here, $\keyspace_{weak}$ is the set of weak keys, defined as
+\[
+    \keyspace_{weak} = \smallset{ \key = kkkkkkkkkkkkkkkk \in \BB^{2 \cdot \ol}\ |\ k \in \BB^w }.
+\]
+A random $ \Enc \sample \blockSet^{*}(2 \cdot \ol, 2 \cdot \ol)$ can now be modeled as follows:
+\begin{itemize}
+    \item on input of $(\key, x) \in \keyspace_{weak} \times \weakSet$, $\Enc$ generates its response $y$ randomly from \weakSet up to repetition;
+    \item on input of $(\key, x) \in \keyspace_{weak} \times \strongSet$, $\Enc$ generates its response $y$ randomly from \strongSet up to repetition.
+\end{itemize}
+
+For key values $\key \in \BB^{2 \cdot \ol} \setminus \keyspace_{weak}$, $\Enc$ behaves like an ideal cipher: it either outputs a new random value or if the key-message-image tuple has already been queried the tuple's image. The case of inverse queries is analogous.
+
+
+\blake{2C}{} is defined over the following domains and codomain:
+\[
+    \blake{2C}{}: \blockSet^{*}(2 \cdot \ol, 2 \cdot \ol) \times \BB^{\ol} \times \BB^{2 \cdot \ol} \times \BB^{\ol/4} \times \BB^{\ol/4} \to \BB^{\ol}
+\]
+We write $\blake{2C}{}_\Enc(h, \msg, t, f)$ for the output of the Blake2 compression function, defined over encryption scheme $\Enc$ on inputs $h$, $\msg$, $t$ and $f$. The compression function, in particular, computes the state $x = (h \concat \pad{0}{\ol/2} \concat t \concat f) \xor (\pad{0}{\ol} \concat \blakeIV{})$ for some $\blakeIV{}$. It then encrypts $x$ under $\msg$ (where $\msg$ is treated as a key for the encryption) and splits $\Enc(\msg, x)$ in two same size variables, the left part $l_\Enc$ and right part $r_\Enc$. It finally outputs $l_\Enc \xor r_\Enc \xor h$.\linebreak
+
+\zeth uses the \blake{2}{} compression function with a fixed encryption scheme $\Enc^*$ based on \chacha{} stream cipher~\cite{bernstein2008chacha}. Accordingly we write $\blake{2C}{h, \msg, t, f} = \blake{2C}{}_{\Enc^*}(h, \msg, t, f)$.
+
+\blake{2}{} is defined over the following domain and codomain:
+\[
+    \blake{2}{}: \BB^{\leq 2 \cdot \ol} \times \BB^{*} \to \BB^{\ol}
+\]
+
+\paragraph{Indifferentiability.}
+
+One way to measure the extent to which a certain cryptographic function behaves like a random function is via the indistinguishability framework, where a distinguisher is given oracle access to either the cryptographic function or the random function, with the goal of determining which one it has access to.
+
+\begin{definition}\label{appendix:blake:secmod:WICM:indiff}
+    Let $\primC$ be a construction with oracle access to an ideal primitive $\primP$. Let $\primR$ be an ideal primitive with the same domain and codomain as $\primC$. Let $\simulator$ be a simulator with the same domain and codomain as $\primP$ with oracle access to $\primR$, and let $\distinguisher$ be a $\ppt$ distinguisher. The indifferentiability advantage of $\distinguisher$ is defined as:
+    \[
+        \indiff_{\primC^\primP, \simulator}(\distinguisher) = \abs*{\prob{\distinguisher^{\primC^\primP, \primP} = 1} - \prob{\distinguisher^{\primR, \simulator^\primR} = 1}}
+    \]
+\end{definition}
+
+The distinguisher $\distinguisher$ can query both its left oracle (either $\primC$ or $\primR$) and its right oracle (either $\primP$ or \simulator). We refer to $\primC^\primP,\ \primP$ as the real world, and to $\primR,\ \simulator^\primR$ as the simulated world; the distinguisher $\distinguisher$ converses with either of these worlds and its goal is to tell both worlds apart.
+
+\begin{theorem}[Indifferentiability of \blake{2}{}~\cite{luykx2016security}]
+Let an encryption scheme $\Enc \sample \blockSet^*(2 \cdot \ol, 2 \cdot \ol)$ be a weakly ideal cipher, and consider the hash function $\blake{2}{}_\Enc$ that internally uses $\Enc$. There exists a simulator $\simulator$ such that for any distinguisher $\distinguisher$ with total complexity $\queryBound$, we have:
+    \[
+        \indiff_{\blake{2}{}_\Enc, \simulator}(\distinguisher) \leq \frac{\binom q 2}{2^{2\ol}} + \frac{2 \binom q 2}{2^{\ol}} + \frac{q}{2^{\ol/2}}
+    \]
+    where $\simulator$ makes at most $O(\queryBound^3)$ queries to a random function $\primR$.
+\end{theorem}
+\begin{proof}
+    See:~\cite[Corollary 1]{luykx2016security}.
+\end{proof}
+
+For asymptotic security, we assume the distinguisher to be \ppt{} and that the number of queries done is polynomial $q\leq \poly[\ol]$.
+
+\paragraph{Additional remarks.}
+
+Luykx et al.~\cite{luykx2016security} remark that, by resorting to the WICM, they do not make stronger assumptions than those used in previous results (ICM), and, despite the fact that they give distinguishers more power (by weakening the cipher), they are able to get similar results.
+
+\section{Security proofs}\label{appendix:blake:proofs}
+
+\subsection{Proof of Blake2 function's PRFness}\label{appendix:blake:proofs:prf}
+
+Luykx et al.~already prove the PRFness of Blake2 \textit{keyed} hash function in the multi-key setting.
+
+\begin{definition}[PRF in multi-key setting~\cite{mouha2015multi}]
+	Let $\mu \geq 1$ and $k \sample \keyspace^\mu$. Let $\primC$ be a keyed construction with key space $\keyspace$ and with oracle access to an ideal primitive $\primP$. Let $\primR_1, \ldots, \primR_\mu$ be random functions with the same domains and ranges as $\primC_{\key_1}, \ldots, \primC_{\key_\mu}$. Let $\dist$ be a distinguisher. The PRF distinguishing advantage of $\dist$ is defined as,
+\[
+    \prf_{\primC^\primP}(\dist) = \abs*{\prob{\distinguisher^{\primC^\primP_{\key_1}, \ldots, \primC^\primP_{\key_\mu}, \primP} = 1} - \prob{\distinguisher^{\primR_1, \ldots, \primR_\mu, \primP} = 1}}
+\]
+\end{definition}
+
+\blake{2}{} supports keyed hashing by simply prepending the key to the message:
+\[
+    \blake{2}{}_{\Enc,\key}(\msg) = \blake{2}{}_{\Enc}(\key \concat 0^{2\ol - \kl} \concat \msg)
+\]
+where $\kl \leq 2\ol$ denotes the key size. In other words, the key gets processed as other data and the $\haifa$ counter and flags are designated to the key in a similar fashion as if they were for normal data blocks.
+
+\begin{theorem}[PRF-Security of \blake{2}{} keyed mode~\cite{luykx2016security}]\label{appendix:th:kh-blake-prf}
+Let $\mu \geq 1$ and let $\key \sample \left( \BB^\kl \right )^\mu$. Let an encryption scheme $\Enc \sample \blockSet^*(2 \cdot \ol, 2 \cdot \ol)$ be a weakly ideal cipher, and consider the keyed hash function $\blake{2}{}_{\Enc, \key}$ that internally uses $\blake{2C}{}_\Enc$ that internally uses $\Enc$. For any distinguisher $\distinguisher$ with total complexity $\queryBound$:
+    \[
+        \prf_{\blake{2}{}_{\Enc, \key}}(\distinguisher) \leq \frac{\binom q 2}{2^{2\ol}} + \frac{2 \binom q 2}{2^{\ol}} + \frac{q}{2^{\ol/2}} + \frac{\mu q}{2^\kl} + \frac{\binom \mu 2}{2^\kl}
+    \]
+\end{theorem}
+\begin{proof}
+    See:~\cite[Corollary 3]{luykx2016security}.
+\end{proof}
+
+\begin{remark}\label{appendix:blake:proofs:kh-blake-remark}
+We can note that in the case of keyed hashing, the key is padded only to be processed in a single block to differentiate the key from the message. The security proof of~\cref{appendix:th:kh-blake-prf} does not rely on this padding and as such also works with no padding.
+\end{remark}
+
+\begin{theorem}[PRF-Security of \blake{2}{} with key~\cite{luykx2016security}]\label{appendix:th:blake-prf}
+Let $\key \sample \BB^\kl$. Let an encryption scheme $\Enc \sample \blockSet^*(2 \cdot \ol, 2 \cdot \ol)$ be a weakly ideal cipher, and consider the keyed hash function $\blake{2}{}_{\Enc}(\key, \cdot) = \blake{2}{}_\Enc(\key \concat \cdot)$ that internally uses $\blake{2C}{}_\Enc$ that internally uses $\Enc$. For any distinguisher $\distinguisher$ with total complexity $\queryBound$:
+    \[
+        \prf_{\blake{2}{}_{\Enc}}(\distinguisher) \leq \frac{\binom q 2}{2^{2\ol}} + \frac{2 \binom q 2}{2^{\ol}} + \frac{q}{2^{\ol/2}} + \frac{q}{2^\kl}
+    \]
+\end{theorem}
+\begin{proof}
+    See:~\cref{appendix:blake:proofs:kh-blake-remark} and~\cref{appendix:th:kh-blake-prf} with $\mu=1$.
+\end{proof}
+
+
+\subsection{Proof of Blake2 collision resistance}\label{appendix:blake:proofs:colres}
+
+We want to prove here the collision resistance of \blake{2}{}. To do so, we are going to prove by contradiction that if \blake{2}{} is not collision resistant, it is not indifferentiable.
+
+\begin{theorem}
+    \blake{2}{} is collision resistant.
+     % with a security parameter of $\secpar=\ol/2$.
+\end{theorem}
+\begin{proof}[Informal proof.]
+    Let us assume that there exists a $\ppt$ adversary $\bdv$ which breaks the collision resistance of \blake{2}{}. We build an adversary $\adv$ that uses this adversary to differentiate between the real and simulated worlds. More particularly, $\adv$ gets left and right oracles (see~\cite[Figure 3]{luykx2016security}), which are either an oracle for a hash function and for a weakly ideal block cipher or a random oracle and an encryption simulator with oracle access to the random oracle.
+
+    On each $\bdv$'s query $\msg_i$, $i \in \range{1}{\queryBound}$, $\adv$ passes them to his left oracle and returns the answer $h_i$ to $\bdv$.
+    Eventually, if $\bdv$ finds a collision, that is a pair $(\msg_i, \msg_j)$ such that $i \neq j$ and $h_i = h_j$, $\adv$ guesses that his oracles were real; else $\adv$ returns a random guess. Otherwise $\adv$ guesses his oracles were simulated.
+%
+    If the left oracle was a random oracle, the probability of finding a collision would be negligible for $\queryBound \leq \poly$\footnote{The probability would be $\frac{\queryBound^2}{2^{\ol}}$ which is negligible for a polynomial number of queries $\queryBound$. This is the sum of the probabilities of finding a collision when doing the $i^{th}$ query. Indeed, let us suppose the adversary has done $i-1$, $i>2$, queries without finding a collision, i.e.~he knows $i-1$ distinct tuples of input-output. When receiving the $i^{th}$ value, the adversary has thus $i-1$ chance to find a collision. The probability for the new output to be equal to any of the previous outputs is thus $(i-1) \cdot \frac{1}{2^{\ol}}$ (as we are in the random oracle model). Summing this probability over all queries, we find the probability of finding a collision after doing $\queryBound$ queries.}.
+
+    On the other hand, as assumed $\bdv$ finds a collision with non-negligible probability if the oracles were real.
+    Hence, $\adv$ wins the indifferentiability game with non-negligible advantage what is a contradiction.
+\end{proof}
+
+\subsection{Blake2 as a commitment scheme}\label{appendix:blake:proofs:comm}
+
+We prove here that $\blake{2}{}$ is a commitment scheme, i.e.~is binding and hiding. To do so we rely on the previous results that \blake{2}{} is collision resistant and a \prf.
+
+\begin{theorem}
+    Let $\Enc\sample \blockSet (2\ol, 2\ol) $ and for a message $x \in \BB^{*}$ and randomness $r \in \BB^{\rl}$ commitment to $x$ using $r$ be $\comm.\commit{x}{r} = \blake{2}{}_\Enc (r \concat x)$.
+    Then $\comm$ is hiding and binding.
+
+    % Then $\comm$ is hiding with security parameter $\rl/2$ and binding with security parameter $\rl/2$.
+
+\end{theorem}
+\begin{proof}[Informal proof.]
+\emph{Hiding.}
+    A commitment scheme $\comm$ is computationally hiding if, knowing two potential openings, a \ppt{} adversary cannot distinguish which was committed. Let us assume that there exists a $\ppt$ adversary $\bdv$ which breaks the hiding property of $\blake{2}{}$ with a non-negligible advantage $\eta$. We build an adversary $\adv$ that uses $\bdv$ to break the PRF property of $\blake{2}{}$ with advantage $\eta/2$.
+
+    First, the \prf{} game is initiated, that is, the challenger chooses a random encryption scheme $\Enc$ and key $\key \in \BB^\rl$ and instantiates two oracles $\oracle{\blake{2}{}_k} = \blake{2}{}_{\Enc}(\key, \cdot)$ and $\oracle{R}$ a random function. The challenger picks an oracle randomly and gives $\adv$ access to it.
+    $\bdv{}$ sends $\queryBound$ oracle queries to $\adv{}$ who passes them to his left oracle and returns the oracle answers to him. $\bdv{}$ then outputs two challenge messages $(\msg_0, \msg_1)$ and sends them to $\adv$ who randomly message selects $\msg_b$, sends it to his left oracle, gets back $y_b$ as an answer and sends $y_b$ to \bdv{}. \bdv{} returns the decision bit $\tilde{b}$ to \adv. If $b = \tilde{b}$, \adv{} answers to the challenger that the oracle was instantiating the PRF. Otherwise, \adv{} answers with a random guess.
+    The advantage of $\adv$ equals advantage of $\bdv$ if it interacts with a real hash function. The advantage of $\adv$ equals half the advantage of $\bdv$ when interacting with a random oracle and simulator.
+    % $\adv$ wins when $\bdv$ does and wins with probability at least $1/2$ otherwise. Hence, \adv{} wins the PRF game with non-negligible advantage what gives a contradiction.
+
+\emph{Binding.}
+    A commitment scheme $\comm$ is said to be computationally binding if it is infeasible to find $x, x'$ and $r, r'$ such that $x \neq x'$ and $\commit{x}{r} = \commit{x'}{r'}$. This is implied by collision resistance of \blake{2}{}. Thus if $\bdv$ is an algorithm that breaks the biding property with advantage $\eta$, there is another algorithm $\adv$ that breaks \blake{2}{} collision resistance with the same advantage.
+\end{proof}
+
+Assuming that \blake{2s}{} is as secure as \blake{2}{}, a commitment scheme based on a \blake{2s}{}, i.e.~$\commit{x}{r} = \blake{2s}{}_{\Enc}(r \concat x)$ is hiding and binding.
+
+\subsection{Proof of commitment scheme security}\label{appendix:blake:full-comm}
+
+To prove the binding and hiding property of $\comm$ (see:~\cref{instantiation:prf-comm-crh:comm}), we introduce the following commitment scheme $\comm^*$,
+\begin{align*}
+	\comm^*.\setup & : \smallset{\secparam\ \suchthat\ \secpar \in \NN} \to \BB^{*} \\
+	\comm^*.\commit{}{} &: \blockSet^{*}(2 \cdot \blakeCompLen, 2 \cdot \blakeCompLen) \times \BB^{2 \cdot \blakeCompLen} \\
+  & \times \left( \BB^\prfAddrOutLen \times \BB^\prfRhoOutLen \times \BB^\zvalueLen \right ) \times \BB^\noterLen \to \BB^\blakeCompLen
+\end{align*}
+
+The commitment scheme is defined as follows,
+\begin{align*}
+	& \comm^*.\setup(\secparam) = \pparams^* = \epsilon\\
+	&\comm^*.\commit{\msg = (\apk, \rrho, \notev)}{\noter} = \cm{}\\
+	&= \blake{2}{}_{\Enc^*} (\noter \concat \apk \concat \rrho \concat \notev)
+\end{align*}
+
+Given a commitment scheme $\comm^*$, the bijective function $\decode{\cdot}{\NN}$ and $p_\secpar{} \in \NN$, a prime which can be represented using $\secpar$ bits, we define the commitment scheme $\comm'$ as follows:
+\begin{align*}
+    & \comm'.\setup(\secparam{}) = (\comm^*.\setup(\secparam{}), p_\secpar{})\\
+    & \comm'.\commit{\msg}{r} = \decode{\comm^*.\commit{\msg}{\noter}}{\NN} \pmod{p_{\secpar}}\ \text{for}\ \msg= (\apk \concat \rrho \concat \notev)
+\end{align*}
+Note that $\comm$ is a particular instantiation of $\comm'$ where $\Enc^*$ is set as \chacha{} encryption scheme~\cite{bernstein2008chacha}, $k^*$ is a random key, and $p_\secpar{}$ is $\rBN$.
+
+\begin{theorem}[Hiding]\label{instantiation:th:com-bin-field-hiding}
+    If $\comm^*$ is hiding then $\comm'$ is hiding.
+\end{theorem}
+\begin{proof}
+	We prove it by contradiction i.e.~we assume that there exists an adversary $\bdv$ that breaks $\comm'$'s hiding property and show an adversary $\adv$ that uses $\bdv$ to break $\comm^*$'s hiding property with non-negligible probability.
+
+  Let $\cdv$ be a challenger that sets up the hiding game for $\comm^*$ and $\adv$.
+	The adversary $\adv$, given public parameters $\pparams^*$ of $\comm^*$ and access to an oracle that runs the $\commit{}{}$ algorithm of $\comm^*$ scheme, simulates a hiding game for $\comm'$ for $\bdv$.
+  The adversary $\adv$ starts by setting public parameters $\pparams'$ for $\comm'$ using public parameters $\pparams^*$ given by $\cdv$. Parameters $\pparams'$ are passed to $\bdv$ who outputs a pair of messages $\msg_0, \msg_1$.
+  The adversary $\adv$ forwards them to the challenger who samples a bit $b$ at random and generates $\cm{}^*= \comm^*.\commit{\msg_b}{r}$ for some randomness $r$. The result is returned to \adv{} (see:~\cref{preliminaries:definitions:commitment-hiding}).
+	Then $\adv{}$ passes $\cm{}= \decode{\cm{}^*}{\NN} \pmod{p_\secpar{}}$ to $\bdv{}$ who returns his guess $b'$. The adversary $\adv$ returns the same $b'$ to the challenger.
+
+	By construction, it is clear that $\adv$ wins the hiding game with the same probability that $\bdv$ wins the simulated hiding game. Since $\bdv$ advantage is non-negligible, this means that $\adv$ adversary wins the $\comm^*$ hiding game with non-negligible probability as well.
+\end{proof}
+
+\begin{theorem}[Binding]\label{instantiation:th:com-bin-field-binding}
+    Let $\comm^*$ be a computationally binding commitment scheme and $\comm^*.\commit{}{}$ indifferentiable from a random oracle. Then $\comm'$ is also computationally binding if $l = \left \lceil 2^{\secpar} / p_\secpar \right\rceil$ is at most $\poly[\secpar]$.
+\end{theorem}
+\begin{proof}
+	Assume that \adv{} asks the $\comm'$ commit and open oracles a total of distinct $q_\secpar$ queries. Let us denote the result of the $q_\secpar$ queries and output of the attacker (candidate collision) as
+  $\left ( ( \msg_1, \opening_1, y_1), \ldots , (\msg_{q_\secpar}, \opening_{q_\secpar}, y_{q_\secpar}), \text{out} \right )$.
+  If \adv{} is successful it means that it outputs $(\msg, \opening)$, $(\msg', \opening')$ such that $(\msg, \opening) \neq (\msg', \opening')$ and $\comm'.\commit{\msg}{\opening} = \comm'.\commit{\msg'}{\opening'}$.
+
+	By the definition of $\comm'$, we have that,
+	\[
+		\comm'.\commit{\msg}{\opening} = \decode{\comm^*.\commit{\msg}{\opening}}{\NN} \pmod{p_\secpar}
+	\]
+Hence, we have a collision in $\comm'$ if there exists $k \in [l]$, $l$ being the ratio of the codomains of $\comm^*.\commit{}{}$ and $\comm'.\commit{}{}$, such that,
+	\[
+		\abs*{\decode{\comm^*.\commit{\msg}{\opening}}{\NN} - \decode{\comm^*.\commit{\msg'}{\opening'}}{\NN}} = k \cdot p_{\secpar}.
+	\]
+	We show that this event is unlikely.
+
+	% In fact, for each $i \in [q_\secpar]$, let $C_i$ be the event that the adversary wins at the $i^{th}$ query; i.e.~either the last commitment $y_i$, obtained by the adversary, is a $\comm^*$ collision with one of the previous or a $\comm'$ collision which is not a collision for $\comm^*$. That is, $\exists j\leq i, \exists k, 0\leq k < l,\ \suchthat\ y_i = y_j + k \cdot p_\secpar$. Hence, the adversary has $l$ ways to win.
+
+  In fact, for each $i \in [q_{\secpar}]$, let $C_i$ be the event that the adversary wins at the $i$-th query. That is, the last commitment $y_i$ is a $\comm'$ collision with one of the previous $y_j$.  More precisely there exists $j \leq i$ and $k < l$ such that $y_i = y_j + k \cdot p_{\secpar}$.
+
+	Since $\comm^*$ is a random oracle, $y_i$ is randomly selected from a set of at least $p_\secpar$ elements. As such, we have $\prob{C_i} \leq i \cdot l / p_\secpar$.
+
+	Thus the probability of finding a collision after $q_\secpar$ queries is
+  $\prob{C_1 \lor \ldots \lor C_{q_\secpar}} \leq \sum_{i = 1}^{q_\secpar} \prob{C_i} = l/p_\secpar \cdot \sum_{i=1}^{q_\secpar} i$.
+  This probability is bounded by $l \cdot \frac{q_\secpar(q_\secpar+1)}{p_\secpar}$.
+	However, we allow only polynomial number of queries. Thus for $q_\secpar = \poly$ this probability becomes,
+		\[
+			\frac{2^\secpar \cdot \poly}{p_\secpar^2},
+		\]
+	what is negligible for $2^\secpar / p_\secpar \leq \poly$.
+\end{proof}
+
+\begin{remark}\label{instantiation:remark:rbn-blackcomplen}
+	We observe that in \zeth's commitment scheme, we set $p_\secpar{} = \rBN$ and $2^\secpar = 2^\blakeCompLen$. We thus have $l = 6$ and the probability of an attacker breaking the binding property is because of the reduction modulo $\rBN$ increases by a factor of approximately $6$ and remains negligible.
+\end{remark}
+
+\begin{corollary}
+    Assume that \blake{2}{} is indifferentiable from a random oracle and a PRF, then $\comm^*$ is computationally binding and computationally hiding. Furthermore, the reduction is tight. That is, the advantage of any \ppt{} adversary against binding (resp.~hiding) property is the same as the advantage of an adversary against collision resistance and binding (resp.~hiding).
+\end{corollary}

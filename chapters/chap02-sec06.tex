@@ -1,0 +1,27 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Receiving \zethnotes}\label{zeth-protocol:zeth-receive}
+
+In order to confirm the reception of \zethnotes, $\zparty{R}$ must listen to the events (\cref{sssec:ethereum-events}) of type $\mixEventDType$ emitted by the processing of $\zethTx$, and try to decrypt the ciphertexts using $\zparty{R}.\privaddr.\skenc$. If the decryption is successful, $\zparty{R}$ must verify that the $\zethnote$ recovered is the opening of a commitment in the Merkle tree of $\mixer$. If not, $\zparty{R}$ rejects the payment.
+
+For each event $\evMixOut{} \in \mixEventDType$ emitted by \mixer{}, the steps to be followed are detailed below:
+
+\begin{enumerate}
+    \item\label{zeth-receive:check-commit-tree} Compute the new root $\mkroot'$ of the Merkle tree of commitments, after adding the new values $\evMixOut.\cms{}$. If this value does not match the new root $\evMixOut.\mkroot$ emitted by \mixer{}, abort.
+    \item\label{zeth-receive:decrypt} Try to decrypt the ciphertexts:
+        \begin{align*}
+            & zn_j = \encscheme.\dec(\evMixOut.\ciphers[j], \zparty{R}.\privaddr.\skenc)
+        \end{align*}
+    \item For each successful decryption, let $j$ be the index of the decrypted ciphertext:
+        \begin{enumerate}
+            \item\label{zeth-receive:parse-plaintext} Check whether the recovered plaintext $zn_j$ is a well-formed $\zethnote$. Abort if it is not well-formed.
+            \item\label{zeth-receive:check-note-data} Check that the recovered \zethnote $zn_j$ is the opening of the corresponding commitment $\evMixOut{}.\cms{}[j]$:
+                \[
+                    \evMixOut.\cms{}[j] = \comm.\commit{zn_j.\apk, zn_j.\rrho, zn_j.\notev}{zn_j.\noter}
+                \]
+              Abort if the note is not a valid opening.
+            \item Additionally, if sender \zparty{S}, and recipient \zparty{R} had a contractual agreement, then \zparty{R} needs to check that the terms of this agreement are fulfilled by all the recovered $\zethnotes$, abort otherwise.
+        \end{enumerate}
+\end{enumerate}
+
+Note that steps \ref{zeth-receive:check-commit-tree} and \ref{zeth-receive:check-note-data} are required to ensure that data decrypted by $\zparty{R}$ exactly matches the data committed to in \mixer{}. In particular, step \ref{zeth-receive:check-commit-tree} requires \zparty{R} to maintain or have access to some representation of the Merkle tree of commitments. See~\cref{client-security:syncing:note-management} for further details.

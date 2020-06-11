@@ -1,0 +1,20 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\chapter{Preliminaries}\label{chap:preliminaries}
+
+\zeth~is a protocol which enables private transactions on \ethereum~\cite{ethyellowpaper}. It is a modification of the Decentralized Anonymous Payment (DAP) system \zerocash~\cite{sasson2014zerocash}. The design described in~\cite{zethpaper} presents the mechanisms by which \zerocash~can be used on \ethereum, and argues that the information leakages of the solution are well defined and controlled. This document, however, serves as a specification of the protocol and provides security fixes and optimizations from the first proof of concept release of the protocol~\cite{zethsproken}.
+
+\medskip
+
+This document assumes familiarity with blockchain and \ethereum~in particular. It does not, in any way, aim at replacing the Ethereum yellow paper~\cite{ethyellowpaper}. The reader is strongly advised to read about \ethereum~before delving into this specification document.
+
+\medskip
+
+The key words \MUST, \MUSTNOT, \SHOULD, \SHOULDNOT, \MAY, and \RECOMMENDED~in this document are to be interpreted as described in~\cite{rfc2119} when they appear in \ALLCAPS~. These words may also appear in this document in lower case as plain English words, absent their normative meanings.
+
+\input{./chapters/chap01-sec01.tex} % Data types
+\input{./chapters/chap01-sec02.tex} % Ethereum
+\input{./chapters/chap01-sec03.tex} % zk-SNARKs
+\input{./chapters/chap01-sec04.tex} % DAP
+\input{./chapters/chap01-sec05.tex} % Security Assumptions
+\input{./chapters/chap01-sec06.tex} % Definitions

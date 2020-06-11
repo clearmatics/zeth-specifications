@@ -1,0 +1,85 @@
+%!Tex root = ../zeth-protocol-specification.tex
+
+\usepackage[utf8]{inputenc}
+\usepackage[english]{babel}
+
+% Display line numbers
+\usepackage[edtable,longtable]{lineno}
+\linenumbers%
+% Manage document versioning
+\usepackage{vhistory}
+% For pdf annotations
+% See: https://tex.stackexchange.com/questions/6306/how-to-annotate-pdf-files-generated-by-pdflatex
+\usepackage{pdfcomment}
+% Marking things to do
+\usepackage[color=yellow!20]{todonotes}
+% Use subfiles and make the project modular
+\usepackage{subfiles}
+% Typesetting theorems
+\usepackage{subcaption}
+%for subfigures
+\usepackage{amsthm}
+% AMS mathematical facilities
+\usepackage{amsmath}
+% An extended set of fonts for use in mathematics
+\usepackage{amsfonts}
+% Useful math symbols
+% See: http://milde.users.sourceforge.net/LUCR/Math/mathpackages/amssymb-symbols.pdf
+\usepackage{amssymb}
+% St Mary Road symbols for theoretical computer science
+\usepackage{stmaryrd}
+% Customising captions in floating environments
+\usepackage[justification=centering]{caption}
+% Deal with space insertion and "eaten" spaces when defining commands
+\usepackage{xspace}
+% Split long sequences of letters or numbers
+\usepackage{seqsplit}
+% Verbatim with URL-sensitive line breaks
+\usepackage{url}
+% Improves the interface for defining floating objects such as figures and tables.
+\usepackage{float}
+% Key-value interface for optional arguments to the \includegraphics command
+\usepackage{graphicx}
+% Handle cross-referencing commands to produce hypertext links in the document
+\usepackage{hyperref}
+% Intelligent cross-referencing
+\usepackage[capitalise]{cleveref}
+% Glossary management (to include after hyperref to have hyperlinks)
+\usepackage[acronym]{glossaries}
+% Avoid widow lines
+% see: https://www.techrepublic.com/blog/web-designer/how-to-fix-your-rags-widows-and-orphans/
+\usepackage[all]{nowidow}
+% Framed environments that can split at page boundaries
+\usepackage[innerleftmargin=5pt,innerrightmargin=5pt]{mdframed}
+% Interface to document dimensions
+\usepackage[a4paper,centering]{geometry}
+% Hyphenation for letterspacing, underlining, and more
+\usepackage{soul}
+% Enhances the quality of tables
+\usepackage{booktabs}
+% Nice looking colored, rounded-corners box
+\usepackage{tcolorbox}
+\newtcolorbox{notebox}{colback=red!5!white,colframe=red!75!black,fonttitle=\bfseries,title=Note}
+\newtcolorbox{todobox}{colback=yellow!5!white,colframe=blue!75!black,fonttitle=\bfseries,title=TODO}
+% Create various type of PDF comments
+\usepackage{pdfcomment}
+%for proper scaling abs values in multilines
+\usepackage{mathtools}
+% and for that purpose we introduce an abs* command
+  \newcommand\MTkillspecial[1]{% helper macro
+  \bgroup
+  \catcode`\&=9
+  \let\\\relax%
+  \scantokens{#1}%
+  \egroup
+  }
+  \DeclarePairedDelimiter\abs\lvert\rvert
+  \reDeclarePairedDelimiterInnerWrapper\abs{star}{
+  \mathopen{#1\vphantom{\MTkillspecial{#2}}\kern-\nulldelimiterspace\right.}
+  #2
+  \mathclose{\left.\kern-\nulldelimiterspace\vphantom{\MTkillspecial{#2}}#3}}
+  
+\usepackage{paralist} % for compact lists
+
+% Main package for cryptography commands
+\usepackage[advantage, asymptotics, adversary, complexity, sets, keys, ff, notions, lambda, primitives, events, operators, probability, logic, mm, landau]{cryptocode}

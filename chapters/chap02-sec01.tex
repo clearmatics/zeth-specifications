@@ -1,0 +1,90 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{\zeth~Data Types}\label{zeth-protocol:zeth-data-types}
+
+We begin by describing, and giving intuition about, the data types (see:~\cref{preliminaries:structured-data}) used in \zeth.
+We follow some design rationale from \zerocash~\cite{sasson2014zerocash}, and \zcash~\cite{zcashprotocol} in order to prevent the transaction malleability attack, and the Faerie Gold attack\cite[Section 8.4]{zcashprotocol}. We refer the reader to~\cref{appendix:trnm} for more details.
+
+\begin{description}
+    \item[\zethNoteDType] Represents a note in \zeth. It comprises the note's owner public address \apk, identifier $\rrho$, randomness \noter{}~and value \notev.
+        \begin{table}[H]
+        \centering
+        \begin{tabular}{ccc}
+            Field & Description & Value\\ \toprule
+            $\apk$ & Note owner's paying key & $\BB^{\prfAddrOutLen}$\\ \midrule
+            $\noter$ & Note randomness & $\BB^{\noterLen}$\\ \midrule
+            $\notev$ & Note value & $\BB^{\zvalueLen}$ \\ \midrule
+            $\rrho$ & Note identifier & $\BB^{\prfRhoOutLen}$\\ \bottomrule
+        \end{tabular}
+        \caption{\zethNoteDType~data type}\label{zeth-protocol:tab:zethnote}
+        \end{table}
+    \item[\jsInputDType] Denotes a \gls{joinsplit} input. It comprises the opening of a commitment $\cm{}$ which is in the set of leaves in the Merkle tree of $\mixer$ (i.e.~a $\zethnote$), its address $\mkaddr$ and authentication path $\mkpath$ on the contract's Merkle tree as well as the spending key $\ask$ of the note holder and the note nullifier $\nf{}$.
+        \begin{table}[H]
+        \centering
+        \begin{tabular}{cp{20em}c}
+            Field & Description & Value\\ \toprule
+            $\mkpath$ & Merkle authentication path to the commitment corresponding to the $\zethnote$ to spend & $\FFx{\rBN}^{\mkTreeDepth}$ \\ \midrule
+            $\mkaddr$ & Commitment address in the Merkle tree & $\BB^{\mkTreeDepth}$\\ \midrule
+            $\znote$ & Zeth note object & $\zethNoteDType$ \\ \midrule
+            $\cm{}$ & Zeth note commitment & $\FFx{\rBN}$ \\ \midrule
+            $\ask$ & Note owner's spending key & $\BB^{\askLen}$\\ \midrule
+            $\nf{}$ & Note nullifier & $\BB^{\prfNfOutLen}$\\ \bottomrule
+        \end{tabular}
+        \caption{\jsInputDType~data type}\label{zeth-protocol:tab:jsinput}
+        \end{table}
+    \item[\primInputDType] 
+    Represents the primary inputs used to generate the zk-snark $\zkp$. $\priminputs$ is a tuple defined as the current Merkle root \mkroot~of the Merkle tree maintained by $\mixer$, the input notes nullifiers $\nfs{} = \smalltuple{\nf{0}, \ldots, \nf{\jsin - 1}}$, the output notes commitments $\cms{} = \smalltuple{\cm{0}, \ldots, \cm{\jsout - 1}}$, the signature hash \hsig, the message authentication tags $\htags{} = \smalltuple{\htag{0}, \ldots, \htag{\jsin-1}}$ and the residual bits field $\resbits$, which aggregates the former's fields bits which could not be contained in a field element.
+        \begin{table}[H]
+        \centering
+        \begin{tabular}{cp{20em}c}
+            Field & Description & Value\\ \toprule
+            $\mkroot$ & Merkle root of the Merkle tree & $\FFx{\rBN}$ \\ \midrule
+            $\nfs{}$ & Indexed set of nullifiers of the ``old'' notes to spend & ${(\FFx{\rBN}^{\nfFLen})}^{\jsin}$\\ \midrule
+            $\cms{}$ & Indexed set of commitments to the newly created notes & ${(\FFx{\rBN})}^{\jsout}$\\ \midrule
+            $\hsig$ & Signature hash (non-malleability, see:~\cref{appendix:trnm}) & $\FFx{\rBN}^{\hsigFLen}$\\ \midrule
+            $\htags{}$ & Indexed set of message authentication tags (non-malleability, see:~\cref{appendix:trnm}) & ${(\FFx{\rBN}^{\htagFLen})}^{\jsin}$\\ \midrule
+            $\resbits$ & Residual bits corresponding to unpacked bits of former fields& $\FFx{\rBN}^{\resBitsFLen}$\\ \bottomrule
+        \end{tabular}
+        \caption{\primInputDType~data type}\label{zeth-protocol:tab:priminputs}
+        \end{table}
+    \item[\auxInputDType] Represents the auxiliary inputs used to generate the zk-snark \zkp. \auxinputs~is a tuple defined as \gls{joinsplit} inputs (i.e.~``old outputs to be spent''), the new \zethnotes{}, the joinsplit's randomness $\pphi$ as well the public values $\vin$ and $\vout$, the signature hash $\hsig$ and the message authentication tags $\htags{} = \smalltuple{\htag{0}, \ldots, \htag{\jsin-1}}$.
+        \begin{table}[H]
+        \centering
+        \begin{tabular}{cp{20em}c}
+            Field & Description & Value\\ \toprule
+            $\jsins{}$ & Indexed set of $\jsin$ \gls{joinsplit} inputs & $\jsInputDType^{\jsin}$\\ \midrule
+            $\znotes{}$ & Indexed set of $\jsout$ newly created notes & $\zethNoteDType^{\jsout}$\\ \midrule
+            $\pphi$ & The \gls{joinsplit} randomness (non-malleability, see:~\cref{appendix:trnm}) & $\BB^{\phiLen}$\\ \midrule
+            $\vin$ & Public input value to the \gls{joinsplit} & $\BB^{\zvalueLen}$\\ \midrule
+            $\vout$ & Public output value to the \gls{joinsplit} & $\BB^{\zvalueLen}$\\ \midrule
+            $\hsig$ & Signature hash (non-malleability, see:~\cref{appendix:trnm}) & $\BB^{\crhhsigOutLen}$\\ \midrule
+            $\htags{}$ & Indexed set of message authentication tags (non-malleability, see:~\cref{appendix:trnm}) & ${(\BB^{\prfPkOutLen})}^{\jsin}$\\ \bottomrule
+        \end{tabular}
+        \caption{\auxInputDType~data type}\label{zeth-protocol:tab:auxinputs}
+        \end{table}
+    \item[\mixInputDType] Represents the set of inputs to the \mix~function of \mixer. The input of the \mix~function~is a tuple defined as the primary inputs \priminputs, the zk-proof \zkp, the ciphertexts of the newly created notes $\ciphers = \smalltuple{\ct_{0}, \ldots, \ct_{\jsout - 1}}$, a one-time signature $\sigma$ and the associated verification key \vk.
+        \begin{table}[H]
+        \centering
+        \begin{tabular}{cp{20em}c}
+            Field & Description & Value\\ \toprule
+            $\primInp$ & Primary input object associated with the zk-proof $\zkp$ & \primInputDType\\ \midrule
+            $\zkproof$ & The zk-SNARK associated to the \zeth~statement (see:~\cref{zeth-protocol:statement}) & $\zkpDType$ (see:~\cref{instantiation:zksnark})\\ \midrule
+            $\otssig$ & The one-time signature used to prevent transaction malleability (see:~\cref{appendix:trnm}) & $\sigOtsDType$ (see:~\cref{instantiation:otsig:data-types})\\ \midrule
+            $\otsvk$ & The verification key associated with the signature $\otssig$ used to prevent transaction malleability (see:~\cref{appendix:trnm}) & $\vkOtsDType$ (see:~\cref{instantiation:otsig:data-types})\\ \midrule
+            $\ciphers$ & Indexed set of ciphertexts of the newly generated notes & ${(\BB^{\encZethNoteLen})}^{\jsout}$ (see:~\cref{instantiation:enc})\\ \bottomrule
+        \end{tabular}
+            \caption{\mixInputDType~data type}\label{zeth-protocol:tab:mixinputs}
+        \end{table}
+    \item[\mixEventDType] Represents the data emitted as an \ethereum event (\cref{sssec:ethereum-events}) during a successful execution of the \mix~function of \mixer{}. Clients are required to read this data and use it to update their representation of \mixer{}'s state.
+      \begin{table}[H]
+        \centering
+        \begin{tabular}{cp{20em}c}
+          Field & Description & Value \\ \toprule
+          $\mkroot$ & New root of Merkle tree of commitments & $\FFx{\rBN}$ \\ \midrule
+          $\nfs{}$ & Nullifiers for input notes consumed & ${(\BB^{\prfNfOutLen})}^{\jsin}$ \\ \midrule
+          $\cms{}$ & Commitments to the output notes & ${(\FFx{\rBN})}^{\jsout}$ \\ \midrule
+          $\ciphers{}$ & Ciphertexts for the output notes & ${(\BB^{\encZethNoteLen})}^{\jsout}$ \\ \bottomrule
+        \end{tabular}
+        \caption{\mixEventDType~data type}\label{zeth-protocol:tab:mixoutputs}
+      \end{table}
+\end{description}

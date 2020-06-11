@@ -1,0 +1,12 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\chapter{Instantiation of the cryptographic primitives}\label{chap:instantiation}
+
+In this chapter, we start by instantiating the cryptographic building blocks used in previous sections to describe the \zeth~\dapscheme~design. Finally, we proceed by providing security proofs justifying that our instantiation complies with the security requirements listed in previous sections.
+
+\input{./chapters/chap03-sec01.tex} % PRFs, COMM and CRHs (may need to be split if we decide to instantiate these with different functions)
+\input{./chapters/chap03-sec02.tex} % MKHASH
+\input{./chapters/chap03-sec03.tex} % Zeth statement after instantiation
+\input{./chapters/chap03-sec04.tex} % OT-SIG
+\input{./chapters/chap03-sec05.tex} % Encryption scheme
+\input{./chapters/chap03-sec06.tex} % ZkSNARK

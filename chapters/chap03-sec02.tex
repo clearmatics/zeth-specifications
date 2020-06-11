@@ -1,0 +1,219 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Instantiating $\mkhash$}\label{instantiation:mkhash}
+
+In this section, we show how we instantiate $\mkhash$ with a compression function based on \mimc{}~\cite{albrecht2016mimc}. We start by showing how the compression function is constructed. Then, we instantiate \mkhash, and we finally prove that our instantiation complies with the security requirements mentioned in~\cref{zeth-protocol:sec-req}
+
+\subsection{\mimc{} Encryption}\label{instantiation:mkhash:mimc-encryption}
+
+\mimc{} is a block cipher with a simple design. During a round, the message $\msg$ is first mixed with the encryption key $\key{}$ and a randomly chosen constant $c[i]$. We then apply a permutation function on this result, this is done by raising it with a carefully chosen exponent $\exponent{}$ (see:~\cref{instantiation:mkhash:mimc-encryption:security}). This round is repeated a specific number of time $\rounds$, where \rounds{} depends on the desired security level $\secpar$. We denote the encryption function by \mimcEnc{} and illustrate it in~\cref{instantiation:fig:mimc}.
+
+\begin{figure*}[ht]
+    \centering
+    \procedure[linenumbering]{$\mimcEnc(\key, \msg, c, \exponent{}, \rounds)$}{
+        \pcforeach\ i \in [\rounds]:\\
+        \t \msg = {(\key\ \mathsf{OP}\ c[i]\ \mathsf{OP}\ \msg)}^\exponent{}\\
+        \pcreturn (\msg\ \mathsf{OP}\ \key)
+    }
+    \caption{\mimc{} Encryption function.}\label{instantiation:fig:mimc}
+\end{figure*}
+
+\mimcEnc{} can be defined on both binary and prime fields. As such, the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}. We denote by $\mimcPrime{p}$ (respectively $\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (respectively \FFx{2^n}). Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. The functions' signature thus become,
+\begin{align*}
+    \mimcPrime{p} &: \FFx{p} \times \FFx{p} \to \FFx{p} \\
+    \mimc{}_{2^n} &: \FFx{2^n} \times \FFx{2^n} \to \FFx{2^n}
+\end{align*}
+
+We will from now on only consider \mimc{} defined over prime fields as we consider SNARKs based on arithmetic circuits defined over a finite field \FFx{p}, $p$ prime.
+
+\subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
+
+Assume our prime $p$ is written over at least $\secpar$ bits. To ensure that the exponentiation leads to a permutation in $\FFx{p}$, we have to choose $\exponent{}$ of the form $2^t-1$ such that $\gcd(\exponent{}, p-1) = 1$. To achieve a security of $\secpar$, we furthermore define the number of rounds as follows, $\rounds = \lceil \frac{\log_2 p}{\log_2 \exponent{}} \rceil. $\footnote{We do not consider exponents of type $2^t+1$ since the polynomial representing $\mimcEnc$ would be sparse and as such, the number of rounds becomes constant (see:~\cite[Section 5.3]{albrecht2016mimc}).}
+
+We refer to $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. We can note that $\mimcPrime{p}$ does not suffer from \emph{inversion subfield attacks} as the only subgroup in a prime order group are itself and the trivial group - induced by the identity element.
+
+\subsection{\mimc{}-based compression function}\label{instantiation:mkhash:mimc-compressionf}
+
+To construct a hash function from a block-cipher (or permutation), there exists two main techniques: sponge functions~\cite{bertoni2007sponge} and iterated compression functions~\cite{black2002black}.
+In a Merkle Tree, we need to hash two fixed size inputs into one. This is the definition of a compression function. As such, we decided to use a compression function and settled for Miyaguchi-Preneel compression function~\cite[$f_3$ function]{black2002black} construct for its proven security (it is more secure than the more common Davies-Meyer construct~\cite[$f_5$ function]{black2002black}, and we do not require the flexibility of the latter~\cite[Section 3]{gazzoni2006maelstrom}).
+
+\subsubsection{Miyaguchi-Preneel Compression construct}
+
+Miyaguchi-Preneel (MP)~\cite[$f_3$ function]{black2002black} is a general construction that allows to build compression functions from block ciphers (see:~\cref{preliminaries:definitions:hashcomp}). Given a block cipher \Enc, we denote the corresponding compression function by \fMP{} and its description is given in~\cref{instantiation:fig:mp-constructions}. We focus on ciphers working on \FFx{p}, for some prime $p$, while the original construction is defined over binary fields. As such, we replace the bitwise addition $\oplus$ by the modular addition in \FFx{\rBN} (see:~\cite{mp-security-ethsnarks}).
+
+\begin{figure*}[ht]
+    \begin{minipage}[t]{0.50\textwidth}
+        \procedure[linenumbering]{$\fMP{} (\key, \msg)$}{
+            res = \Enc_\key(\msg) \\
+            \pcreturn (res + \msg + \key) \pmod{p}
+        }
+        \caption{\MP{} construct in $\FFx{p}$.}\label{instantiation:fig:mp-constructions}
+    \end{minipage}%
+    \begin{minipage}[t]{0.50\textwidth}
+        \procedure[linenumbering]{$\mimcMPPrime{p}(\key, \msg)$}{
+            res = \mimcPrime{p}(\key, \msg) \\
+            \pcreturn (res + \key + \msg) \pmod{p}
+        }
+    \caption{$\mimcMPPrime{p}$ construction.}\label{instantiation:fig:mimc-mp-constructions}
+    \end{minipage}%
+\end{figure*}
+
+We denote by \mimcMP{} the compression function defined by the application of the Miyaguchi-Preneel construct over \mimc{}. Similarly, we define $\mimcMPPrime{p}$, illustrated in~\cref{instantiation:fig:mimc-mp-constructions}, by using $\mimcPrime{p}$ as the following compression function defined over $\FFx{p}$,
+
+\subsection{An efficient instantiation of \mimc{} primitives}\label{instantiation:mkhash:efficient-instance}
+
+In this section, we give instances of $\mimcPrime{p}$ and $\mimcMPPrime{p}$ that offer the best compromise between having an efficient prover and a cheap (in terms of gas consumption) on-chain compression function, and where $p=\rBN$.
+
+We observe that a small $\exponent{}$ would reduce the number of constraints in the arithmetic circuit (see:~\cref{zeth-protocol:statement}) while a large one would reduce the gas necessary to carry out Merkle Tree operations on the contract (see:~\cref{zeth-protocol:process-tx}). This is due to the fact that the exponentiation is cheaper to execute on a contract than on a circuit, and that the number of rounds decreases with higher $\exponent{}$. For instance, choosing $\exponent{} = 7$ results in $365$ constraints and $\approx 20k$ gas while $\exponent{} = 31$ corresponds to $417$ constraints ($+15\%$) and $\approx 17k$ ($-10\%$) in gas consumption. Repeating the same process for different exponents, we observe roughly the same order of magnitude gain on the gas consumption and loss on the number of constraints.
+
+The number of constraints of \mimcMPPrime{} for different exponents $\exponent{}$ of type $2^t-1$ is given by the following formula,
+\[
+    Constraints = \rounds \cdot mults + 1
+\]
+where $\rounds = \lceil \frac{\log_2 \rBN}{\log_2 \exponent{}} \rceil$ and $mults = 2 \cdot t - 2$ (using the \emph{square-and-multiply} algorithm~\cite[14.06]{menezes1996handbook}) and the last constraint represents the final message and key addition. The number of constraints is showed in~\cref{table:mimc-exp-analysis}, with $\exponent{}$ chosen such that $\gcd(\exponent{},\rBN - 1) = 1$ and the number of rounds $\rounds$ chosen to attain a security level of $\log(\rBN)$. As we expect, the number of constraints increases with $t$.
+
+\begin{table}
+    \begin{minipage}[t]{0.50\textwidth}
+        \centering
+        \begin{tabular}{c c c}
+            \midrule
+            $\exponent{}$ & $\rounds$ & $Constraints$ \\ [0.5ex]
+            \midrule
+            7 & 91 & 365\\
+            \midrule
+            31 & 52 & 417\\
+            \midrule
+            127 & 37 & 445\\
+            \midrule
+            511 & 29 & 465\\
+            \midrule
+            2047 & 24 & 481\\
+            \bottomrule
+        \end{tabular}
+    \end{minipage}%
+    \begin{minipage}[t]{0.50\textwidth}
+        \centering
+        \begin{tabular}{c c c}
+            \midrule
+            $\exponent{}$ & $\rounds$ & $Constraints$ \\ [0.5ex]
+            \midrule
+            8191 & 20 & 481\\
+            \midrule
+            32676 & 17 & 477\\
+            \midrule
+            131071 & 15 & 481\\
+            \midrule
+            524287 & 14 & 505\\
+            \midrule
+            2097151 & 13 & 521\\
+            \bottomrule
+        \end{tabular}
+    \end{minipage}%
+    \caption{Number of constraints for \mimcMP{} for different exponents.}\label{table:mimc-exp-analysis}
+\end{table}
+
+In conclusion, we choose $\exponent{} = 7$ which is the value for the exponent $\exponent{}$ that offers the best balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract. We call these ``snark-efficient'' instances \mimcSevenPrime{} and \mimcSevenMPPrime{} and show them in~\cref{instantiation:fig:mimc7-construction} and \cref{instantiation:fig:mimc7-mp-construction}.
+
+\begin{figure*}[ht]
+    \begin{minipage}[t]{0.5\textwidth}
+        \centering
+        \procedure[linenumbering]{$\mimcSevenPrime(\key, \msg)$}{
+            \pcforeach i \in [91]:\\
+            \t \msg = {(\key + c[i] + \msg)}^7 \pmod{\rBN}\\
+            \pcreturn (\msg + \key) \pmod{\rBN}
+        }
+    \end{minipage}%
+    \begin{minipage}[t]{0.5\textwidth}
+        \centering
+        \procedure{$c = (c[0], \ldots, c[\rounds-1])$}{
+            iv = \keccak{256} (\text{``clearmatics\_mt\_seed''}) \\
+            c[0], c[1] = 0, \keccak{256} (iv) \\
+            \forall i >1,\ c[i] = \keccak{256} (c[i-1])
+        }
+    \end{minipage}%
+    \caption{$\mimcSevenPrime$ construction.}\label{instantiation:fig:mimc7-construction}
+\end{figure*}
+
+\begin{figure*}[ht]
+    \begin{minipage}[t]{0.5\textwidth}
+        \centering
+        \procedure{$\mimcSevenMPPrime(\key, \msg)$}{
+            \pcreturn \mimcSevenPrime(\key, \msg) + \msg + \key \pmod{\rBN}
+        }
+    \caption{\mimcSevenMPPrime{} construction.}\label{instantiation:fig:mimc7-mp-construction}
+    \end{minipage}%
+    \begin{minipage}[t]{0.5\textwidth}
+        \centering
+        \procedure{$\mkhash(\msg_0, \msg_1)$}{
+            \pcreturn \mimcSevenMPPrime(m_0, m_1)
+        }
+        \caption{\mkhash{} instantiation.}\label{instantiation:fig:mkhash-instantiation}
+    \end{minipage}%
+\end{figure*}
+
+\begin{remark}
+    Note that $\rounds = 91$ targets $254$ bit security level for \mimcMPPrime{} and that \keccak{256} is the $256$ bit digest instance of the \keccak{} family that won the NIST SHA-3 competition~\cite{keccak-submission}. Compared to other hash functions, its use in solidity contracts is quite convenient since an EVM opcode is available (see:~\cite[Appendix G]{wood2014ethereum}).
+\end{remark}
+
+\subsection{\mkhash{} instantiation}
+We instantiate \mkhash{} with \mimcSevenMPPrime{} defined in~\cref{instantiation:fig:mkhash-instantiation},
+\[
+    \mkhash : \FFx{\rBN} \times \FFx{\rBN} \to \FFx{\rBN}
+\]
+
+\begin{remark}
+    To increase the security of the $\mathsf{\mkhash}$, different round constants for each level of the Merkle tree could be used.
+\end{remark}
+
+\subsection{Security requirements satisfaction}\label{instantiation:mkhash:security}
+After presenting the state of the art of MiMC cryptanalysis, we present the security proof of \mimcMPPrime{} collision resistance.
+
+\subsubsection{Cryptanalysis of MiMC block cipher and primitives}\label{instantiation:mkhash:security:cryptanalysis}
+\mimc{}'s security is increasingly being analysed for its traction in zero-knowledge and cryptocurrency communities. As of today, we do not know of any attacks breaking \mimc{} on prime fields on full rounds.
+
+The first attack on \mimc{} was an interpolation attack~\cite{li2019improved} which targets a reduced-round version for a scenario in which the attacker has only limited memory.
+An attack on Feistel-based \mimc{}~\cite{bonnetain2019collisions} was discovered shortly after, by using generic properties of the used Feistel construction (instead of exploiting properties of the primitive itself).
+Additionally,~\cite{albrecht2019algebraic} proposes an attack based on Gr\"{o}bner basis. The authors state that by introducing a new intermediate variable in each round, the resulting multivariate system of equations is a Gr\"{o}bner basis. As such, the first step of a Gr\"{o}bner basis attack can be obtained for free. However, the following steps of the attack are so computationally demanding that the attack becomes infeasible in practice.
+A recent work~\cite{cryptoeprint:2020:182} targets \mimc{} on binary fields, and achieves a full-round break of the scheme. While, the attack presented does not apply to prime fields, the authors note that it ``can be generalized to include ciphers over $\FFx{p}$'', and that only the lack of efficient distinguishers over prime fields precludes this.
+Another attack from Beyne et al~\cite{cryptoeprint:2020:188} uses a low complexity distinguisher against full \mimc{} permutation leading to a practical collision attack on reduced round sponge-based \mimc{} hash defined with security of 128 bits.
+
+\subsubsection{Security proof of \mimcMPPrime{} collision resistance}\label{instantiation:mkhash:security:colres-proof}
+We now prove that this compression scheme satisfies all the security requirements listed in~\cref{zeth-protocol:sec-req}. To do so, we first assume that the round constants are pseudo-random, i.e.~that $\keccak{256}$ is a \prf{}.
+
+\begin{lemma}
+	\keccak{256} is a $\prf$ with $\lambda=128$.
+\end{lemma}
+
+The security of \mimcMPPrime{} derives from a more general result, i.e.~by modelling \mimcPrime{} as an ideal cipher (see:~\cref{preliminaries:def:ICM}). More specifically, we show a security result for the \MP{} construction on \FFx{\rBN} by proving that, in the Ideal Cipher Model, the collision resistance advantage of any adversary is bounded by $\frac{q(q+1)}{\rBN}$, where $q$ is the number of different queries that the attacker does to the oracle. This means that, assuming a maximum $q$ number of possible encryption/decryption queries, parameter $\rBN$ can be chosen to make the advantage small as needed and $\fMP$ considered collision resistant. Similar result applies to the ${2^n}$ case.
+
+The instance of \mimc{} we use is modelled as an ideal cipher defined on field elements, for this reason we consider a variant of the ICM model where the keys, inputs and outputs are field elements in $\FFx{\rBN}$ and the block cipher scheme, with key $\key$, correspond to a family of $\rBN$ independent random permutations $f_{\key}: \FFx{\rBN} \times \FFx{\rBN} \to \FFx{\rBN}$.
+
+In the proof, without loss of generality, we assume the following conventions for an adversary \adv{}:
+\begin{itemize}
+    \item the adversary asks distinct queries: i.e.~if \adv{} asks a query $\oracleEnc(\key,\msg)$ and this returns $y$, then \adv{} does not ask a subsequent query of $\oracleEnc(\key,\msg)$ or $\oracleDec(\key,y)$, and inversely;
+    \item the adversary necessarily obtained the candidate collision from the oracle. This property follows suite from modelling \mimc{} as an ideal cipher.
+\end{itemize} 
+
+\begin{lemma}\label{lemma:colrescomp}
+    Let \fMP{} be the \MP{} compression function built on an ideal block-cipher \Enc{} on \FFx{\rBN}, the probability for an adversary \adv{} to find a collision is lower than $q(q+1)/\rBN$ where $q$ is the non-null number of distinct oracle queries.
+\end{lemma}
+
+The following proof has been adapted from~\cite[Lemma 3.3]{black2002black}\footnote{It states the collision resistance of a set of compression functions $f_1,,\ldots,,f_{12}$, denoted as \emph{group-1 compression functions} and showed in~\cite[Figure 3]{black2002black}. As mentioned above, Miyaguchi-Preneel corresponds to $f_3$ of that group. Since the proof of~\cite[Lemma 3.3]{black2002black} shows collision resistance of $f_1$, we slightly modified it to work for $f_3$.}. 
+
+\begin{proof}
+    Fix $h_0\in\FFx{\rBN}$. Let \adv{} be an adversary attacking the compression function \fMP{}.
+    Assume that \adv{} asks the oracles \oracleEnc{} and \oracleDec{} a total of \emph{distinct} $q$ queries. Let us denote the result of the $q$ queries and output of the attacker (candidate collision) as $\left ( (\key_1, \msg_1, y_1), \ldots , (\key_q, \msg_q, y_q), \text{out} \right )$. If \adv{} is successful it means that it outputs $(\key, \msg)$, $(\key', \msg')$ such that either $(\key, \msg) \neq (\key', \msg')$ and $\fMP(\key, \msg) = \fMP(\key', \msg')$ or $\fMP(\key, \msg) = h_0$. By the definition of \fMP, we have that $\Enc_\key(\msg) + \msg + \key = \Enc_{\key'}(\msg') + \msg' + \key'$ for the first case, or $\Enc_\key(\msg) + \msg + \key = h_0$ for the second. So either there are distinct $r, s \in [1,\ldots, q]$ such that $(\key_r, \msg_r, y_r) = (\key, \msg, \Enc_\key(\msg))$ and $(\key_s,\msg_s, y_s) = (\key',\msg', \Enc_{\key'}(\msg'))$ and $\Enc_{\key_r}(\msg_r) + \msg_r + \key_r = \Enc_{\key_s}(\msg_s) + \msg_s + \key_s$ or else there is an $r \in [1,\ldots, q]\ \suchthat\ (\key_r, \msg_r, y_r) = (\key, \msg, h_0)$ and $\Enc_{\key_r}(\msg_r) + \msg_r + \key_r = h_0$. We show that this event is unlikely.
+
+    In fact, for each $i \in [1,\ldots, q]$, let $C_i$ be the event that either $y_i + \msg_i + \key_i = h_0$ or does exist $j \in [1,\ldots, i-1]\ \suchthat\ y_i + \msg_i + \key_i = y_j + \msg_j + \key_j$. When carrying out the simulation $y_i$ or $\msg_i$ was randomly selected from a set of at least $\rBN - (i-1)$ elements, so $\prob{C_i}\leq i / (\rBN-i)$. This means that for the collision advantage of \adv{}, \advCollMP holds that $\advCollMP \leq \prob{C_1 \lor \cdots \lor C_q} \leq \sum_{i=1}^{q} \prob{C_i}$. For $q \leq \frac{\rBN}{2}$ this probability is bounded by $l \cdot \frac{q(q+1)}{\rBN}$. However, we allow only polynomial number of queries, thus for $q = \poly$ this probability becomes,
+        \[
+            \frac{\poly}{\rBN}
+        \]
+\end{proof}
+
+\begin{remark}
+    Note that from~\cref{lemma:colrescomp} follows that the collision resistance security of the \zeth{} Merkle tree is $\log_2(\rBN/2)$ (around $127$ bits).
+\end{remark}
+
+\begin{notebox}
+   \cref{lemma:colrescomp} is applicable to our case by the strong assumption of \mimcSevenPrime{} being an ideal cipher. In other words, the proof does not take into account any structural weakness or knowledge that an attacker is aware of. These additional information makes~\cref{lemma:colrescomp} not applicable anymore to our case and as consequence can be used to break the collision resistance.
+\end{notebox}

@@ -1,0 +1,11 @@
+\chapter{Double Spend Attack on Equivalent class}\label{appendix:dbspd}
+
+The primary inputs of our zk-snarks are elements of $\FFx{\rBN}$ and they can be written over $ \bnFieldBitLen $ bits. Because $\rBN$ is an odd prime number and we have that $\encode{\FFx{\rBN}}{\FFx{\rBN}} \subset \BB^\bnFieldBitLen$, the projection of $\BB^\bnFieldBitLen$ in $\FFx{\rBN}$ is surjective.
+
+When we pass the primary inputs to the Mixer contracts, they are interpreted as elements of $\BB^\ethWordLen$, $ \BB^\bnFieldBitLen \subset \BB^\ethWordLen $. As previously noted, this means that there exists elements of $\BB^\ethWordLen$ with the same projection in $\FFx{\rBN}$. An adversary could make use of this to perform a double spend attack.
+
+Indeed, to check that a coin is not double spent, the contract stores the nullifiers of spent coins (as elements of $\BB^\ethWordLen$) and verifies that the nullifier of the coin to be spent is not stored. The adversary could thus modify the nullifier to a different value with the same projection. As the snark verification operates in $\FFx{\rBN}$, the proof would still be valid. However, the value stored for this nullifier would be different from the adversarial one. Hence, the nullifier would be validated, the transaction would succeed and the coin would be double spent.
+In practice, the adversary can perform the attack by simply adding $\rBN$ to one of the elements representing the nullifier.
+
+To prevent this attack, the contract checks that all primary inputs are elements of $\FFx{\rBN}$, that is to say that they are smaller than $\rBN$.
+As one may see, the attack describe above is not due to the necessary packing of hash digests into field elements but to the contract storage of field elements.

@@ -1,0 +1,487 @@
+%%%%% Projects %%%%%
+\newcommand{\projectstyle}[1]{\texttt{#1}}
+\newcommand{\zeth}{\projectstyle{Zeth}}
+\newcommand{\zcash}{\projectstyle{Zcash}}
+\newcommand{\zerocash}{\projectstyle{ZeroCash}}
+\newcommand{\ethereum}{\projectstyle{Ethereum}}
+
+%%%%% Relation/Circuit of Zeth %%%%%
+\newcommand{\REL}{\mathbf{R}}
+\newcommand{\RELCIRC}{\REL^{\projectstyle{z}}} % Zeth relation
+\newcommand{\RELMAL}{\REL^{\projectstyle{mal}}} % Malleability Relation
+\newcommand{\LANG}{\mathbf{L}} % language corresponding to relation \REL
+\newcommand{\RELGEN}{\mathcal{R}} % relation generator
+
+%%%%% Units %%%%%
+\newcommand{\unitstyle}[1]{\mathsf{#1}}
+\newcommand{\ether}{\ensuremath{\unitstyle{Ether}}\xspace}
+\newcommand{\wei}{\ensuremath{\unitstyle{Wei}}\xspace}
+
+%%%%% Parties %%%%%
+\newcommand{\partystyle}[1]{\mathcal{#1}}
+\newcommand{\partyp}{\ensuremath{\partystyle{P}}} % General notation for a party P
+\newcommand{\challenger}{\ensuremath{\partystyle{C}}} % General notation for a challenger C
+\newcommand{\zparty}[1]{\ensuremath{\partystyle{{#1}_{Z}}}} % Notation for a Zeth user (owner of a DAP address)
+\newcommand{\eparty}[1]{\ensuremath{\partystyle{{#1}_{E}}}} % Notation for an Ethereum user (owner of an Ethereum address)
+
+%%%%% Ethereum accounts %%%%%
+\newcommand{\accountstyle}[1]{\mathbf{#1}}
+%% Smart-contracts accounts
+\newcommand{\contractstyle}[1]{\widetilde{\accountstyle{#1}}}
+\newcommand{\mixer}{\ensuremath{\contractstyle{Mixer}}} % Notation for the Mixer contract in Zeth
+
+%%%%% Math
+\let\emptyset\varnothing% amssymb
+\let\implies\Rightarrow%
+\newcommand{\bytestyle}[1]{\texttt{0x#1}} % bytes style
+\newcommand{\nuppt}{\pcmachinemodelstyle{NUPPT}} % Non-Uniform PPT
+\newcommand{\suchthat}{\ensuremath{\text{s.t.}}\xspace} % Syntactic sugar for "such that"
+\newcommand{\BB}{\mathbb{B}} % Set of bits {0, 1}
+\newcommand{\BBy}[1]{\ensuremath{\mathbb{B}\ifthenelse{\equal{#1}{}}{}{^{#1}}_\mathbb{Y}}\xspace} % Set of bytes
+\newcommand{\smallset}[1]{\left\{{#1}\right\}}
+\newcommand{\brak}[1]{\left(#1 \right)}
+\newcommand{\indexedset}[2]{\{{#1}\}_{#2}}
+\newcommand{\range}[2]{\{{#1},\ldots,{#2}\}}
+\newcommand{\cardinality}[1]{\#{#1}}
+\newcommand{\smalltuple}[1]{({#1})}
+\newcommand{\iseq}{\stackrel{?}{=}}
+\newcommand{\FFx}[1]{\ensuremath{\FF_{#1}}\xspace} % Finite field of {#1} elements
+\newcommand{\gset}{\ensuremath{\mathbb{G}}\xspace} % Notation for a group
+\newcommand{\gel}[1]{\ensuremath{\mathfrak{#1}}\xspace} %group element (without brackets)
+\newcommand{\ggen}{\ensuremath{\mathfrak{g}}\xspace} % Generator of group
+\newcommand{\groupenc}[1]{\ensuremath{\llbracket {#1} \rrbracket}\xspace} % Group encoding
+\newcommand{\groupenci}[2]{\ensuremath{\left\llbracket {#1} \right\rrbracket_{#2}}\xspace} % Group encoding in group i
+\newcommand{\pair}{\bullet} % bilinear pairing operator (inline)
+\newcommand{\keyspace}{\ensuremath{\mathcal{K}}\xspace} % Space of keys
+\newcommand{\weakSet}{\ensuremath{\mathcal{W}}\xspace} % Space of weak values
+\newcommand{\strongSet}{\ensuremath{\mathcal{S}}\xspace} % Space of strong values
+\newcommand{\primP}{\ensuremath{\mathcal{P}}\xspace} % Primitive
+\newcommand{\primR}{\ensuremath{\mathcal{R}}\xspace} % Primitive
+\newcommand{\primC}{\ensuremath{\mathcal{C}}\xspace} % Primitive
+
+%%%%% Variables
+\newcommand{\varstyle}[1]{\mathit{#1}}
+\renewcommand{\pckeystyle}[1]{\ensuremath{\varstyle{#1}}} % change cryptocode key style to match with our
+\newcommand{\iv}{\ensuremath{\varstyle{IV}}\xspace} % Notation for an initiation vector
+\newcommand{\tablevar}{\ensuremath{\varstyle{Table}}\xspace} % Notation for a (lookup) table
+\newcommand{\digest}{\ensuremath{\varstyle{digest}}\xspace} % Notation for a digest variable
+\newcommand{\ek}{\ensuremath{\varstyle{ek}}\xspace} % Symmetric Encryption key
+\newcommand{\mk}{\ensuremath{\varstyle{mk}}\xspace} % Mac key
+\newcommand{\sharedSecret}{\ensuremath{\varstyle{ss}}\xspace} % Shared Secret
+\newcommand{\epk}{\ensuremath{\varstyle{epk}}\xspace} % Notation for an ephemeral public key
+\newcommand{\esk}{\ensuremath{\varstyle{esk}}\xspace} % Notation for an ephemeral secret key
+\newcommand{\msg}{\ensuremath{\varstyle{m}}\xspace} % Notation for a message
+\DeclareRobustCommand{\cm}[1]{\ensuremath{\varstyle{cm}\ifthenelse{\equal{#1}{}}{}{_{#1}}}\xspace} % Notation for commitment
+\newcommand{\ct}{\ensuremath{\varstyle{ct}}\xspace} % Notation for ciphertext
+\newcommand{\queryBound}{\ensuremath{\varstyle{q}}\xspace} % Notation for the number of queries
+\newcommand{\timeBound}{\ensuremath{\varstyle{t}}\xspace} % Notation for the time steps
+\newcommand{\pparams}{\ensuremath{\varstyle{pp}}\xspace} % Notation for public parameters
+\newcommand{\ledger}{\ensuremath{\varstyle{L}}\xspace} % Notation for a Ledger (Ethereum here)
+\newcommand{\keystore}{\ensuremath{\varstyle{keystore}}\xspace} % Notation for a keystore, i.e. set of Zeth payment addresses
+\newcommand{\randomSeed}{\ensuremath{\varstyle{randomSeed}}\xspace} % randomSeed used in Zcash's fix of x malleability
+\DeclareRobustCommand{\htag}[1]{\ensuremath{\varstyle{h}\ifthenelse{\equal{#1}{}}{}{_{#1}}}\xspace} % Notation for MAC for non-malleability
+\newcommand{\zkp}{\ensuremath{\varstyle{\pi}}\xspace} % Notation for a zk-snark
+\newcommand{\zethnote}{\ensuremath{\varstyle{ZethNote}}\xspace} % Notation for a zethNote object
+\newcommand{\zethnotes}{\ensuremath{\varstyle{ZethNotes}}\xspace} % Notation for multiple zethNote objects
+\newcommand{\note}{\ensuremath{\varstyle{Note}}\xspace} % Notation for a note, used in DAP definition
+\newcommand{\notes}{\ensuremath{\varstyle{Notes}}\xspace} % Notation for a note, used in DAP definition
+\newcommand{\datatobesigned}{\ensuremath{\varstyle{dataToBeSigned}}\xspace} % Notation for the data to be signed for TRNM
+\newcommand{\rootset}{\ensuremath{\varstyle{Roots}}\xspace} % Notation for the set of Merkle roots corresponding to the various states of the Merkle tree
+\newcommand{\nullifierset}{\ensuremath{\varstyle{Nulls}}\xspace} % Notation for the set of Nullifiers declared to the Mixer
+%
+\newcommand{\otsSigma}{\ensuremath{\varstyle{\sigma_{\otsig}}}\xspace} % Notation for one-time signature
+\newcommand{\ecdsaSigma}{\ensuremath{\varstyle{\sigma_{\ecdsa}}}\xspace} % Notation for ECDSA signature
+%
+\DeclareRobustCommand{\blakeState}[1]{\ensuremath{\varstyle{v}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % Notation for Blake state variable
+%
+\newcommand{\priminputs}{\ensuremath{\varstyle{prim}}\xspace} % Notation for primary inputs
+\newcommand{\auxinputs}{\ensuremath{\varstyle{aux}}\xspace} % Notation for auxiliary inputs
+\newcommand{\inputs}{\ensuremath{\varstyle{inp}}\xspace} % Notation for auxiliary or primary inputs
+%
+\newcommand{\addr}{\ensuremath{\varstyle{Addr}}\xspace} % Notation for address variable
+%
+\newcommand{\wstate}{\ensuremath{\varstyle{\varsigma}}\xspace} % Notation for the Ethereum world state
+%
+\newcommand{\tx}{\ensuremath{\varstyle{tx}}\xspace} % Notation for Ethereum transaction
+\newcommand{\zethTx}{\ensuremath{\varstyle{\tx_\mix}}\xspace} % Notation for Ethereum transaction using Zeth
+\newcommand{\rawTx}{\ensuremath{\varstyle{\tx_{raw}}}\xspace} % Notation for raw Ethereum transaction
+\newcommand{\finalTx}{\ensuremath{\varstyle{\tx_{final}}}\xspace} % Notation for finalized Ethereum transaction
+\newcommand{\zdata}{\ensuremath{\varstyle{zdata}}\xspace} % Notation for data field of a zethTx
+%
+\newcommand{\evMixOut}{\ensuremath{\varstyle{evMixOut}}\xspace} % Notation for mix output event
+%
+\newcommand{\rounds}{\ensuremath{\varstyle{rounds}}\xspace} % Notation for Mimc number of rounds
+\newcommand{\exponent}{\ensuremath{\varstyle{e}}} % Notation for Mimc exponent
+%
+\newcommand{\encTag}{\ensuremath{\constantstyle{encTag}}\xspace} % Encryption tag
+% Function inputs (Add "in" subscript for function inputs to avoid naming collisions)
+% Use: \inp{x}, or \inp{\functionName}
+\newcommand{\inp}[1]{\ensuremath{\varstyle{{#1}_{in}}}\xspace}
+\newcommand{\tagged}[2]{\ensuremath{\varstyle{tag_{#1}^{#2}}}\xspace} % Notation for tagged variable use for domain separation
+\newcommand{\taggedaddr}{\ensuremath{\tagged{\ask}{addr}}\xspace} % Notation for the tag input of prf^addr
+\newcommand{\taggedpk}{\ensuremath{\tagged{\ask,i}{pk}}\xspace} % Notation for the tag input of prf^pk
+\newcommand{\taggednf}{\ensuremath{\tagged{\ask}{nf}}\xspace} % Notation for the tag input of prf^nf
+\newcommand{\taggedrho}{\ensuremath{\tagged{\ask,j}{\rho}}\xspace} % Notation for the tag input of prf^rho
+
+
+%% Domain/codomain size
+\newcommand{\msgLen}{\ensuremath{\varstyle{mLen}}\xspace} % Notation for the msg length
+\newcommand{\symKeyLen}{\ensuremath{\varstyle{kLen}}} % Notation for symmetric cipher key bit length
+\newcommand{\macKeyLen}{\ensuremath{\varstyle{mLen}}} % Notation for mac key bit length
+\newcommand{\macTagLen}{\ensuremath{\varstyle{tLen}}} % Notation for mac tag bit length
+\newcommand{\hashLen}{\ensuremath{\varstyle{hLen}}} % hash digest bit length
+\newcommand{\hashInpLen}{\ensuremath{\varstyle{hInpLen}}} % hash input bit length
+\newcommand{\groupLen}{\ensuremath{\varstyle{gLen}}} % group element bit length
+
+%%%%% Algorithms and remarkable functions
+\newcommand{\algostyle}[1]{\mathsf{#1}}
+%% Literature algorithms
+\newcommand{\groth}{\algostyle{Groth16}}
+\newcommand{\sha}[1]{\ensuremath{\algostyle{SHA{#1}}}\xspace} % General macro for SHA algorithms, eg: \sha{256}, \sha{3}
+\DeclareRobustCommand{\blake}[2]{\ensuremath{\algostyle{Blake{#1}}\ifthenelse{\equal{#2}{}}{}{(#2)}}\xspace} % General macro for BLAKE algorithms, eg: \blake{2s}, \blake{2b}
+\newcommand{\blakeG}{\ensuremath{\algostyle{G}}\xspace} % Blake G function
+\newcommand{\haifa}{\ensuremath{\algostyle{HAIFA}}\xspace} % HAIFA hash construct (used in BLAKE algorithms)
+\newcommand{\mimc}[1]{\ensuremath{\algostyle{MIMC{#1}}}\xspace} % General macro for MiMC algorithms, eg: \mimc{256}
+\newcommand{\keccak}[1]{\ensuremath{\algostyle{Keccak{#1}}}\xspace} % General macro for KECCAK algorithms, eg: \keccak{256}
+\newcommand{\salsa}[1]{\ensuremath{\algostyle{Salsa#1}}\xspace} % Salsa cipher
+\newcommand{\chacha}[1]{\ensuremath{\algostyle{ChaCha#1}}\xspace} % Chacha stream cipher
+\newcommand{\chachaBlock}[1]{\ensuremath{\algostyle{\chacha{#1}Block}}\xspace} % Chacha block function
+\newcommand{\polymac}[1]{\ensuremath{\algostyle{Poly#1}}\xspace} % Poly mac
+\newcommand{\aes}{\ensuremath{\algostyle{AES}}\xspace} % Aes cipher
+\newcommand{\ecdsa}{\ensuremath{\algostyle{ECDSA}}\xspace}
+\newcommand{\otsig}{\ensuremath{\algostyle{OT\mhyphen{}SIG}}\xspace} % One-time signature algorithm
+\DeclareRobustCommand{\mimcPrime}[1][]{\ensuremath{{\mimc{}}\ifthenelse{\equal{#1}{}}{}{_{#1}}}\xspace} % Mimc block cipher mod r
+\newcommand{\mimcEnc}{\ensuremath{\algostyle{\mimc{}\pcmathhyphen Encrypt}}\xspace} % Mimc block cipher encrypt
+\newcommand{\mimcMP}{\ensuremath{\algostyle{\mimc{}\pcmathhyphen MP}}\xspace} % Mimc Miyaguchi-Preneel compression function
+\DeclareRobustCommand{\mimcMPPrime}[1]{\ensuremath{\mimcMP\ifthenelse{\equal{#1}{}}{}{_{#1}}}\xspace} % Mimc Miyaguchi-Preneel compression function mod r
+\newcommand{\mimcSeven}{\ensuremath{\algostyle{\mimc[7]}}\xspace} % Mimc block cipher with (e=7)
+\newcommand{\mimcSevenPrime}{\ensuremath{\mimcSeven_\rBN}\xspace} % Mimc block cipher with (e=7) mod r
+\newcommand{\mimcSevenMP}{\ensuremath{\algostyle{\mimcSeven\pcmathhyphen\MP}}\xspace} % Mimc MP compression function with with (e=7)
+\newcommand{\mimcSevenMPPrime}{\ensuremath{\mimcSevenMP_\rBN}\xspace} % Mimc MP compression function with with (e=7) mod r
+%%% General algorithms
+\newcommand{\xortxt}{\ensuremath{\algostyle{XOR}}\xspace} % XOR algorithm
+%% Definitions and preliminaries
+%%% Ethereum util algorithms
+\newcommand{\getEthAddr}[1]{\ensuremath{\algostyle{EthAddress({#1})}}\xspace} % Takes an Ethereum account as input and returns its address
+\newcommand{\funcSelec}[1]{\ensuremath{\algostyle{FS({#1})}}\xspace} % Takes a function on a smart contract, and returns its "function selector" (i.e. the function's address)
+%%% Strings
+\DeclareRobustCommand{\pad}[2]{\ensuremath{\algostyle{pad}\ifthenelse{\equal{#1}{}}{}{_{#2}(#1)}}\xspace} % Padding algorithm
+\DeclareRobustCommand{\trunc}[2]{\ensuremath{\algostyle{trunc}\ifthenelse{\equal{#1}{}}{}{_{#2}(#1)}}\xspace} % Truncates a string, eg: \trunc{k}{b} takes the first k bits of string b
+\DeclareRobustCommand{\slice}[3]{\ensuremath{\ifthenelse{\equal{#1}{}}{\algostyle{[:]}}{#1\algostyle{[}#2\algostyle{:}#3\algostyle{]}}}\xspace} % Returns x[a:b], from string x the substring starting at position a and finishing at position b
+\DeclareRobustCommand{\len}[1]{\ensuremath{\algostyle{length}\ifthenelse{\equal{#1}{}}{}{(#1)}}\xspace} % Returns the number of symbols in a string, i.e. its length
+%%% Data types
+\DeclareRobustCommand{\encode}[2]{\ensuremath{\algostyle{encode}\ifthenelse{\equal{#1}{}}{_{#2}}{_{#2}(#1)}}\xspace} % Returns binary encoding of object
+\DeclareRobustCommand{\decode}[2]{\ensuremath{\algostyle{decode}\ifthenelse{\equal{#1}{}}{_{#2}}{_{#2}(#1)}}\xspace} % Returns object from binary encoding and data type
+\DeclareRobustCommand{\append}[2]{\ensuremath{\algostyle{append}\ifthenelse{\equal{#1}{}}{}{(#1, #2)}}\xspace} % Append an element to a list of of elements with the same data type
+%%% Block ciphers
+\newcommand{\Enc}{\ensuremath{\algostyle{E}}\xspace} % Block cipher encryption algorithm
+\newcommand{\Dec}{\ensuremath{\algostyle{E}^{-1}}\xspace} % Block cipher decryption algorithm
+%%% Compression functions
+\newcommand{\MP}{\ensuremath{\algostyle{MP}}\xspace} % Miyaguchi-Preneel construction
+\newcommand{\fFunc}{\ensuremath{\algostyle{f}}\xspace} % Notation for a compression function f
+\newcommand{\FEnc}{\ensuremath{\fFunc_{\Enc}}\xspace} % Compression function based on a given block cipher E
+%% Zeth Spec algorithms
+\newcommand{\fMP}{\ensuremath{\FEnc^{\MP}}\xspace} % MP compression function
+\newcommand{\txgen}{\ensuremath{\algostyle{TxGen}}\xspace} % Algorithm that creates an Ethereum transaction
+\newcommand{\txmalgen}{\ensuremath{\algostyle{TxMalGen}}\xspace} % Algorithm that creates a transaction that breaks TRNM
+\newcommand{\zethVerifyTx}{\ensuremath{\algostyle{ZethVerifyTx}}\xspace} % Algorithm that verifies the validity of a \zethTx
+\newcommand{\ethVerifyTx}{\ensuremath{\algostyle{EthVerifyTx}}\xspace} % Algorithm that verifies the validity of an Ethereum transaction
+%%% CRHs
+\newcommand{\crh}{\ensuremath{\algostyle{CRH}}\xspace} % Collision Resistant Hash function
+\DeclareRobustCommand{\crhots}[1]{\ensuremath{\algostyle{\crh^{ots}}\ifthenelse{\equal{#1}{}}{}{(#1)}}\xspace} % CRH for One Time Signature Scheme
+\DeclareRobustCommand{\crhhsig}[1]{\ensuremath{\algostyle{\crh^{hsig}}\ifthenelse{\equal{#1}{}}{}{(#1)}}\xspace} % CRH for Non Malleability
+\newcommand{\hashSetup}{\ensuremath{\pcalgostyle{Setup}}\xspace} % hash setup function
+%%% PRFs
+\newcommand{\prfnf}[2]{\ensuremath{\algostyle{\prf}^\algostyle{nf}\ifthenelse{\equal{#2}{}}{}{_{#1}(#2)}}\xspace}
+\newcommand{\prfrho}[2]{\ensuremath{\algostyle{\prf}^\algostyle{rho}\ifthenelse{\equal{#2}{}}{}{_{#1}(#2)}}\xspace}
+\newcommand{\prfaddr}[2]{\ensuremath{\algostyle{\prf}^\algostyle{addr}\ifthenelse{\equal{#2}{}}{}{_{#1}(#2)}}\xspace}
+\newcommand{\prfpk}[2]{\ensuremath{\algostyle{\prf}^\algostyle{pk}\ifthenelse{\equal{#2}{}}{}{_{#1}(#2)}}\xspace}
+%%% State transitions
+\newcommand{\mix}{\ensuremath{\algostyle{Mix}}\xspace} % Zeth main state transition function
+%%% Algebraic groups
+\newcommand{\groupSetup}{\ensuremath{\algostyle{SetupG}}\xspace} % group setup function
+%%% Others
+\newcommand{\setup}{\ensuremath{\algostyle{Setup}}\xspace} % Setup algorithm that outputs public parameters
+\newcommand{\kdf}{\ensuremath{\algostyle{KDF}}\xspace} % Key Derivation function
+\newcommand{\mkhash}{\ensuremath{\algostyle{MKHASH}}\xspace} % Hash function used in the Merkle tree
+%%% Packing functions
+\DeclareRobustCommand{\pack}[2]{\ensuremath{\algostyle{Pack}\ifthenelse{\equal{#1}{}}{}{_{#2}(#1)}}\xspace} % Returns field encoding of object
+\DeclareRobustCommand{\packResBits}[1]{\ensuremath{\algostyle{Pack}_\resbits\ifthenelse{\equal{#1}{}}{}{(#1)}}\xspace} % Returns field encoding of object
+\DeclareRobustCommand{\unpack}[2]{\ensuremath{\algostyle{Unpack}\ifthenelse{\equal{#1}{}}{}{_{#2}(#1)}}\xspace} % Returns field encoding of object
+%%%% Tagging functions
+\newcommand{\tagfunction}{\ensuremath{\algostyle{tag}}\xspace} % Tagging function
+\DeclareRobustCommand{\tagnf}[1]{\ensuremath{\algostyle{tag^{nf}}\ifthenelse{\equal{#1}{}}{}{(#1)}}\xspace} % Tagging function to make PRF^nf distribution independent
+\DeclareRobustCommand{\tagrho}[2]{\ensuremath{\algostyle{tag^{rho}}\ifthenelse{\equal{#1}{}}{}{(#2, #1)}}\xspace} % Tagging function to make PRF^rho distribution independent
+\DeclareRobustCommand{\tagaddr}[1]{\ensuremath{\algostyle{tag^{addr}}\ifthenelse{\equal{#1}{}}{}{(#1)}}\xspace} % Tagging function to make PRF^addr distribution independent
+\DeclareRobustCommand{\tagpk}[2]{\ensuremath{\algostyle{tag^{pk}}\ifthenelse{\equal{#1}{}}{}{(#2, #1)}}\xspace} % Tagging function to make PRF^pk distribution independent
+%%%%% Schemes (set of algorithms) %%%%%
+\newcommand{\schemestyle}[1]{\mathsf{#1}}
+%% Signature schemes
+\newcommand{\sigscheme}{\ensuremath{\schemestyle{SigSch}}\xspace}
+\newcommand{\otsigscheme}{\ensuremath{\schemestyle{\sigscheme_{\otsig}}}\xspace} % Notation for One Time signature scheme
+\newcommand{\ecdsasigscheme}{\ensuremath{\schemestyle{\sigscheme_{\ecdsa}}}\xspace} % Notation for ECDSA signature scheme
+%% Encryption scheme
+\newcommand{\encscheme}{\ensuremath{\schemestyle{EncSch}}\xspace}
+\newcommand{\sym}{\ensuremath{\schemestyle{Sym}}\xspace} % Symmetric cipher
+\newcommand{\aSym}{\ensuremath{\schemestyle{Asym}}\xspace} % Asymmetric cipher
+\newcommand{\dhaes}{\ensuremath{\schemestyle{DHAES}}\xspace} % dhaes encryption scheme
+\newcommand{\dhies}{\ensuremath{\schemestyle{DHIES}}\xspace} % dhies encryption scheme
+%% Commitment scheme
+\newcommand{\comm}{\ensuremath{\algostyle{ComSch}}\xspace}
+\DeclareRobustCommand{\commit}[2]{\ensuremath{\algostyle{Com}\ifthenelse{\equal{#2}{}}{}{(#1 ; \allowbreak #2)}}\xspace} % commit function of a commitment scheme
+\newcommand{\opening}{\ensuremath{\varstyle{r}}\xspace} % commitment opening/random value
+%% Message authentication code
+\newcommand{\tagg}{\ensuremath{\algostyle{Tag}}\xspace} % Tag generation algorithm
+%% DAP scheme
+\newcommand{\dapscheme}{\ensuremath{\schemestyle{DAP}}\xspace}
+%\newcommand{\setup}{\ensuremath{\algostyle{Setup}}\xspace} % Outputs public parameters -- macro commented since already defined
+\newcommand{\genadd}{\ensuremath{\algostyle{GenAddr}}\xspace} % Generates DAP address
+\newcommand{\sendtx}{\ensuremath{\algostyle{SendTx}}\xspace} % Generates DAP transaction and sends in on the network
+\newcommand{\receive}{\ensuremath{\algostyle{Receive}}\xspace} % Receive DAP transaction
+\newcommand{\verifytx}{\ensuremath{\algostyle{VerifyTx}}\xspace} % Verify DAP transaction validity
+%% zk-SNARK scheme
+\newcommand{\zksnark}{\ensuremath{\schemestyle{ZkSnarkSch}}\xspace}
+
+%%%%% Curves %%%%%
+\newcommand{\curvestyle}[1]{\mathsf{#1}}
+\newcommand{\BNCurve}{\ensuremath{\curvestyle{BN\mhyphen{}254}}\xspace}
+\newcommand{\secpCurve}{\ensuremath{\curvestyle{secp256k1}}\xspace}
+\newcommand{\curve}[1]{\ensuremath{\curvestyle{Curve#1}}\xspace} % general curve format macro
+\newcommand{\xscalarmult}[1]{\ensuremath{\algostyle{X#1}}\xspace} % Scalar multiplication on Curve25519
+
+\newcommand{\jubjub}{\ensuremath{\curvestyle{Jubjub}}\xspace} % jubjub curve
+
+%%%%% Data types %%%%%
+\newcommand{\datatypestyle}[1]{{\mathtt{#1}}}
+\newcommand{\datatype}{\ensuremath{\datatypestyle{DType}}\xspace} % Generic data type
+%% Ethereum account data type
+\newcommand{\nonce}{\ensuremath{\varstyle{nce}}\xspace} % Account nonce
+\newcommand{\balance}{\ensuremath{\varstyle{bal}}\xspace} % Balance of the account
+\newcommand{\sroot}{\ensuremath{\varstyle{sRoot}}\xspace} % Storage root
+\newcommand{\codeh}{\ensuremath{\varstyle{codeh}}\xspace} % Code hash
+%% Zeth address data type
+\newcommand{\zaddrDType}{\ensuremath{\datatypestyle{ZAddrDType}}\xspace}
+\newcommand{\pubaddr}{\ensuremath{\varstyle{pub}}\xspace} % Payment (public) address
+\newcommand{\privaddr}{\ensuremath{\varstyle{priv}}\xspace} % Private address
+%% Zeth payment address data type
+\newcommand{\apk}{\ensuremath{\varstyle{apk}}\xspace} % Paying key
+\newcommand{\pkenc}{\ensuremath{\varstyle{pkenc}}\xspace} % Transmission key
+%% Zeth private address data type
+\newcommand{\ask}{\ensuremath{\varstyle{ask}}\xspace} % Spending key
+\newcommand{\skenc}{\ensuremath{\varstyle{skenc}}\xspace} % Receiving key
+%% Zeth note data type
+\newcommand{\zethNoteDType}{\ensuremath{\datatypestyle{ZethNoteDType}}\xspace}
+%\newcommand{\apk}{\ensuremath{\varstyle{apk}}\xspace} % Note owner's paying key -- macro commented since already defined
+\newcommand{\noter}{\ensuremath{\varstyle{r}}\xspace} % Note commitment trapdoor
+\newcommand{\notev}{\ensuremath{\varstyle{v}}\xspace} % Note value
+\newcommand{\rrho}{\ensuremath{\varstyle{\rho}}\xspace} % Note identifier
+%% JSInput data type
+\newcommand{\jsInputDType}{\ensuremath{\datatypestyle{JSInputDType}}\xspace}
+\newcommand{\mkpath}{\ensuremath{\varstyle{mkpath}}\xspace} % Merkle authentication path for note commitment
+\newcommand{\mkaddr}{\ensuremath{\varstyle{mkaddr}}\xspace} % Merkle address for note commitment
+\newcommand{\znote}{\ensuremath{\varstyle{znote}}\xspace} % Zeth note to spend
+%\newcommand{\ask}{\ensuremath{\varstyle{ask}}\xspace} % Note owner's spending key -- macro commented since already defined
+\DeclareRobustCommand{\nf}[1]{\ensuremath{\varstyle{nf}\ifthenelse{\equal{#1}{}}{}{_{\!#1}}}\xspace} % Zeth note nullifier
+%% Primary input data type
+\newcommand{\primInputDType}{\ensuremath{\datatypestyle{PrimInputDType}}\xspace}
+\newcommand{\mkroot}{\ensuremath{\varstyle{mkroot}}\xspace} % Merkle root
+\DeclareRobustCommand{\nfs}[1]{\ensuremath{\varstyle{nfs}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % List of nullifiers (notes spent)
+\DeclareRobustCommand{\cms}[1]{\ensuremath{\varstyle{cms}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % List of commitments (new notes)
+\newcommand{\vin}{\ensuremath{\varstyle{vin}}\xspace} % Public value to add to the mix
+\newcommand{\vout}{\ensuremath{\varstyle{vout}}\xspace} % Public value to remove from the mix
+\newcommand{\hsig}{\ensuremath{\varstyle{hsig}}\xspace} % Signature hash
+\DeclareRobustCommand{\htags}[1]{\ensuremath{\varstyle{htags}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % List of notes' message authentication tags
+%% Packed primary input data type
+\newcommand{\resbits}{\ensuremath{\varstyle{rsd}}\xspace} % List of residual bits
+%% Auxiliary input data type
+\newcommand{\auxInputDType}{\ensuremath{\datatypestyle{AuxInputDType}}\xspace}
+\DeclareRobustCommand{\znotes}[1]{\ensuremath{\varstyle{znotes}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % List of notes to create
+\DeclareRobustCommand{\jsins}[1]{\ensuremath{\varstyle{jsins}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % List of notes (and associated data) to spend
+\newcommand{\pphi}{\ensuremath{\varstyle{\phi}}\xspace} % Joinsplit randomness
+%% Mix input data type
+\newcommand{\mixInputDType}{\ensuremath{\datatypestyle{MixInputDType}}\xspace}
+%% Mix event data type
+\newcommand{\mixEventDType}{\ensuremath{\datatypestyle{MixEventDType}}\xspace}
+\newcommand{\primInp}{\ensuremath{\varstyle{primIn}}\xspace} % Primary inputs
+\newcommand{\zkproof}{\ensuremath{\varstyle{proof}}\xspace} % zk-SNARK
+\newcommand{\otssig}{\ensuremath{\varstyle{otssig}}\xspace} % One-time signature for TRNM
+\newcommand{\otsvk}{\ensuremath{\varstyle{otsvk}}\xspace} % One-time signature vk for TRNM
+\newcommand{\ciphers}{\ensuremath{\varstyle{ciphers}}\xspace} % Ciphertexts of the new notes
+%% ZKP data type
+\newcommand{\zkpDType}{\ensuremath{\datatypestyle{ZKPDType}}\xspace}
+%% EPK data type
+\newcommand{\epkDType}{\ensuremath{\datatypestyle{EPKDType}}\xspace}
+%% OTS vk data type
+\newcommand{\vkOtsDType}{\ensuremath{\datatypestyle{VKOtsDType}}\xspace}
+%% OTS sk data type
+\newcommand{\skOtsDType}{\ensuremath{\datatypestyle{SKOtsDType}}\xspace}
+%% OTS signature data type
+\newcommand{\sigOtsDType}{\ensuremath{\datatypestyle{SigOtsDType}}\xspace}
+%% Transaction data types
+\newcommand{\txRawDType}{\ensuremath{\datatypestyle{TxRawDType}}\xspace}
+\newcommand{\txDType}{\ensuremath{\datatypestyle{TxDType}}\xspace}
+%\newcommand{\nonce}{\ensuremath{\varstyle{nce}}\xspace} % Transaction nonce -- macro commented since already defined
+\newcommand{\init}{\ensuremath{\varstyle{init}}\xspace} % Deployed code (new smart contract)
+\newcommand{\data}{\ensuremath{\varstyle{data}}\xspace} % Transaction data
+\newcommand{\sigv}{\ensuremath{\varstyle{v}}\xspace} % Transaction v ECDSA sig
+\newcommand{\sigr}{\ensuremath{\varstyle{r}}\xspace} % transaction r ECDSA sig
+\newcommand{\sigs}{\ensuremath{\varstyle{s}}\xspace} % Transaction s ECDSA sig
+\newcommand{\gasp}{\ensuremath{\varstyle{gasP}}\xspace} % Transaction gas price
+\newcommand{\gasl}{\ensuremath{\varstyle{gasL}}\xspace} % Transaction gas limit
+\newcommand{\tto}{\ensuremath{\varstyle{to}}\xspace} % Transaction recipient address (macro `\to` already exists)
+\newcommand{\val}{\ensuremath{\varstyle{val}}\xspace} % Transaction value
+
+%% Others
+\newcommand{\badvar}{\ensuremath{\texttt{bad}}\xspace} % Bad variable used in DHAES ik-cca proof
+
+%%%%% Acronyms %%%%%
+\newcommand{\poc}{\acrshort{poc}}
+\newcommand{\evm}{\acrshort{evm}} % Ethereum Virtual Machine
+\newcommand{\eoa}{\acrshort{eoa}} % Externally owned Account
+\newcommand{\rlp}{\acrshort{rlp}} % Recursive Length Prefix
+\newcommand{\mmac}{\acrshort{mac}} % Message Authentication Code
+\newcommand{\dos}{\acrshort{dos}} % Denial of Service attack
+
+%%%%% Security Assumptions and games %%%%%
+\newcommand{\gamestyle}[1]{\mathsf{#1}}
+\renewcommand{\pcnotionstyle}[1]{\ensuremath{\gamestyle{#1}}} % change cryptocode notion/game style to match with our
+\newcommand{\dlog}{\ensuremath{\gamestyle{DLog}}\xspace} % Discrete Logarithm
+\newcommand{\omdlog}{\ensuremath{\gamestyle{om\mhyphen{}\dlog}}\xspace} % One-more DLog
+\newcommand{\ufcma}{\ensuremath{\gamestyle{UF\mhyphen{}CMA}}\xspace} % Unforgeability under CMA
+\newcommand{\sufcma}{\ensuremath{\gamestyle{S\ufcma}}\xspace} % Strong UFCMA
+\newcommand{\trnm}{\ensuremath{\gamestyle{TR\mhyphen{}NM}}\xspace} % TRansaction Non-Malleability
+\newcommand{\colres}{\ensuremath{\gamestyle{CR}}\xspace} % Collision Resistance
+\newcommand{\ikcca}{\ensuremath{\gamestyle{IK\mhyphen{}CCA}}\xspace} % Indistinguishability of Key under CCA
+\newcommand{\aicca}{\ensuremath{\gamestyle{AI\mhyphen{}CCA}}\xspace} % Indistinguishability of Key and Ciphertext under CCA
+\newcommand{\hdhi}{\ensuremath{\gamestyle{HDHI}}\xspace} % Hash diffie-helmann independence assumption
+\newcommand{\hdhii}{\ensuremath{\gamestyle{HDHI2}}\xspace} % Two hash diffie-helmann independence
+\newcommand{\odh}{\ensuremath{\gamestyle{ODH}}\xspace} % Oracle diffie-helmann assumption
+\newcommand{\odhii}{\ensuremath{\gamestyle{ODH2}}\xspace} % Two oracle diffie-helmann assumption
+\newcommand{\advColl}{\ensuremath{\advantage{\gamestyle{coll}}{\fFunc, \adv}[]}\xspace} % Advantage collision resistant compression function
+\newcommand{\advCollMP}{\ensuremath{\advantage{\gamestyle{coll}}{\fMP, \adv}[]}\xspace} % advantage collision resistant MP compression function
+\newcommand{\indiff}{\ensuremath{\gamestyle{Indiff}\xspace}}
+
+%%%%% Oracles %%%%%
+\newcommand{\oracle}[1]{\ensuremath{\algostyle{O}^{#1}}} % Oracle
+\newcommand{\oracleSig}{\ensuremath{\oracle{\sig_\sk}}\xspace} % Signature Oracle
+\newcommand{\oracleDLog}[1]{\ensuremath{\oracle{\dlog_\mathsf{#1}}}} % Dlog oracle
+\newcommand{\oracleEnc}{\ensuremath{\oracle{\Enc}}\xspace} % Encryption Oracle
+\newcommand{\oracleDec}{\ensuremath{\oracle{\Dec}}\xspace} % Decryption Oracle
+\newcommand{\ro}{\mathcal{R}} %random oracle
+\newcommand{\oracleHdhi}[1]{\ensuremath{\oracle{\hdhi_{#1}}}\xspace} % HDHI Oracle
+
+%%%%% Function families %%%%%
+\newcommand{\ffamstyle}[1]{\mathcal{#1}}
+\newcommand{\funcSet}{\ensuremath{\ffamstyle{F}}\xspace} % General notation for a function family
+\newcommand{\hashSet}{\ensuremath{\ffamstyle{H}}\xspace} % Family of hash functions
+\newcommand{\blockSet}{\ensuremath{\ffamstyle{BLK}}\xspace} % Family of block ciphers
+\newcommand{\crhSet}{\ensuremath{\ffamstyle{CRH}}\xspace} % Family of hash functions
+\newcommand{\randSet}{\ensuremath{\ffamstyle{RAND}}\xspace} % Family of random functions
+\newcommand{\prfSet}{\ensuremath{\ffamstyle{PRF}}\xspace} % Family of pseudo-random functions
+
+%%%%% Constants %%%%%
+\newcommand{\constantstyle}[1]{\mathtt{#1}}
+%% Ethereum constants
+\newcommand{\addressLen}{\ensuremath{\constantstyle{ADDRLEN}}\xspace} % Bit length of an Ethereum address
+\newcommand{\ethWordLen}{\ensuremath{\constantstyle{WORDLEN}}\xspace} % Bit length of an Ethereum word
+\newcommand{\txDefaultGas}{\ensuremath{\constantstyle{DGAS}}\xspace} % Intrinsic gas cost of an Ethereum transaction
+%% Remarkable groups and fields
+\newcommand{\bnFieldBitLen}{\ensuremath{\constantstyle{BNFIELDLEN}}\xspace} % Bit length of an element of the BN254 scalar field
+\newcommand{\bnFieldBitCap}{\ensuremath{\constantstyle{BNFIELDCAP}}\xspace} % Maximum bit length such that all elements of that bit length are in BN254 scalar field
+\newcommand{\secpFieldBitLen}{\ensuremath{\constantstyle{SECPFIELDLEN}}\xspace} % Bit length of an element of the Secp256k1 scalar field
+\newcommand{\rBN}{\ensuremath{\constantstyle{r_{BN}}}\xspace} % Prime scalar field BN254
+\newcommand{\pSecp}{\ensuremath{\constantstyle{p_{SECP}}}\xspace} % Prime scalar field Secp256k1
+%% Zeth constants
+\newcommand{\jsmax}{\ensuremath{\constantstyle{JSMAX}}\xspace} % Number of inputs in each Joinsplit
+\newcommand{\jsin}{\ensuremath{\constantstyle{JSIN}}\xspace} % Number of inputs in each Joinsplit
+\newcommand{\jsout}{\ensuremath{\constantstyle{JSOUT}}\xspace} % Number of outputs in each Joinsplit
+\newcommand{\mkTreeDepth}{\ensuremath{\constantstyle{MKDEPTH}}\xspace} % Zeth merkle tree depth
+\newcommand{\zvalueLen}{\ensuremath{\constantstyle{ZVALUELEN}}\xspace} % Zeth value length
+\newcommand{\askLen}{\ensuremath{\constantstyle{ASKLEN}}\xspace} % ask length (spending key length)
+\newcommand{\phiLen}{\ensuremath{\constantstyle{PHILEN}}\xspace} % phi length (joinsplit randomness length)
+\newcommand{\noteByteLen}{\ensuremath{\constantstyle{NOTEBYTELEN}}\xspace} % note byte length
+\newcommand{\encZethNoteLen}{\ensuremath{\constantstyle{ENCZETHNOTELEN}}\xspace} % encrypted note length
+\newcommand{\chachaNonceValue}{\ensuremath{\constantstyle{CHACHANONCEVALUE}}\xspace} % chacha nonce value
+\newcommand{\chachaBlockCounterValue}{\ensuremath{\constantstyle{CHACHABLOCKCOUNTERVALUE}}\xspace} % chacha block counter initial value
+%%% Abstract primitives constants
+\newcommand{\prfAddrOutLen}{\ensuremath{\constantstyle{PRFADDROUTLEN}}\xspace} % \prfaddr output length
+\newcommand{\prfNfOutLen}{\ensuremath{\constantstyle{PRFNFOUTLEN}}\xspace} % \prfnf output length
+\newcommand{\prfRhoOutLen}{\ensuremath{\constantstyle{PRFRHOOUTLEN}}\xspace} % \prfrho output length
+\newcommand{\prfPkOutLen}{\ensuremath{\constantstyle{PRFPKOUTLEN}}\xspace} % \prfpk output length
+\newcommand{\crhhsigOutLen}{\ensuremath{\constantstyle{CRHHSIGOUTLEN}}\xspace} % \crhhsig output length
+\newcommand{\cmFLen}{\ensuremath{\constantstyle{CMFLEN}}\xspace} % \comm output length in field elements
+\newcommand{\noterLen}{\ensuremath{\constantstyle{RTRAPLEN}}\xspace} % \noter length
+\newcommand{\eskByteLen}{\ensuremath{\constantstyle{ESKBYTELEN}}\xspace} % ephemeral private key byte length
+\newcommand{\epkByteLen}{\ensuremath{\constantstyle{EPKBYTELEN}}\xspace} % ephemeral public key byte length
+\newcommand{\ctByteLen}{\ensuremath{\constantstyle{CTBYTELEN}}\xspace} % DHAES ciphertext byte length
+\newcommand{\tagByteLen}{\ensuremath{\constantstyle{TAGBYTELEN}}\xspace} % tag byte length
+\newcommand{\kdfDigestByteLen}{\ensuremath{\constantstyle{KDFDIGESTBYTELEN}}\xspace} % kdf digest byte length
+\newcommand{\symKeyByteLen}{\ensuremath{\constantstyle{SYMKEYBYTELEN}}\xspace} % sym key byte length
+\newcommand{\macKeyByteLen}{\ensuremath{\constantstyle{MACKEYBYTELEN}}\xspace} % mac key byte length
+
+%%% OT Signature constants
+\newcommand{\crhotsOutLen}{\ensuremath{\constantstyle{CRHOTSOUTLEN}}\xspace} % \crhhsig output length
+%%% Packing constant
+\newcommand{\nfFLen}{\ensuremath{\constantstyle{NFFLEN}}\xspace} % \prfnf output length
+\newcommand{\htagFLen}{\ensuremath{\constantstyle{HFLEN}}\xspace} % \prfpk output length
+\newcommand{\hsigFLen}{\ensuremath{\constantstyle{HSIGFLEN}}\xspace} % \crhhsig output length
+\newcommand{\resBitsBLen}{\ensuremath{\constantstyle{RSDBLEN}}\xspace} % Residual Bits length
+\newcommand{\resBitsFLen}{\ensuremath{\constantstyle{RSDFLEN}}\xspace} % Residual Bits field elements length
+%% SHA256 constants
+\newcommand{\shaTwoDigestLen}{\ensuremath{\constantstyle{SHA256DLEN}}\xspace} % SHA256 digest length
+\newcommand{\shaTwoMsgLen}{\ensuremath{\constantstyle{SHA256MLEN}}\xspace} % SHA256 message length
+\newcommand{\shaTwoBlockLen}{\ensuremath{\constantstyle{SHA256BLEN}}\xspace} % SHA256 block length
+%% Keccak256 constants
+\newcommand{\keccakTwoDigestLen}{\ensuremath{\constantstyle{KEK256DLEN}}\xspace} % Keccak256 digest length
+%% Blake Constants
+%% SHA256 constants
+\newcommand{\blakeCompLen}{\ensuremath{\constantstyle{BLAKE2sCLEN}}\xspace} % BLAKE2 Compression input and output length
+\newcommand{\blakeRound}{\ensuremath{\constantstyle{rounds}}\xspace} % BLAKE rounds
+\DeclareRobustCommand{\blakePermutation}[1]{\ensuremath{\constantstyle{\Sigma}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % BLAKE permutation constants
+\DeclareRobustCommand{\blakeIV}[1]{\ensuremath{\constantstyle{IV}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % BLAKE IV
+\DeclareRobustCommand{\blakePB}[1]{\ensuremath{\constantstyle{PB}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % BLAKE parameter block
+\DeclareRobustCommand{\blakeFlag}[1]{\ensuremath{\constantstyle{F}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % BLAKE flags
+\DeclareRobustCommand{\blakeInitState}[1]{\ensuremath{\constantstyle{H}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % BLAKE initial state
+\DeclareRobustCommand{\blakeDigestLength}[1]{\ensuremath{\constantstyle{T}\ifthenelse{\equal{#1}{}}{}{[#1]}}\xspace} % BLAKE block length
+%% Others
+\newcommand{\byteLen}{\ensuremath{\constantstyle{BYTELEN}}\xspace} % Bit length of a byte
+
+% Adversaries
+\newcommand{\bdvii}{\ensuremath{\overline{\bdv}}} % two oracle diffie-helmann attacker
+
+%% vectors
+\newcommand{\vectorstyle}[1]{\vec{#1}} % format for vectors
+
+% RFC2119
+\newcommand{\rfcreq}[1]{\textbf{\texttt{#1}}}
+\newcommand{\MUST}{\rfcreq{MUST}}
+\newcommand{\MUSTNOT}{\rfcreq{MUST NOT}}
+\newcommand{\SHOULD}{\rfcreq{SHOULD}}
+\newcommand{\SHOULDNOT}{\rfcreq{SHOULD NOT}}
+\newcommand{\RECOMMENDED}{\rfcreq{RECOMMENDED}}
+\newcommand{\MAY}{\rfcreq{MAY}}
+\newcommand{\ALLCAPS}{\rfcreq{ALL CAPS}}
+
+% For Groth's SNARK
+\newcommand{\srs}{\varstyle{srs}\xspace} % structured reference string
+\newcommand{\td}{\varstyle{td}\xspace} % trapdoor for srs
+\newcommand{\constno}{\varstyle{constNo}\xspace} %number of constrains in the circuit
+\newcommand{\inpno}{\varstyle{inpNo}\xspace} % number of inputs in the circuit
+\newcommand{\inpnoprim}{\varstyle{inpNoPrim}\xspace} %number of primary inputs in the circuit
+\newcommand{\multno}{\varstyle{multNo}\xspace} % number of multiplication gates in the circuit
+\newcommand{\wireno}{\varstyle{wireNo}\xspace} % number of wires in the circuit
+\newcommand{\RELQAP}{\REL_\projectstyle{QAP}\xspace} % for QAP relation
+\newcommand{\xchi}{X} % for a formal variable corresponding to \chi
+\newcommand{\HHH}{h} % quotient polynomial h
+\newcommand{\AAA}{\gel{a}} % Groth's zkproof -- first element
+\newcommand{\BBB}{\gel{b}} % Groth's zkproof -- second element
+\newcommand{\CCC}{\gel{c}} % Groth's zkproof -- third element
+
+%Comments and colors
+\definecolor{blueish}{rgb}{0.1,0.1,0.5}
+\definecolor{pinkish}{rgb}{0.9,0.8,0.8}
+
+\DeclareRobustCommand{\michals}[2]  {{\color{blueish}\sethlcolor{pinkish}\hl{\textsf{Michal #1:} #2}}}
+
+%math proofs
+\newtheorem{corollary}{Corollary} %Corollary environment

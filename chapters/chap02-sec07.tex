@@ -1,0 +1,46 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Security requirements for the primitives}\label{zeth-protocol:sec-req}
+
+We list below the security requirements to instantiate the primitives of the \zeth~protocol.
+
+\begin{itemize}
+    \item $\crhhsig{}$ and $\crhots{}$ \MUST~be collision resistant functions (see:~\cref{preliminaries:def:collision-resistance}).
+    \item $\prfaddr{}{}, \prfnf{}{}, \prfrho{}{}$ and $\prfpk{}{}$ \MUST~be PRF when keyed by $\ask$ and $\phi$ and collision-resistant (see:~\cref{preliminaries:def:collision-resistance}, and~\cref{preliminaries:definitions:prfs}).
+    \item $\otsigscheme$ \MUST~be $\ufcma$ (see:~\cref{preliminaries:def:ufcma} and~\cref{appendix:trnm:preliminaries:ethereum-trnm}).
+    \item $\comm$ \MUST~be computationally hiding, and binding (see:~\cref{preliminaries:definitions:commitment-sc}).
+    \item $\mkhash$ \MUST~be collision resistant with $h_0 = {0}_{\FFx{\rBN}}$ (see:~\cref{preliminaries:definitions:hashcomp}).~\footnote{This security requirement is equivalent to the one in~\cite[Section 5.4.1.3]{zcashprotocol} where finding a preimage of $0^\shaTwoDigestLen$ must be hard.}
+    \item $\encscheme$ \MUST~be $\indccaii$ and $\ikcca$ (see, respectively,~\cite[Definition 8]{abdalla1999dhaes} and \cref{preliminaries:def:ikcca}).
+    \item $\pack{}{}$, $\packResBits{}$ and $\unpack{}{}$ \MUST~be bijective, i.e.~the encoding (resp.~decoding) of a variable via $\pack{}{}$ and $\packResBits{}$ (resp. $\unpack{}{}$) \MUST~be bijective.
+    \item $\encode{}{}$ and $\decode{}{}$ \MUST~be bijective.
+\end{itemize}
+
+\subsection{Additional notes}\label{zeth-protocol:sec-req:add-notes}
+
+\subsubsection{Defining \hsig}\label{zeth-protocol:sec-req:add-notes:def-hsig}
+
+The signature hash \hsig~is a variable used to bind the signature keys to the primary inputs.
+We use the same definition of \hsig~as \zcash~to prevent the Faerie Gold attack. As a private transaction is uniquely determined by its nullifiers $\nfs{} = \smalltuple{\nf{0}, \ldots, \nf{\jsin - 1}}$, and because of the collision resistance of \crhhsig{}, a transaction is uniquely determined by \hsig~(with overwhelming probability). We did not use the \randomSeed~defined in \zcash~however, since this is only necessary to achieve uniqueness of \hsig~for transactions \emph{in transit} (i.e.~not mined yet)~\cite{zcash-randomseed-hsig}.
+The uniqueness of \hsig~is a requirement to prevent the Fairy Gold attack.
+\[
+    \hsig = \crhhsig{\nfs{}, \vk}
+\]
+
+\paragraph{Security Requirement.}
+\begin{itemize}
+    \item The variable \hsig~\MUST~be derived from the nullifiers $\indexedset{\nf{i}}{i \in [\jsin]}$ and the signing key \vk~using a collision resistant function. Doing so, makes sure that $\hsig$ is unique for each \zethTx~with overwhelming probability.
+\end{itemize}
+
+\subsubsection{Defining $\rrho$}\label{zeth-protocol:sec-req:add-notes:def-rho}
+
+We define $\rrho$ like in \zcash~in order to prevent the Faerie Gold attack. A malicious sender could reuse the same $\rrho$ for a given recipient, hence correctly generating a $\zethnote$ which could become unspendable by the recipient. Making $\rrho$ the output of a collision resistant \prf~with random variable $\pphi$ as key and with \zethTx's \hsig~as input~ensures the uniqueness of $\rrho$ --- with overwhelming probability --- and prevents this attack.
+\[
+    \rrho_{j} = \prfrho{\pphi}{j, \hsig}
+\]
+
+\subsubsection{Message authentication tags $\htag{i}$}\label{zeth-protocol:sec-req:add-notes:def-htag}
+
+The message authentication tags are used to bind the signature hash with the input notes spending keys to show ownership of the spent notes. Each tag derived from a note owner's spending key and the signature hash \MUST~be unique for each note with overwhelming probability.
+\[
+    \htag{i} = \prfpk{\ask_{i}}{i, \hsig}
+\]

@@ -1,0 +1,72 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Processing $\zethTx$}\label{zeth-protocol:process-tx}
+
+When a $\zethTx$ is mined (hence assuming that $\ethVerifyTx(\zethTx)$ returns $\true$), the state transition specified by the $\mix$ function of $\mixer$ is executed.
+
+To preserve the soundness of \zeth, and make sure that no $\zparty{U}$ is able to create value by double spending $\zethnotes$, various checks need to satisfied. The function $\zethVerifyTx$ is defined as the function that returns $\true$ if all the checks are satisfied, and $\false$ otherwise.
+
+If $\zethVerifyTx(\zethTx)$ returns $\true$, then $\mix$ modifies the ``World state'' $\wstate$ to account for the spent $\zethnotes$ and the newly generated ones. However, if $\zethVerifyTx(\zethTx)$ returns $\false$, then the state transition ends.
+
+\begin{notebox}
+    Even if $\zethVerifyTx(\zethTx)$ returns $\false$, $\wstate$ is modified since the \ethereum~balances of the transaction originator is decremented by the sum of $\txDefaultGas$ and the gas consumed by the $\zethVerifyTx$ function, and the balance of the \ethereum~account of the miner gets incremented by the same amount.
+\end{notebox}
+
+Thus, $\mix$ proceeds as follows:
+\begin{enumerate}
+    \item Check that all the values of the primary inputs' ($\inp{\mix}.\primInp$) entries are elements of the scalar field over which the zk-proof is generated:
+        \[
+            \inp{\mix}.\primInp \in \FFx{\rBN}^*
+        \]
+    \item Unpack the nullifiers, signature hash and public values:
+        \begin{align*}
+            \nf{i} &= \unpack{\inp{\mix}.\primInp.\nfs{i}, \inp{\mix}.\primInp.\resbits}{\nf{}}\ \forall i \in [\jsin] \\
+            \vin &= \decode{\unpack{(), \inp{\mix}.\primInp.\resbits}{\vin}}{\NN} \\
+            \vout &= \decode{\unpack{(), \inp{\mix}.\primInp.\resbits}{\vout}}{\NN} \\
+            \hsig &= \unpack{\inp{\mix}.\primInp.\hsig, \inp{\mix}.\primInp.\resbits}{\hsig}
+        \end{align*}
+    \item Check the validity of the $\zethTx$ object ($\zethVerifyTx$):
+        \begin{itemize}
+            \item Check that $\inp{\mix}.\primInp.\hsig$ is correctly computed, i.e.~check that he following equation holds (to prevent transaction malleability, see:~\cref{appendix:trnm}):
+                \[
+                    \hsig = \crhhsig{\inp{\mix}.\primInp.\nfs{}, \inp{\mix}.\otsvk}
+                \]
+            \item Check that $\zkp$ is a valid zk-snark for $\inp{\mix}.\primInp$, i.e.~check that:
+                \[
+                    \zksnark.\verifier(\pparams_{\zksnark}, \zkp, \inp{\mix}.\primInp) = true
+                \]
+            \item Check that none of the nullifiers in $\inp{\mix}.\primInp.\nfs{}$ have already been used, i.e.~check that:
+                \[
+                    \nf{i} \not\in \nullifierset, \forall i \in [\jsin]
+                \]
+                where $\nullifierset$ is the set of all nullifiers that are ``declared'' on $\mixer$.
+            \item Check that $\inp{\mix}.\otssig$ is a valid signature of the Ethereum sender's address $\addr$ (see:~\cref{zeth-protocol:create-tx}) and the attributes of $\inp{\mix}$, to prevent transaction malleability (see:~\cref{appendix:trnm}), i.e.~check that:
+                \begin{align*}
+                    & \otsigscheme.\verify(\inp{\mix}.\otsvk, \msg, \inp{\mix}.\otssig) = \true \\
+                    & where \ \msg = \crhots{\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\zkp \concat \inp{\mix}.\ciphers}
+                \end{align*}
+            \item Check that $\inp{\mix}.\primInp.\mkroot$ corresponds to a valid state of the Merkle tree held on $\mixer$, i.e.~check that:
+                \[
+                    \inp{\mix}.\primInp.\mkroot \in \rootset'
+                \]
+                where $\rootset'$ is the set of all Merkle roots corresponding to one of the state of the Merkle tree.
+            \item Check that $\vin$ corresponds to the value $\val$ of the transaction object, i.e.~check that:
+                \[
+                    \vin = \zethTx.\val
+                \]
+        \end{itemize}
+    \item If all checks above pass, i.e.~if $\zethVerifyTx(\zethTx)$ returns $\true$, then the following additional modifications are made in $\wstate$:
+        \begin{itemize}
+            \item Add the commitments $\inp{\mix}.\primInp.\cms{}$ to the Merkle tree held on $\mixer$.
+            \item $\rootset' \gets \rootset' \cup \smallset{\mkroot'}$, where $\mkroot'$ is the Merkle root of the Merkle tree after insertion of the commitments $\inp{\mix}.\primInp.\cms{}$ in the Merkle tree.
+            \item $\nullifierset \gets \nullifierset \cup \indexedset{\nf{i}}{i \in [\jsin]}$, i.e.~the nullifiers $\nfs{}$ become ``declared''.
+            \item Modify the \ethereum~balances according to the public values:
+                \begin{itemize}
+                    \item $\wstate[\eparty{S}.\addr].\balance = \wstate[\eparty{S}.\addr].\balance - \vin$
+                    \item $\wstate[\eparty{S}.\addr].\balance = \wstate[\eparty{S}.\addr].\balance + \vout$
+                    \item $\mixer.\balance = \mixer.\balance + \vin$
+                    \item $\mixer.\balance = \mixer.\balance - \vout$
+                \end{itemize}
+            \item Emit an event (\cref{sssec:ethereum-events}) $\evMixOut$ of type \mixEventDType, containing the new root $\mkroot'$ of the Merkle tree of commitments, the nullifiers $\indexedset{\nf{i}}{i \in [\jsin]}$, commitments to the newly created \zethnotes $\inp{\mix}.\primInp.\cms{}$, and the corresponding ciphertexts $\inp{\mix}.\primInp.\ciphers$.
+        \end{itemize}
+\end{enumerate}

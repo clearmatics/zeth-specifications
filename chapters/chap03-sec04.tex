@@ -1,0 +1,94 @@
+% !TEX root = ../zeth-protocol-specification.tex
+
+\section{Instantiate $\sigscheme_{\otsig}$}\label{instantiation:otsig}
+
+In \zeth, we chose to use the one-time Schnorr-based signature scheme introduced by Bellare and Shoup~\cite{bellare2007two}, over $\BNCurve$, for its long proven security, simplicity, speed and size. Its security relies on the one-more discrete log problem (see:~\cref{preliminaries:def:om-dlog}) and the collision resistance of the underlying hash function $\crh$ (see:~\cref{preliminaries:def:collision-resistance}) that we instantiate with \sha{256}.
+
+This one-time signature scheme (see:~\cref{preliminaries:def:ot-sig}) is defined by the two-tier signature scheme over a cyclic group $(p, \gset, \langle \ggen \rangle, \otimes)$.
+In the two-tier signature scheme, the hash function $\crh$ only needs to be collision resistant (the random oracle model is not used). Similarly, the variable $\hk$ represents the key of the hash function (a particular instance).
+
+To turn this two-tier signature scheme into a one-time signature scheme, one simply has to define the one-time signature key generation \kgen~as the combination of both primary and secondary key generations of the two-tier (see:~\cite[Section 6]{bellare2007two}). The one-time signing key (respectively verification key) of the one time signature scheme is defined as both the primary and secondary signing key (respectively verification key) of the two-tier scheme,~\cref{instantiation:fig:ots-from-two-tier-sig}
+
+\begin{figure*}[ht]
+    \begin{minipage}[t]{0.33\textwidth}
+        \begin{align*}
+            & \underline{\kgen():} \\
+            & \hk \sample \BB^{\kl} \\
+            & \ggen \sample \gset^* \\
+            & x \sample \FFx{p} \\
+            & \pk{}1 = (\hk, \ggen, \groupenc{x}) \\
+            & \sk{}1 = (\hk, \ggen, x) \\
+            & y \sample \FFx{p} \\
+            & \pk{}2 =  \groupenc{y} \\
+            & \sk{}2 = (y, \groupenc{y}) \\
+            & \pk = (\pk{}1, \pk{}2) \\
+            & \sk = (\sk{}1, \sk{}2) \\
+        \end{align*}
+    \end{minipage}%
+    \begin{minipage}[t]{0.33\textwidth}
+        \begin{align*}
+            & \underline{\sig(\sk, \msg):}\\
+            & \hk, \ggen, x = \sk.\sk{}1 \\
+            & y, \groupenc{y} = \sk.\sk{}2 \\
+            & c = \crh(\hk, \groupenc{y} \concat \msg) \\
+            & \sigma = y \bmod p \\
+            & \sigma\ \text{+=}\ c \cdot x \bmod p \\
+            & \textbf{return}\ \sigma
+        \end{align*}
+    \end{minipage}%
+    \begin{minipage}[t]{0.33\textwidth}
+        \begin{align*}
+        & \underline{\verify(\pk, \msg, \sigma):}\\
+        &  \hk, \ggen, \groupenc{x} = \pk.\pk{}1 \\
+        &  \groupenc{y} = \pk.\pk{}2 \\
+        &  c = \crh(\hk, \groupenc{y} \concat \msg)\\
+        &  \pcif \sigma \iseq \groupenc{y} \otimes c \cdot \groupenc{x} \pcthen: \\
+        &  \pcind \pcreturn 1\\
+        &  \pcendif \\
+        &  \pcreturn 0
+        \end{align*}
+    \end{minipage}
+\caption{One-time signature scheme from two tier Schnorr based signature scheme by Bellare and Shoup~\cite{bellare2007two}}\label{instantiation:fig:ots-from-two-tier-sig}
+\end{figure*}
+
+\subsection{Security requirements satisfaction}
+
+We now prove that this signature scheme satisfies all the security requirements listed in~\cref{zeth-protocol:sec-req}.
+
+\begin{theorem}
+    The One-Time Schnorr signature is strongly unforgeable under chosen-message attacks (\sufcma) assuming that the \omdlog~problem is hard in \gset~and that the hash function is collision resistant.
+
+\begin{proof}
+    See:~\cite[Theorems 5.1, 5.2 and 6.1]{bellare2007two}.
+\end{proof}
+
+\end{theorem}
+
+\subsection{Data types}\label{instantiation:otsig:data-types}
+
+We now describe the data types associated with this signature scheme defined over $\BNCurve$.
+
+\begin{description}
+    \item[\vkOtsDType] Denotes the verification key associated with the one-time signature scheme.
+        \begin{table}[H]
+        \centering
+        \begin{tabular}{cp{20em}c}
+            Field & Description & Value\\ \toprule
+            $pk1$ & Encoding of the scalar $x$ in the group & ${(\FFx{\rBN})}^{2}$ \\ \midrule
+            $pk2$ & Encoding of the scalar $y$ in the group & ${(\FFx{\rBN})}^{2}$ \\ \bottomrule
+        \end{tabular}
+        \caption{\vkOtsDType~data type}\label{instantiation:tab:vk-ots-dtype}
+        \end{table}
+    \item[\skOtsDType] Denotes the signing key associated with the one-time signature scheme.
+        \begin{table}[H]
+        \centering
+        \begin{tabular}{cp{20em}c}
+            Field & Description & Value\\ \toprule
+            $sk1$ & Scalar element $x$ & $\FFx{\rBN}$ \\ \midrule
+            $sk21$ & Scalar element $y$ & $\FFx{\rBN}$ \\ \midrule
+            $sk22$ & Encoding of the scalar $y$ in the group & ${(\FFx{\rBN})}^{2}$ \\ \bottomrule
+        \end{tabular}
+        \caption{\skOtsDType~data type}\label{instantiation:tab:sk-ots-dtype}
+        \end{table}
+    \item[\sigOtsDType] Denotes the signature data type associated with the one-time signature scheme. $\sigOtsDType$ is an alias for ${(\FFx{\rBN})}^{2}$.
+\end{description}

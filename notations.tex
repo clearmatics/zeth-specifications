@@ -1,0 +1,94 @@
+% !TEX root = zeth-protocol-specification.tex
+
+% Math notations - A
+\nomenclature[A, 010]{$\emptyset$}{The empty set, i.e.~$\emptyset = \smallset{}$}
+\nomenclature[A, 020]{$\cardinality{S}$}{The number of elements in the finite set $S$ (also referred to as ``cardinality of the set $S$''). By convention, $\cardinality{\emptyset} = 0$}
+\nomenclature[A, 030]{$x \in S$}{Represents that $x$ is an element of $S$. If $x$ is a variable such that $x \in S$, we will say that ``$x$ has type $S$'', i.e.~the unordered collection of objects $S$ represents all the values that $x$ can take}
+\nomenclature[A, 040]{$S \setminus T$}{Set difference of sets $S$ and $T$, i.e.~$S \setminus T = \smallset{ x \in S : x \not\in T}$ (voiced ``the set of elements $x$ in $S$ such that $x$ is not in $T$'')}
+\nomenclature[A, 041]{$S \subseteq T$}{$S$ is a subset of $T$, i.e.~$\forall x \in S \implies x \in T$}
+\nomenclature[A, 042]{$S \subset T$}{$S$ is a \emph{proper} (or ``strict'') subset of $T$, i.e.~$\forall x \in S \implies x \in T \land \exists y \in T, y\not\in S$}
+\nomenclature[A, 043]{$S = T$}{$S \subseteq T \land T \subseteq S$}
+\nomenclature[A, 044]{$S \cup T$}{Union of set $S$ and set $T$, i.e.~$\smallset{x : x \in S \lor x \in T}$}
+\nomenclature[A, 045]{$S \cap T$}{Intersection of set $S$ with set $T$, i.e.~$\smallset{x : x \in S \land x \in T}$}
+\nomenclature[A, 046]{$f \colon S \to T$}{Function $f$ that maps items from the non-empty set $S$, called ``the domain'', to the non-empty set $T$, called ``the co-domain''}
+\nomenclature[A, 050]{$\NN$}{Set of natural numbers. $\NN^{+}$ represents $\NN \setminus \smallset{0} = \smallset{1, 2, \ldots}$, where $\smallset{n, \ldots}$ represents the application of the successor operator $\algostyle{Succ}(n) = n + 1$, defined by the Peano axioms, infinitely many times}
+\nomenclature[A, 060]{$\ZZ$}{Set of integers, i.e.~$\smallset{\ldots, -2, -1, 0, 1, 2, \ldots}$, where $\smallset{\ldots, n}$ represents the application of the predecessor operator $\algostyle{Pred}(n) = n - 1$ infinitely many times}
+\nomenclature[A, 070]{$\QQ, \RR$}{Set of rational, real numbers}
+\nomenclature[A, 080]{$[n]$}{Set $\smallset{0, \ldots, n-1}$, where $n \in \NN$}
+\nomenclature[A, 090]{$\range{a}{b}$}{Set of integers from $a$ through $b$ inclusive, where $a \leq b$}
+\nomenclature[A, 091]{$\smalltuple{a_0, a_1, \ldots, a_{n-1}}$}{n-tuple, i.e.~ordered collection of items of length $n$. If $n = 1$, we call it a ``singleton'', if $n = 2$, we call the tuple a ``pair''. Finally, if $n = 3$, we call it a ``triple''. We use the terms ``tuples'' and ``lists'' interchangeably.}
+\nomenclature[A, 100]{$S \times T$}{Cartesian product of sets $S$ and $T$, i.e.~set of all ordered pairs $\smallset{(x, y) : x \in S \land y \in T}$}
+\nomenclature[A, 110]{$S^{n}$}{n-fold Cartesian product of $S$ with itself, i.e.~$S^{n} = \{(x_1, \ldots, x_n) : \forall i \in \smallset{1, \ldots, n}, x_i \in S\}$, where $n \in \NN$}
+\nomenclature[A, 120]{$\Lambda$}{General notation for an alphabet, i.e.~a \emph{non-empty finite set} such that every string (ordered collection of symbols, or letters, all in $\Lambda$) has a unique decomposition. The number of symbols in a string is denoted the ``length'' of the string}
+\nomenclature[A, 130]{$\emptystring$}{The empty string. $\emptystring$ is a string over any alphabet.}
+\nomenclature[A, 140]{$\Lambda^{n}$}{Set of all strings, defined over alphabet $\Lambda$, containing $n$ symbols (i.e.~``of length $n$'')}
+\nomenclature[A, 150]{$\Lambda^{*}$}{The Kleene star of $\Lambda$ represents the set of all strings of finite length, defined over alphabet $\Lambda$, including the empty string $\emptystring$, i.e.~$\Lambda^{*} = \bigcup_{n \in \NN} \Lambda^{n}$}
+\nomenclature[A, 160]{$\len{x}$}{$\len{} \colon \Lambda^{*} \to \NN$ computes the length of a string $x$ defined over $\Lambda$, i.e.~$\len{x}$ returns the number of symbols composing the string $x$. By convention, $\len{\emptystring} = 0$}
+\nomenclature[A, 170]{$x \concat y$}{Infix notation for the concatenation function, $\concat \colon \Lambda^{*} \times \Lambda^{*} \to \Lambda^{*}$. If $\len{x}= n, \len{y} = m: (n, m) \in \NN^2$, then $\len{z} = n + m, z = x \concat y$}
+\nomenclature[A, 180]{$\trunc{k}{x}$}{$\trunc{}{} \colon \Lambda^{*} \to \Lambda^{k}$ is the truncation function that returns the sequence formed from the the first $k$ elements of $x$, where $x \in \Lambda^{*}$. If $k > \len{x}$, then $\trunc{k}{x} = x$}
+\nomenclature[A, 190]{$\slice{x}{a}{b}$}{$\slice{}{}{} \colon \Lambda^n \times \NN \times \NN \to \Lambda^{\leq b-a}$ is the slice function that, if $b \geq a$, returns the string starting at index $\min(n,a)$ of $x$ and finishing at index $\min(n,b)$. The function additionally intereprets $\slice{x}{}{b}$ as $\slice{x}{0}{b}$ and $\slice{x}{a}{}$ as $\slice{x}{a}{n}$}
+\nomenclature[A, 200]{$\pad{x}{n}$}{$\pad{}{} \colon \Lambda^{\leq n} \to \Lambda^n$ is the padding function which pads $x$ by 0's to reach a size of $n$. The padding depends on the variable type and endianness}
+\nomenclature[A, 210]{$\append{l}{x}$}{$\append{}{} \colon D^{n} \times D \to D^{n+1}$ is the algorithm that appends $x$ to the list of $n$ element(s) $l$, if all $x$ and $l$ share the same datatype $D$}
+\nomenclature[A, 220]{$\BB$}{Alphabet of binary symbols, i.e.~$\bin$}
+\nomenclature[A, 230]{$\langle \ggen_1, \ldots, \ggen_l \rangle$}{Cyclic group generated by $\smallset{\ggen_1, \ldots, \ggen_l}$}
+\nomenclature[A, 240]{$(q, \gset, \ggen, \otimes)$}{Description of the cyclic group $\gset = \langle \ggen \rangle$ of order $q$, with operation $\otimes$}
+\nomenclature[A, 250]{$\ZZ / r\ZZ$}{Quotient group defined as the set of equivalence classes modulo $r$. $\ZZ / r\ZZ$, also written $\ZZ_r$, is an additive group. If $r = p$ a prime number, then $\ZZ_p = \smallset{0, \ldots, p-1} = \ZZ / p\ZZ$ is a finite field of elements modulo prime $p$, also denoted $\FFx{p}$, where $0_{\FFx{p}}$ and $1_{\FFx{p}}$ respectively represent the additive and multiplicative identity}
+\nomenclature[A, 260]{$\FFx{q}$}{Finite field of cardinality $q = p^m$, where $p$ is prime}
+\nomenclature[A, 270]{$\groupenc{x}$}{Represents the encoding of the scalar $x$ in a group $\gset$ described as $(p, \gset, \langle \ggen \rangle, \otimes)$, i.e.~$\groupenc{x} = x \cdot \groupenc{1} = \ggen \otimes \ldots \otimes \ggen$ ($x$ times). Thus, by convention, $\groupenc{1} = \ggen$}
+\nomenclature[A, 280]{$\pair$}{Represents an inline operator for bilinear pairing. That is for a bilinear pairing from $\gset_1 \times \gset_2$ to $\gset_T$ and elements $\groupenci{a}{1}, \groupenci{b}{2}$ we write $\groupenci{ab}{t} = \groupenci{a}{1} \pair \groupenci{b}{2}$}
+\nomenclature[A, 290]{$\ceil{x}$}{Round $x \in \RR$ to the next integer}
+\nomenclature[A, 300]{$\floor{x}$}{Round $x \in \RR$ to the previous integer}
+\nomenclature[A, 310]{$\log_b(x)$}{Logarithm with respect to base $b$, i.e.~$x = b^y, \log_b(x) = y$}
+
+% Algorithmic notations - B
+\nomenclature[B, 010]{$x \sample \mathcal{X}$}{Element chosen uniformly at random from set $\mathcal{X}$}
+\nomenclature[B, 020]{$x \gets y$}{The value $y$ is assigned to the variable $x$ (i.e.~``$x$ receives the value $y$'')}
+\nomenclature[B, 030]{$\ppt$}{Probabilistic polynomial time. A polynomial time algorithm $\algostyle{A}$ is one for which there exists a polynomial $f$ such that the running time of $\algostyle{A}$ on input $x \in \bin^{*}$ is $f(\abs*{x})$. A probabilistic algorithm has the ability to ``flip'' random coins and use the result of these coin tosses in its computation}
+\nomenclature[B, 040]{$\nuppt$}{Non-uniform probabilistic polynomial time}
+\nomenclature[B, 050]{$\bigO{f}$}{Big-O notation}
+\nomenclature[B, 060]{$\il, \kl, \nl, \rl, \ol$}{The input $\il$, key $\kl$, nonce $\nl$, randomness $\rl$ and output $\ol$ length}
+
+% Cryptography notations - C
+\nomenclature[C, 010]{$\oracle{\algostyle{X}}(n)$}{Public oracle for algorithm $\algostyle{X}$ which can be accessed at most $n$ times; $\oracle{\algostyle{X}}$ is an unrestricted oracle for algorithm $\algostyle{X}$}
+\nomenclature[C, 020]{$\secpar$}{Security parameter ($\secpar \in \NN$)}
+\nomenclature[C, 030]{$\negl[]$}{Negligible function. In this document, negligible will usually mean $\bigO{2^{-\secpar}}$}
+\nomenclature[C, 040]{$\poly[]$}{Polynomial function}
+\nomenclature[C, 050]{$\adv$}{Adversary algorithm}
+\nomenclature[C, 060]{$\advantage{\gamestyle{prop}}{F, \adv}$}{Advantage of the adversary $\adv$ with regard to the attack game $\gamestyle{prop}$ on $F$ (e.g.~$F$ can be a function, a family of functions or a group on which a given property represented by the game $\gamestyle{prop}$ is supposed to hold)}
+\nomenclature[C, 070]{$\gamestyle{prop}^{\adv}$}{Adversary \adv{} running a security game $\gamestyle{prop}$}
+
+% Zeth notations - D
+\nomenclature[D, 010]{$\zkp$}{Zero-knowledge non-interactive argument of knowledge (zk-snark for short). \zkp~is also informally referred to as a ``zk-proof'', or simply ``proof'' when clear from context}
+\nomenclature[D, 020]{$\zparty{P}$}{Standard notation for a $\zeth$ user}
+\nomenclature[D, 030]{$\mixer$}{The mixer smart-contract instance}
+\nomenclature[D, 040]{$\encscheme$}{In-band encryption scheme used to share \zeth{} notes}
+
+
+% Ethereum notations - E
+\nomenclature[E, 010]{$\accountstyle{Account}$}{Standard notation for an $\ethereum$ account object}
+\nomenclature[E, 020]{$\contractstyle{Cntrct}$}{Standard notation for an $\ethereum$ smart-contract instance}
+\nomenclature[E, 030]{$\eparty{P}$}{Standard notation for an $\ethereum$ user}
+\nomenclature[E, 040]{$\wstate$}{Mapping representing the \ethereum~state (i.e.~``World state'')}
+\nomenclature[E, 050]{$\wstate[a]$}{Account object stored at address $a$ in $\wstate$ if it exists, $\perp$ is returned otherwise}
+
+% Constants - F (Alphabetical order, no manual order enforced)
+\nomenclature[F]{$\rBN$}{Characteristic of the scalar field of \BNCurve, $\rBN = \seqsplit{21888242871839275222246405745257275088548364400416034343698204186575808495617}$~\cite{bn-prime}}
+\nomenclature[F]{$\bnFieldBitLen$}{Bit-length of a field element $x \in \FFx{\rBN}$ \nomunit{$\ceil{\log_2{\rBN}} = 254\, bits$}}
+\nomenclature[F]{$\bnFieldBitCap$}{Field capacity of $\FFx{\rBN}$. It is defined as the maximum bit length $l$ such that all numbers $x \in \BB^l$ are field elements $x \in \FFx{\rBN}$: $\max_n \smallset{ \forall x \in \bin^n,\ x \in \FFx{\rBN}}$ \nomunit{$\floor{\log_2{\rBN}} = 253\, bits$}}
+\nomenclature[F]{$\jsin, \jsout, \jsmax$}{The number of inputs and outputs of a joinsplit and $\jsmax = \max(\jsin, \jsout)$}
+\nomenclature[F]{$\mkTreeDepth$}{The depth of the Merkle tree used to store commitments}
+\nomenclature[F]{$\addressLen$}{The bit-length of an \ethereum~address \nomunit{$160\, bits$}}
+\nomenclature[F]{$\txDefaultGas$}{The intrinsic gas cost of an \ethereum~transaction \nomunit{$21 000\, \wei$}}
+\nomenclature[F]{$\ethWordLen$}{Width of a storage cell on the Ethereum Virtual Machine stack, i.e.~size of a word on the EVM \nomunit{$256\, bits$}}
+\nomenclature[F]{$\pSecp$}{Prime defining the finite field of curve $\secpCurve$~\cite{secp256k1}}
+\nomenclature[F]{$\secpFieldBitLen$}{Bit-length of a field element $x \in \FFx{\pSecp}$ \nomunit{$\ceil{\log_2{\pSecp}} = 256\, bits$}}
+\nomenclature[F]{$\byteLen$}{Bit-length of a byte \nomunit{$8\, bits$}}
+\nomenclature[F]{$\shaTwoDigestLen$}{Message digest size of \sha{256}~\cite[Figure 1]{fips1804} \nomunit{$256\, bits$}}
+\nomenclature[F]{$\shaTwoMsgLen$}{Message size of \sha{256}~\cite[Figure 1]{fips1804} \nomunit{$< 2^{64}\, bits$}}
+\nomenclature[F]{$\shaTwoBlockLen$}{Block size of \sha{256}~\cite[Figure 1]{fips1804} \nomunit{$512\, bits$}}
+\nomenclature[F]{$\keccakTwoDigestLen$}{Message digest size of \keccak{256}~\cite{keccak-submission} \nomunit{$256\, bits$}}
+\nomenclature[F]{$\zvalueLen$}{Size in bits of the transferable maximal value \nomunit{$64\, bits$}}
+\nomenclature[F]{$\blakeCompLen$}{Output size of \blake{2s}{} compression function~\cite{aumasson2013blake2} \nomunit{$256\, bits$}}
+\nomenclature[F]{$\encZethNoteLen$}{Size of an encrypted note \nomunit{$1216\, bits$}}
+
+% Others - G
