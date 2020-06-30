@@ -2,17 +2,17 @@
 
 \section{Instantiate $\encscheme$}\label{instantiation:enc}
 
-In this section we describe the instantiation of $\encscheme$ primitive introduced in \cref{zeth-protocol:mix-inp}. First, we present a general asymmetric encryption scheme called \dhaes{} (Diffie-Hellman Asymmetric Encryption Scheme~\cite{abdalla1999dhaes}), which satisfies all the required security properties for the in-band encryption scheme $\encscheme$ (see:~\cref{preliminaries:sec-assumptions}). Then, we give details of the concrete algorithms used for the implementation.
+In this section we describe the instantiation of $\encscheme$ primitive introduced in \cref{zeth-protocol:mix-inp}. First, we present a general asymmetric encryption scheme called \dhaes{} (Diffie-Hellman Asymmetric Encryption Scheme~\cite{abdalla1999dhaes}), which satisfies all the required security properties for the in-band encryption scheme $\encscheme$ (see~\cref{preliminaries:sec-assumptions}). Then, we give details of the concrete algorithms used for the implementation.
 
 \subsection{\dhaes{} encryption scheme}\label{instantiation:enc:dhaes}
 
 Given a symmetric encryption scheme $\sym{}$, a group defined by $\groupSetup{}$, a family of hash function $\hashSet{}$\footnote{Here, we only consider fixed-length hash functions with $\hashInpLen(\secpar) = 2\groupLen$ and $\hashLen(\secpar) = \symKeyLen(\secpar) + \macKeyLen(\secpar)$ (see~\cref{preliminaries:definitions}).} and a message authentication scheme $\mac{}$ as defined in~\cref{preliminaries:definitions}, we define a \dhaes{} scheme as the following public-key encryption scheme:
 
 \begin{itemize}
-    \item \setup, setup algorithm, takes as input a security parameter (in unary representation) \secparam{}. It runs $\hashSet.\hashSetup{}$, \groupSetup{} and returns public parameters \pparams{} = $(\hk,(q, \gset, \ggen, +)$).
+    \item \setup, setup algorithm, takes as input a security parameter \secparam{}. It runs $\hashSet.\hashSetup{}$, \groupSetup{} and returns public parameters \pparams{} = $(\hk,(q, \gset, \ggen, +)$).
     \item \kgen, key generation algorithm, takes as input public parameters $\pparams$. It samples at random $v \sample{} [q]$ and returns a keypair $(\sk, \pk) = (v, \groupenc{v})$.
-    \item \enc, encryption algorithm, takes as input public parameters $\pparams$, a message \msg{} and a public key $\pk$. It runs \kgen{} that returns an ephemeral keypair $(\esk, \epk) = (u, \groupenc{u})$. Then, it computes a shared secret $\sharedSecret  = \hash_{\hk} (\epk \concat{} \esk \cdot \pk) = \hash_{\hk} (\epk \concat{} \esk{} \cdot \pk)$, parsed as $\ek{} \concat{} \mk{}$\footnote{Note that \ek{} and \mk{} must have same length.}. It computes $\ct_{\sym} = \sym.\enc(\ek, \msg)$ and $\tau = \mac.\tagg(\mk, \ct_{\sym})$ and finally outputs the ciphertext $\epk \concat \ct_{\sym} \concat \tau$.
-    \item \dec, decryption algorithm, takes as input public parameters $\pparams$, a private key $\sk$ a ciphertext $\epk \concat{} \ct_{\sym} \concat \tau$. It computes $\sharedSecret = \hash_{\hk} (\epk \concat \sk \cdot \epk)$ and parses it, as above, as $\ek \concat{} \mk$. If \mac{} verification passes, i.e. $\mac.\verify(\mk, \tau) = 1$, the algorithm returns $\sym.\dec(\ek, \ct_{\sym})$ and $\bot{}$ otherwise.
+    \item \enc, encryption algorithm, takes as input public parameters $\pparams$, a message \msg{} and a public key $\pk$. It runs \kgen{} that returns an ephemeral keypair $(\esk, \epk) = (u, \groupenc{u})$. Then, it computes a shared secret $\sharedSecret = \hash_{\hk} (\epk \concat{} \esk{} \cdot \pk) = \hash_{\hk} (\epk \concat{} \sk{} \cdot \epk)$, parsed as $\ek{} \concat{} \mk{}$\footnote{Note that \ek{} and \mk{} must have the same length.}. It computes $\ct_{\sym} = \sym.\enc(\ek, \msg)$ and $\tau = \mac.\tagg(\mk, \ct_{\sym})$ and finally outputs the ciphertext $\epk \concat \ct_{\sym} \concat \tau$.
+    \item \dec, decryption algorithm, takes as input public parameters $\pparams$, a private key $\sk$ a ciphertext $\epk \concat{} \ct_{\sym} \concat \tau$. It computes $\sharedSecret = \hash_{\hk} (\epk \concat \sk \cdot \epk)$ and parses it, as above, as $\ek \concat{} \mk$. If \mac{} verification passes, i.e.~$\mac.\verify(\mk, \tau) = 1$, the algorithm returns $\sym.\dec(\ek, \ct_{\sym})$ and $\bot{}$ otherwise.
 \end{itemize}
 
 The \dhaes{} definition given above is an asymptotic adaptation of~\cite[Section 1.3]{abdalla1999dhaes}.
@@ -25,7 +25,7 @@ Given an ephemeral keypair $(u_0, \groupenc{u_0})$, If the group $\langle \ggen 
 
 \subsubsection{Curve25519}\label{instantiation:enc:algos:curve25519}
 
-As cyclic group, we propose the use of a subgroup of \curve{25519} described in~\cite{bernstein2006curve25519} and in~\cite{rfc7748}. \curve{25519} is a Montgomery elliptic curve~\cite{montgomery1987speeding} defined by the equation $y^2 = x^3 + 486662x^2 + x$ and coordinates on $\mathbb{F}_p$, where $p$ is the prime number $2^{255}-19$. It has a prime order subgroup of order $2^{252} + \seqsplit{27742317777372353535851937790883648493}$ and cofactor $8$.
+For a cyclic group we propose the use of a subgroup of \curve{25519} described in~\cite{bernstein2006curve25519} and in~\cite{rfc7748}. \curve{25519} is a Montgomery elliptic curve~\cite{montgomery1987speeding} defined by the equation $y^2 = x^3 + 486662x^2 + x$ and coordinates on $\mathbb{F}_p$, where $p$ is the prime number $2^{255}-19$. It has a prime order subgroup of order $2^{252} + \seqsplit{27742317777372353535851937790883648493}$ and cofactor $8$.
 \curve{25519} comes with an efficient scalar multiplication denoted as \xscalarmult{25519}\footnote{\xscalarmult{25519} is actually introduced in~\cite{rfc7748} in order to avoid notation issues due to the use \curve{25519} to indicate both curve and scalar multiplication as done in~\cite{bernstein2006curve25519}}. In a Diffie-Hellman-based scheme it allows to have 32-byte long public and private keys (given a point $P = (x,y)$ only the $x$ coordinate is actually used) and the $32$-byte sequence representing $9$ is specified as base point.
 
 \subsubsection{Efficiency and security of Curve25519}\label{instantiation:enc:algos:curve25519sec}
@@ -33,7 +33,7 @@ As cyclic group, we propose the use of a subgroup of \curve{25519} described in~
 High-speed and timing-attack resistant implementations of \xscalarmult{25519} are available and its security level is conjectured to be $128$ bits~\cite[Section 1]{bernstein2006curve25519}. However, combined attacks can lead to $124$ bits of security (see~\cite[Section ``Twist Security'']{safecurves2017}). By design, \curve{25519} is resistant to state-of-the-art attacks and satisfies all security criteria and principles listed in \emph{Safecurves}~\cite{safecurves2017}\footnote{In this work, the authors take into account both Elliptic Curve Discrete Logarithm Problem (ECDLP) and Elliptic Curve Cryptosystems (ECC) security, that allows to have an overall evaluation of the security guarantees.}.
 
 % Security: public key validation
-Interestingly, \curve{25519} does not require \emph{Public Key Validation}\footnote{Informally, it is a set of security checks that a user performs before using a not trusted public key (e.g.~see~\cite{barker2018recommendation})}, while we know that, on other curves, active attacks - consisting in sending malformed public keys - could be carried out by adversaries, to violate the confidentiality of private keys, e.g.~\cite{antipa2003validation}. However, \curve{25519} specification mandates the \emph{clamping} of private keys: that is, after the random sampling of $32$ bytes, the user clears bits $0$, $1$ and $2$ of the first byte, clears bit $7$ and sets bit $6$ of the last byte. The resulting $32$ bytes are then used as private key. This particular structure for private keys prevents various types of attacks (see~\cite[Section 3]{bernstein2006curve25519} for more details).
+Interestingly, \curve{25519} does not require \emph{public key validation}\footnote{Informally, it is a set of security checks that a user performs before using a not trusted public key (e.g.~see~\cite{barker2018recommendation})}, while we know that, on other curves, active attacks -- consisting of sending malformed public keys -- could be carried out by adversaries, to violate the confidentiality of private keys, e.g.~\cite{antipa2003validation}. However, \curve{25519} specification mandates the \emph{clamping} of private keys: that is, after the random sampling of $32$ bytes, the user clears bits $0$, $1$ and $2$ of the first byte, clears bit $7$ and sets bit $6$ of the last byte. The resulting $32$ bytes are then used as private key. This particular structure for private keys prevents various types of attacks (see~\cite[Section 3]{bernstein2006curve25519} for more details).
 
 \begin{notebox}
     Note that the \emph{clamping} procedure is vital to ensure the security guarantees of the \curve{25519} specification, and implementations \MUST{} perform this exactly as described.
@@ -41,7 +41,7 @@ Interestingly, \curve{25519} does not require \emph{Public Key Validation}\footn
 
 \subsubsection{Chacha20}\label{instantiation:enc:algos:chacha20}
 
-\chacha{20} is a ARX-based\footnote{Addition ($\mod 2^n$), Rotation, Xor} stream cipher introduced in~\cite{bernstein2008chacha}. It is an improved version of \salsa{20}~\cite{Bernstein:2008:SFS:1423346.1423354} that won the \emph{eSTREAM} challenge~\cite{estreamchallenge}. Compared with \salsa{20}, it has been designed to improve diffusion per round, conjecturally increasing resistance to cryptanalysis, while preserving time per round. It is considerably faster than \aes{} in software-only implementations and can be easily implemented to be timing-attacks resistant. Several versions of the cipher can be used. The original paper presents \chacha{20} with a $128$-bit key and $64$-bit nonce/block count. However, the length of the key, nonce and block count - which indicates how many chunks can be processed by using the same key and nonce - can be modified depending on the application. In~\cite{langley2018chacha20}[Section 2.3], for instance, the key is a $256$-bit string, the nonce is a string of $96$ bits and the block count is encoded on a $32$-bit word. This configuration allows to process around $2^{32}$ blocks, corresponding to roughly $256$GB of data. We propose to use the same parameters in \zeth{}.
+\chacha{20} is an ARX-based\footnote{Addition-Rotation-XOR} stream cipher introduced in~\cite{bernstein2008chacha}. It is an improved version of \salsa{20}~\cite{Bernstein:2008:SFS:1423346.1423354} that won the \emph{eSTREAM} challenge~\cite{estreamchallenge}. Compared with \salsa{20}, it has been designed to improve diffusion per round, conjecturally increasing resistance to cryptanalysis, while preserving time efficiency per round. It is considerably faster than \aes{} in software-only implementations and can be easily implemented to be timing-attacks resistant. Several versions of the cipher can be used. The original paper presents \chacha{20} with a $128$-bit key and $64$-bit nonce/block count. However, the length of the key, nonce and block count -- which indicates how many chunks can be processed by using the same key and nonce -- can be modified depending on the application. In~\cite{langley2018chacha20}[Section 2.3], for instance, the key is a $256$-bit string, the nonce is a string of $96$ bits and the block count is encoded on a $32$-bit word. This configuration allows to process around $2^{32}$ blocks, corresponding to roughly $256$\,GB of data. We propose to use the same parameters in \zeth{}.
 
 \begin{align*}
     \chacha{20}&: \BB^{256} \times \BB^{32} \times \BB^{96} \times \BB^{*} \to \BB^{*}
@@ -49,7 +49,7 @@ Interestingly, \curve{25519} does not require \emph{Public Key Validation}\footn
 
 \subsubsection{Security of Chacha}
 
-Recent cryptanalysis results for \chacha{} are available in~\cite{aumasson2008new,ishiguro2012modified, shi2012improved, maitra2016chosen, choudhuri2016differential, choudhuri2017maitra}: all of them makes use of advanced cryptanalysis techniques able to perform key-recovery attacks only on reduced versions (6 and 7 rounds) of \chacha{}.
+Recent cryptanalysis results for \chacha{} are available in~\cite{aumasson2008new,ishiguro2012modified, shi2012improved, maitra2016chosen, choudhuri2016differential, choudhuri2017maitra}: all of them make use of advanced cryptanalysis techniques able to perform key-recovery attacks only on reduced versions (6 and 7 rounds) of \chacha{}.
 
 \begin{notebox}
     Importantly, the security properties of \chacha{} rely on the fact that, for a given key, all blocks are processed with distinct values in the state words 12 to 15 (storing the counter and the nonce)~\cite[Section 2.3]{langley2018chacha20}.
@@ -83,7 +83,7 @@ Since we need a total of $64$ bytes for the key material ($32$ for \chacha{20} a
 
 \subsection{\encscheme{} instantiation}\label{instantiation:enc:enc-sch}
 
-In the following we instantiate \encscheme{} as a \dhaes{} scheme, detailing the \kgen{}, \enc{} and \dec{} components. Before, we introduce some required constant values:
+In the following we instantiate \encscheme{} as a \dhaes{} scheme, detailing the \kgen{}, \enc{} and \dec{} components. First, we introduce some required constant values:
 \begin{align*}
     \eskByteLen &= 32\\
     \epkByteLen &= 32\\
@@ -99,15 +99,15 @@ In the following we instantiate \encscheme{} as a \dhaes{} scheme, detailing the
 
 \subsubsection{\encscheme.\kgen{}}
 
-The keypair generation $(\sk, \pk)$ is defined as:
+The keypair $(\sk, \pk)$ generation is defined as:
 
 \begin{itemize}
     \item Randomly sample a sequence of $\eskByteLen$ bytes and assign to $\sk$.
     \item Clamp \sk{} as follows:
     \begin{align*}
-        \sk[0] &= \sk[0]\ \&\ \bytestyle{F8}\\
-        \sk[31] &= \sk[31]\ \&\ \bytestyle{7F}\\
-        \sk[31] &= \sk[31]\ |\ \bytestyle{40}
+        \sk[0] &\gets \sk[0]\ \&\ \bytestyle{F8}\\
+        \sk[31] &\gets \sk[31]\ \&\ \bytestyle{7F}\\
+        \sk[31] &\gets \sk[31]\ |\ \bytestyle{40}
     \end{align*}
     where $|$ and $\&$ denotes, respectively, OR and AND binary operators between bit strings of same the length.\footnote{E.g Given two bytes \bytestyle{15} and \bytestyle{03} then $\bytestyle{15} | \bytestyle{03} = \bytestyle{17}$ and $\bytestyle{15} \& \bytestyle{03} = \bytestyle{01}$.}
     \item Compute $\pk{} = \xscalarmult{25519}(\sk, \bytestyle{09})$.
@@ -125,7 +125,7 @@ The encryption, on inputs $(\pk, \msg) \in \BBy{\epkByteLen} \times \BBy{\noteBy
     \[
         \sharedSecret = \xscalarmult{25519}(\esk, \pk) \in \BBy{\epkByteLen}
     \]
-    \item Generates a session key:
+    \item Generate a session key:
     \[
         \blake{2b512}{\encTag \concat \epk \concat \sharedSecret} \in \BBy{\kdfDigestByteLen}
     \]
@@ -140,20 +140,20 @@ The encryption, on inputs $(\pk, \msg) \in \BBy{\epkByteLen} \times \BBy{\noteBy
     \]
 
     \begin{remark}
-        Formally speaking we should have written $\ct_{\sym} \in \BB^{n}$, where $n$ is the length of binary representation of the encrypted message $m$. In \zeth{} however, the only data encrypted are the notes. As such the size of the plaintexts is $\noteByteLen * \byteLen$ bits.
+        Formally speaking we should have written $\ct_{\sym} \in \BB^{n}$, where $n$ is the length of binary representation of the encrypted message $m$. In \zeth{} however, the only data encrypted are the notes. As such, the size of the plaintexts is $\noteByteLen * \byteLen$ bits.
     \end{remark}
     \begin{remark}
         In the following, we omit the explicit conversion from $\BB^{n}$ to $\BBy{\ceil{n/\byteLen}}$ when passing the output of \chacha{20} to the \polymac{1305} algorithms.
     \end{remark}
     \item Randomly generate $(r,s) \in \BBy{\macKeyByteLen/2} \times \BBy{\macKeyByteLen/2}$ and clamp it:
     \begin{align*}
-        r[3] &= r[3]\ \&\ \bytestyle{0F}\\
-        r[7] &= r[7]\ \&\ \bytestyle{0F}\\
-        r[11] &= r[11]\ \&\ \bytestyle{0F}\\
-        r[15] &= r[15]\ \&\ \bytestyle{0F}\\
-        r[4] &= r[4]\ \&\ \bytestyle{FC}\\
-        r[8] &= r[8]\ \&\ \bytestyle{FC}\\
-        r[12] &= r[12]\ \&\ \bytestyle{FC}
+        r[3] &\gets r[3]\ \&\ \bytestyle{0F}\\
+        r[7] &\gets r[7]\ \&\ \bytestyle{0F}\\
+        r[11] &\gets r[11]\ \&\ \bytestyle{0F}\\
+        r[15] &\gets r[15]\ \&\ \bytestyle{0F}\\
+        r[4] &\gets r[4]\ \&\ \bytestyle{FC}\\
+        r[8] &\gets r[8]\ \&\ \bytestyle{FC}\\
+        r[12] &\gets r[12]\ \&\ \bytestyle{FC}
     \end{align*}
     \item Generate the related tag:
     \[
@@ -199,18 +199,18 @@ The decryption, on inputs $(\sk, \ct) \in \BBy{\eskByteLen} \times \BBy{\ctByteL
 
 \subsection{Security requirements satisfaction}\label{instantiation:enc:security}
 
-\dhaes{} has already been proved to be \indccaii{} secure (see~\cite[Section 3.5, Theorem 6]{abdalla1999dhaes})\footnote{Specifically, it holds if \sym{} is \indcpa{} secure, \hash{} is \hdhi{} secure and \mac{} is \sufcma{} secure.} and to the best of our knowledge there is no paper showing \ikcca{} security. The only proof we have found is related to \dhies{} scheme~\cite{abdalla2010robust}, that is a prime order group version of \dhaes{}. In the following, we provide a proof for \ikcca{} security of \dhaes{} by adapting that proof to our case.
+\dhaes{} has already been proved to be \indccaii{} secure (see~\cite[Section 3.5, Theorem 6]{abdalla1999dhaes})\footnote{Specifically, if \sym{} is \indcpa{} secure, it holds that \hash{} is \hdhi{} secure and \mac{} is \sufcma{} secure.} and to the best of our knowledge there is no paper showing \ikcca{} security. The only proof we have found is related to \dhies{} scheme~\cite{abdalla2010robust}, that is a prime order group version of \dhaes{}. In the following, we provide a proof for \ikcca{} security of \dhaes{} by adapting that proof to our case.
 
 \begin{theorem}[\ikcca{} of \dhaes]\label{th:ik-cca}
-    Let \dhaes{} be the asymmetric encryption scheme as defined above. Let \adv{} be an adversary for the \ikcca{} game, then there exists a \hdhi{} adversary \bdv{} of ($\hashSet$,\groupSetup) and a \sufcma{} adversary \cdv{} of \mac{} such that
+    Let \dhaes{} be the asymmetric encryption scheme as defined above. Let \adv{} be an adversary for the \ikcca{} game, then there exists a \hdhi{} adversary \bdv{} of $(\hashSet,\groupSetup)$ and a \sufcma{} adversary \cdv{} of \mac{} such that
     \begin{align*}
         \advantage{\ikcca}{\dhaes, \adv} \leq 2\cdot\advantage{\hdhi}{\hashSet, \groupSetup, \bdv} + \advantage{\sufcma}{\mac, \cdv}.
     \end{align*}
     The adversaries \bdv{} and \cdv{} have the same running time as \adv{}\footnote{In order to give an asymptotic version of the theorem, the number of queries $q$ has been substituted by the fact of considering \ppt{} adversaries.}.
 \end{theorem}
 
-\begin{proof}
-    As already mentioned, \dhaes{} is similar to \dhies{} scheme, except for the underlying group and the way the symmetric keys are constructed. As consequence, \ikcca{} property for \dhaes{} can be showed similarly as done in~\cite[Theorem 6.2]{abdalla2010robust}. More precisely, they show that one can construct from an attacker \adv{} for the \ikcca{} game two attackers \bdv{} and \cdv{} for the \odh{} and \sufcma{} games. Actually, they make use of a \bdvii{} attacker for the \odhii{} game~\cite[Figure 20]{abdalla2010robust} and then apply~\cite[Lemma 6.1]{abdalla2010robust} to obtain an attacker \bdv{}\footnote{Note that in~\cite{abdalla2010robust} the \ikcca{} game is a particular case of the \aicca{} game that requires two input messages in the LR query. In order to reason only about the key-privacy, the two messages $\msg_0$ and $\msg_1$ are constrained to be equal.} in the \odh{} game. We adopt a similar strategy, working with \hdhi{}, \hdhii{} and~\cref{preliminaries:lemma:hdhi_hdhii}.
+\begin{proof}[Informal proof.]
+    As already mentioned, \dhaes{} is similar to \dhies{} scheme, except for the underlying group and the way the symmetric keys are constructed. As consequence, \ikcca{} property for \dhaes{} can be shown similarly to the approach in~\cite[Theorem 6.2]{abdalla2010robust}. More precisely, they show that one can construct from an attacker \adv{} for the \ikcca{} game two attackers \bdv{} and \cdv{} for the \odh{} and \sufcma{} games. Actually, they make use of a \bdvii{} attacker for the \odhii{} game~\cite[Figure 20]{abdalla2010robust} and then apply~\cite[Lemma 6.1]{abdalla2010robust} to obtain an attacker \bdv{}\footnote{Note that in~\cite{abdalla2010robust} the \ikcca{} game is a particular case of the \aicca{} game that requires two input messages in the LR query. In order to reason only about the key-privacy, the two messages $\msg_0$ and $\msg_1$ are constrained to be equal.} in the \odh{} game. We adopt a similar strategy, working with \hdhi{}, \hdhii{} and~\cref{preliminaries:lemma:hdhi_hdhii}.
 
     Let \adv{} be an attacker for the \ikcca{} game, and let \bdvii{} be an attacker for the \hdhii{} game described in~\cref{fig:hdhii_adv}. We show that,
     \[
@@ -221,18 +221,18 @@ The decryption, on inputs $(\sk, \ct) \in \BBy{\eskByteLen} \times \BBy{\ctByteL
     Given an \hdhii{} challenge $(\groupenc{u}, \groupenc{v_{0}}, \groupenc{v_{1}}, w_{b_2, 0}, w_{b_2, 1})$, an adversary \bdvii{} samples $b \sample{} \set{0,1}$ and runs \adv{} on $\groupenc{v_{0}}$, $\groupenc{v_{1}}$ (note that $b_2$ is the random bit chosen by the \bdvii{} challenger in the \hdhii{} game). $\bdvii$ constructs oracles $\oracle{\dec_{\sk_i}}$ where the queries $(\gel{r} \concat \ct_{\sym} \concat \tau)$ are processed as follows: if $\gel{r} \neq \groupenc{u}$, then \bdvii{} queries related \hdhii{} oracle to obtain $\ek{} \concat{} \mk\gets{} \oracleHdhi{v_i}(\gel{r})$ (see~\cref{fig:hdhii_adv}). If $\gel{r}=\groupenc{u}$, $w_{b_2, i}$ is parsed as $\ek \concat \mk$. In both cases, it checks that $\mac.\verify(\mk, \ct_{\sym},\tau) = 1$ and, if so, returns $\msg \gets{} \sym.\dec(\ek,\ct_{\sym})$. We note that \adv{} cannot query the challenged ciphertext. \bdvii{} returns $0$ if and only if $b=\widetilde{b}$. It easy to see that if $b_2$ is equal to $0$, then all symmetric encryption and MAC keys used for the challenge ciphertext $(\gel{r}^{*} \concat \ct_{\sym}^{*} \concat \tau^{*})$ and decryption responses are exactly as in a \dhaes{} game.
 
     If $b_2=1$, then $w_{1, 0}$ and $w_{1, 1}$ are random strings and the challenge ciphertext and decryption responses are given as in the $\gamestyle{G_0}$ game described in \cref{fig:g0_game}.
-
+%
     So we get,
         \[
-            \prob{\hdhii^{\bdvii{}}(\secpar) = 1} = \frac{1}{2}\cdot\prob{\ikcca^{\adv}(\secpar) = 1} + \frac{1}{2}\cdot\prob{\gamestyle{G_0}^\adv{}(\secpar) = 1}
+            \prob{\hdhii^{\bdvii{}}(\secpar) = 1} = \frac{1}{2}\cdot\prob{\ikcca^{\adv}(\secpar) = 1} + \frac{1}{2}\cdot\prob{\gamestyle{G_0}^\adv{}(\secpar) = 1}\,.
         \]
-    And from the definition of \hdhii{} advantage, we have,
+    And from the definition of \hdhii{} advantage we have
 
         \[
-            \advantage{\hdhii}{\hashSet,\groupSetup,\bdvii{}} = \abs{\prob{\ikcca^{\adv}(\secpar)=1} + \prob{\gamestyle{G_0}^{\adv}(\secpar)=1} - 1}
+            \advantage{\hdhii}{\hashSet,\groupSetup,\bdvii{}} = \abs{\prob{\ikcca^{\adv}(\secpar)=1} + \prob{\gamestyle{G_0}^{\adv}(\secpar)=1} - 1}\,.
         \]
 
-    At this point, we can conclude as done in~\cite[Theorem 6.2]{abdalla2010robust}, with the only difference of applying~\cref{preliminaries:lemma:hdhi_hdhii} instead of~\cite[Lemma 6.1]{abdalla2010robust} and by defining a game $\gamestyle{G_1}$ that is \emph{identical until} \badvar\footnote{Games $\gamestyle{G_i}$ and $\gamestyle{G_j}$ are said to be \emph{identical until} \badvar if they differ only in statements that follow the setting of the $\badvar{}$ variable to $True$. $\badvar$ is initialized with $False$} $\gamestyle{G_0}$ defined in \cref{fig:g0_game}.
+    At this point, we can conclude as in~\cite[Theorem 6.2]{abdalla2010robust}, with the only difference of applying~\cref{preliminaries:lemma:hdhi_hdhii} instead of~\cite[Lemma 6.1]{abdalla2010robust} and by defining a game $\gamestyle{G_1}$ that is \emph{identical until} \badvar\footnote{Games $\gamestyle{G_i}$ and $\gamestyle{G_j}$ are said to be \emph{identical until} \badvar if they differ only in statements that follow the setting of the $\badvar{}$ variable to $True$. $\badvar$ is initialized with $False$} $\gamestyle{G_0}$ defined in \cref{fig:g0_game}.
 \end{proof}
 
 
@@ -310,16 +310,16 @@ The decryption, on inputs $(\sk, \ct) \in \BBy{\eskByteLen} \times \BBy{\ctByteL
 
 \subsection{Final notes and observations}\label{instantiation:enc:final-notes}
 
-In this section we list some notes regarding \zcash{} approach (see~\cite[Section 8.7]{zcashprotocol}) and other observations:
+In this section we list some notes regarding the approach taken in \zcash{} (see~\cite[Section 8.7]{zcashprotocol}), and other observations:
 \begin{itemize}
-    \item \emph{Key derivation parameters}: in \dhaes{} construction, the only required input variables are the shared secret \sharedSecret{} and \epk. In Sprout, additional parameters were added (i.e. $h_{sig}$, $\pk_{enc}$ and a counter $i$) (see~\cite[5.4.4.2]{zcashprotocol}): they state that $h_{sig}$ was used in order to get a different random extractor for each joinsplit transfer in order to limit the degradation of the security and weaken assumption on the hash. The authors believed, about the use of long-standing public key $\pk_{enc}$, that it might be necessary for \indccaii{} security and for post-quantum privacy (in the case where the quantum attacker does not have the public key)~\cite{zcashforum2019encsec}. None of these additional components are used any longer starting from the Sapling release (see~\cite[5.4.4.4]{zcashprotocol}). To the best of our knowledge there is no formal reason to use note counter $i$ into the \kdf{}: an explanation could be to avoid that same session key is reused, but this should be fine as soon as a different nonce or block counter is used for the symmetric cipher (actually this is already mandated in the case \epk{}, reuse as described below).
-    \item \emph{Reuse of ephemeral keys} \epk: ZCash reuses the same ephemeral keys \epk{} (and different nonces) for two ciphertexts in a joinsplit description, claiming that this does not affect the security of the scheme as soon as the \hdhi{} assumption of the \dhaes{} security proof is adapted. Note that the proof they refer is related to the \indccaii{} notion.
-    \item Note that in \zcash{} Sprout and Sapling being able to break the Elliptic Curve Diffie-Hellman Problem on \curve{25519} or \jubjub{} would not help to decrypt the transmitted notes ciphertext unless the receiver $\pk_{enc}$ is known or guessed. On the other hand, having $\pk_{enc}$ into the hash (as used in Sprout) may violate in principle the key-privacy of the encryption scheme. For these reasons, we underline that the protocol should enforce a mechanism that does not reveal users public keys to increase the security.
-    \item In~\cite{abdalla2010robust}, the concept of \emph{robustness} for an asymmetric encryption scheme is introduced: it formalizes the infeasibility to produce a ciphertext valid under two different public encryption keys. We note that this is particularly useful for \zeth{} since only the intended receiver will be able to decrypt the encrypted note. The definition, actually, is more general, since it covers also the case when a decryption is successful but returns an incorrect plaintext. This prevent situations where a user, scanning the \mixer{} logs for incoming transactions, gets a false positive decryption and stores garbage notes.
+    \item \emph{Key derivation parameters}: in \dhaes{} construction, the only required input variables are the shared secret \sharedSecret{} and \epk. In the Sprout release of $\zcash{}$, additional parameters were added (i.e.~$h_{sig}$, $\pk_{enc}$ and a counter $i$) (see~\cite[5.4.4.2]{zcashprotocol}): they state that $h_{sig}$ was used in order to get a different randomness extractor for each joinsplit transfer in order to limit the degradation of the security and weaken assumption on the hash. The authors believed, about the use of long-standing public key $\pk_{enc}$, that it might be necessary for \indccaii{} security and for post-quantum privacy (in the case where the quantum attacker does not have the public key)~\cite{zcashforum2019encsec}. None of these additional components are used any longer starting from the Sapling release (see~\cite[5.4.4.4]{zcashprotocol}). To the best of our knowledge there is no formal reason to use the note counter $i$ as an input to the \kdf{}: an explanation could be to avoid the same session key being reused for multiple notes, but this should not be a problem since a different nonce or block counter is used for the symmetric cipher (actually this is already mandated in the case where \epk{} is reused, as described below).
+    \item \emph{Reuse of ephemeral keys} \epk: $\zcash{}$ reuses the same ephemeral keys \epk{} (and different nonces) for two ciphertexts in a joinsplit description, claiming that this does not affect the security of the scheme as soon as the \hdhi{} assumption of the \dhaes{} security proof is adapted. Note that the proof they refer to is related to the \indccaii{} notion.
+    \item Note that in \zcash{} Sprout and Sapling, being able to break the Elliptic Curve Diffie-Hellman Problem on \curve{25519} or \jubjub{} would not help to decrypt the transmitted notes ciphertext unless the receiver $\pk_{enc}$ is known or guessed. On the other hand, having $\pk_{enc}$ into the hash (as used in Sprout) may violate in principle the key-privacy of the encryption scheme. For these reasons, we underline that the protocol should enforce a mechanism that does not reveal users public keys to increase the security.
+    \item In~\cite{abdalla2010robust}, the concept of \emph{robustness} for an asymmetric encryption scheme is introduced: it formalizes the infeasibility of producing a ciphertext valid under two different public encryption keys. We note that this is particularly useful for \zeth{} since only the intended receiver will be able to decrypt the encrypted note. In fact, the definition is more general since it also covers the case in which a decryption is successful but returns an incorrect plaintext. This prevents situations where a user, scanning the \mixer{} logs for incoming transactions, gets a false positive decryption and stores garbage notes.
     \begin{notebox}
         We note however, that the ``false-positive'' situation above can be prevented by relying on a weaker notion of robustness called \emph{collision-freeness}~\cite{asiacrypt-2010-23840}. In fact, as described in~\cref{zeth-protocol:zeth-receive}, the procedure to receive a $\zethnote$ requires to decrypt the ciphertext emitted by the $\mixer$, and then to verify that the recovered plaintext is the opening of a commitment in the Merkle tree.
-        As such, since the \emph{collision-freeness} of the encryption ensures that plaintexts recovered under different keys are different (i.e.~``do not produce a collision''), then we know that plaintexts recovered by parties who are not the intended recipient will fail the ``commitment opening verification'', leading the payment to be rejected, and solving the false-positive issue aforementioned.
+        As such, since the \emph{collision-freeness} of the encryption ensures that plaintexts recovered under different keys are different (i.e.~``do not produce a collision''), then we know that plaintexts recovered by parties who are not the intended recipient will fail the ``commitment opening verification'', leading the payment to be rejected, and solving the aforementioned false-positive issue.
     \end{notebox}
 In~\cite[Section 6]{abdalla2010robust}, the authors prove that \dhies{} can be made strongly robust. The proof can be easily adapted to work with \dhaes{}.
-    \item \emph{No public key validation for} \xscalarmult{25519}: community of cryptographers have been discussing about the absence of any mandated public key validation or checks on the result of \xscalarmult{25519}. For example, in~\cite[Section 6.1]{rfc7748}, an optional zero check is introduced in order to assure that the result of \xscalarmult{25519} is not $0$: this avoids that one of the two party can force the result of the key-exchange by using a small order point as public key. This property is generally defined as \emph{contributory behavior}, that is, none of the parties is able to force the output of a key exchange. However, protocols do not have all the same security requirements and adding default checks in the \curve{25519} specifications would be superfluous in most cases and would add complexities that Bernstein has deliberately chosen to avoid (\emph{simple implementation principle}). More importantly, Diffie-Hellman does not require \emph{contributory behavior} property~\cite{trevorzerocheckcritique}: modern view is that the only requirements are key indistinguishability and, in case of an active attacker, that the output of the key exchange should not produce a low-entropy function of the honest party's private key (e.g.~small-subgroup and invalid-curve attacks). Since these two properties are considered satisfied by \curve{25519}, there is no need to add extra checks to the \curve{25519} specification. We conclude by observing that in Sprout release, Zcash protocol does not specify any point validation and makes use only of the private key clamping to keep Diffie-Hellman key exchange secure.
+    \item \emph{No public key validation for} \xscalarmult{25519}: cryptographers have been discussing the absence of any mandated public key validation or checks on the result of \xscalarmult{25519}. For example, in~\cite[Section 6.1]{rfc7748}, an optional zero check is introduced in order to assure that the result of \xscalarmult{25519} is not $0$: this avoids a situation in which one of the two parties can force the result of the key-exchange by using a small order point as public key. This property is generally defined as \emph{contributory behaviour}, that is, none of the parties is able to force the output of a key exchange. However, protocols do not have all the same security requirements and adding default checks in the \curve{25519} specifications would be superfluous in most cases and would add complexities that Bernstein has deliberately chosen to avoid (\emph{simple implementation principle}). More importantly, Diffie-Hellman does not require \emph{contributory behaviour} property~\cite{trevorzerocheckcritique}: modern view is that the only requirements are key indistinguishability and, in case of an active attacker, that the output of the key exchange should not produce a low-entropy function of the honest party's private key (e.g.~small-subgroup and invalid-curve attacks). Since these two properties are considered satisfied by \curve{25519}, there is no need to add extra checks to the \curve{25519} specification. We conclude by observing that in the Sprout release, the $\zcash{}$ protocol does not specify any point validation and makes use only of the private key clamping to keep Diffie-Hellman key exchange secure.
 \end{itemize}

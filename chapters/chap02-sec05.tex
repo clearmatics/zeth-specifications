@@ -4,7 +4,7 @@
 
 When a $\zethTx$ is mined (hence assuming that $\ethVerifyTx(\zethTx)$ returns $\true$), the state transition specified by the $\mix$ function of $\mixer$ is executed.
 
-To preserve the soundness of \zeth, and make sure that no $\zparty{U}$ is able to create value by double spending $\zethnotes$, various checks need to satisfied. The function $\zethVerifyTx$ is defined as the function that returns $\true$ if all the checks are satisfied, and $\false$ otherwise.
+To preserve the soundness of \zeth, and make sure that no $\zparty{U}$ is able to create value by double spending $\zethnotes$, various checks need to be satisfied. The function $\zethVerifyTx$ is defined as the function that returns $\true$ if all the checks are satisfied, and $\false$ otherwise.
 
 If $\zethVerifyTx(\zethTx)$ returns $\true$, then $\mix$ modifies the ``World state'' $\wstate$ to account for the spent $\zethnotes$ and the newly generated ones. However, if $\zethVerifyTx(\zethTx)$ returns $\false$, then the state transition ends.
 
@@ -18,7 +18,7 @@ Thus, $\mix$ proceeds as follows:
         \[
             \inp{\mix}.\primInp \in \FFx{\rBN}^*
         \]
-    \item Unpack the nullifiers, signature hash and public values:
+    \item Unpack the nullifiers, signature hash and public values (see~\cref{instantiation:statement:pack} for the definitions of the $\unpack{}{}$ functions):
         \begin{align*}
             \nf{i} &= \unpack{\inp{\mix}.\primInp.\nfs{i}, \inp{\mix}.\primInp.\resbits}{\nf{}}\ \forall i \in [\jsin] \\
             \vin &= \decode{\unpack{(), \inp{\mix}.\primInp.\resbits}{\vin}}{\NN} \\
@@ -27,29 +27,29 @@ Thus, $\mix$ proceeds as follows:
         \end{align*}
     \item Check the validity of the $\zethTx$ object ($\zethVerifyTx$):
         \begin{itemize}
-            \item Check that $\inp{\mix}.\primInp.\hsig$ is correctly computed, i.e.~check that he following equation holds (to prevent transaction malleability, see:~\cref{appendix:trnm}):
+            \item Check that $\inp{\mix}.\primInp.\hsig$ is correctly computed, i.e.~check that the following equation holds (to prevent transaction malleability, see~\cref{appendix:trnm}):
                 \[
                     \hsig = \crhhsig{\inp{\mix}.\primInp.\nfs{}, \inp{\mix}.\otsvk}
                 \]
-            \item Check that $\zkp$ is a valid zk-snark for $\inp{\mix}.\primInp$, i.e.~check that:
+            \item Check that $\zkp$ is a valid zk-SNARK proof for $\inp{\mix}.\primInp$, i.e.~check that:
                 \[
-                    \zksnark.\verifier(\pparams_{\zksnark}, \zkp, \inp{\mix}.\primInp) = true
+                    \zksnark.\verifier(\pparams_{\zksnark}, \zkp, \inp{\mix}.\primInp) = \true
                 \]
             \item Check that none of the nullifiers in $\inp{\mix}.\primInp.\nfs{}$ have already been used, i.e.~check that:
                 \[
                     \nf{i} \not\in \nullifierset, \forall i \in [\jsin]
                 \]
                 where $\nullifierset$ is the set of all nullifiers that are ``declared'' on $\mixer$.
-            \item Check that $\inp{\mix}.\otssig$ is a valid signature of the Ethereum sender's address $\addr$ (see:~\cref{zeth-protocol:create-tx}) and the attributes of $\inp{\mix}$, to prevent transaction malleability (see:~\cref{appendix:trnm}), i.e.~check that:
+            \item Check that $\inp{\mix}.\otssig$ is a valid signature of the $\ethereum{}$ sender's address $\addr$ (see~\cref{zeth-protocol:create-tx}) and the attributes of $\inp{\mix}$, to prevent transaction malleability (see~\cref{appendix:trnm}), i.e.~check that:
                 \begin{align*}
                     & \otsigscheme.\verify(\inp{\mix}.\otsvk, \msg, \inp{\mix}.\otssig) = \true \\
-                    & where \ \msg = \crhots{\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\zkp \concat \inp{\mix}.\ciphers}
+                    & \text{where} \ \msg = \crhots{\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\zkp \concat \inp{\mix}.\ciphers}
                 \end{align*}
             \item Check that $\inp{\mix}.\primInp.\mkroot$ corresponds to a valid state of the Merkle tree held on $\mixer$, i.e.~check that:
                 \[
                     \inp{\mix}.\primInp.\mkroot \in \rootset'
                 \]
-                where $\rootset'$ is the set of all Merkle roots corresponding to one of the state of the Merkle tree.
+                where $\rootset'$ is the set of all Merkle roots corresponding to one of the states of the Merkle tree.
             \item Check that $\vin$ corresponds to the value $\val$ of the transaction object, i.e.~check that:
                 \[
                     \vin = \zethTx.\val

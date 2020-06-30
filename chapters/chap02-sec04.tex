@@ -4,7 +4,7 @@
 
 After generating a $\inp{\mix}$ object, $\zparty{U}$ can generate an object $\rawTx$ of type $\txRawDType$, such that:
 \[
-    \rawTx.\tto \gets \mixer.\addr \land \rawTx.\data \gets \zdata
+    \rawTx.\tto = \mixer.\addr \land \rawTx.\data = \zdata
 \]
 
 Then, an \ethereum~user $\eparty{S}$ can \ecdsa~sign $\rawTx$, under $\eparty{S}.\sk$ in order to transform this object of type $\txRawDType$ into an finalized transaction, i.e.~an object $\zethTx$ of type $\txDType$.
@@ -12,5 +12,5 @@ Then, an \ethereum~user $\eparty{S}$ can \ecdsa~sign $\rawTx$, under $\eparty{S}
 Finally, the transaction $\zethTx$ is broadcasted on the \ethereum~network and eventually gets mined.
 
 \begin{notebox}
-    Here, the Ethereum user $\eparty{S}$ who sends the final transaction, and the Zeth user $\zparty{U}$ may represent the same person or entity, or not!
+    Here, the $\ethereum{}$ user $\eparty{S}$ who sends the final transaction, and the $\zeth$ user $\zparty{U}$ may represent the same person or entity, but this is not necessarily the case. It is perfectly feasible (and in some cases may be desirable) for a $\zeth$ user $\zparty{U}$ to create a $\zeth$ transaction which is later signed by a distinct party $\eparty{S}$. In particular, the only identifying information that appears in plaintext on the ledger will be that of $\eparty{S}$.
 \end{notebox}

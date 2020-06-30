@@ -1,21 +1,19 @@
 % !TEX root = ../zeth-protocol-specification.tex
 
-\section{Contract Security Considerations}\label{contract-security}
+\section{Contract security considerations}\label{contract-security}
 
-\cref{client-security} mentions several considerations for client implementations, concerning how they interact with the contract.  These must be taken into account when authoring the contract code, to ensure that clients can securely retrieve the information needed, and to discourage implementors from using insecure operations.
+\cref{client-security} mentions several considerations for client implementations, concerning how they interact with the contract. These must be taken into account when authoring the contract code, to ensure that clients can securely retrieve the information they need to operate without encouraging them to perform insecure operations.
 
 \begin{enumerate}
-  \item $\mixer$ \MUST{} validate inputs, the contract needs to ensure that the primary inputs are elements of the scalar field \FFx{\rBN} ($< \rBN$).
+  \item $\mixer$ \MUST{} validate inputs, the contract needs to ensure that the primary inputs are elements of the scalar field \FFx{\rBN} (are in the range $\range{0}{\rBN - 1}$).
   \item $\mixer$ \MUST{} output events for valid $\mix$ calls, including:
       \begin{enumerate}
-        \item Commitment for each new note.
-        \item Nullifier for each spent note.
-        \item Value of new Merkle root of commitments.
-        \item Ciphertexts for each new note.
-        \item Implementation-specific data (such as the one-time sender public key specified in~\cref{instantiation:enc}, required to decrypt the ciphertexts).
+        \item commitment for each new note;
+        \item nullifier for each spent note;
+        \item value of new Merkle root of commitments;
+        \item ciphertexts for each new note;
+        \item implementation-specific data (such as the one-time sender public key specified in~\cref{instantiation:enc}, required to decrypt the ciphertexts).
       \end{enumerate}
-  \item Except the $\mix$ method, $\mixer$ \SHOULDNOT{} expose any public methods unless strictly required by the client.
-  \item\label{contract-security:mixer-payable} The $\mix$ function \MUST{} be payable, to support non-zero $\vin$.
+  \item\label{contract-security:mixer-payable} The $\mix$ function \MUST{} be \emph{payable}\footnote{see~\url{https://solidity.readthedocs.io/en/v0.6.2/types.html?highlight=payable\#function-types}}, to support non-zero $\vin$.
+  \item $\mixer$ \MUSTNOT{} expose any public methods except for $\mix$.
 \end{enumerate}
-
-Note that~\cref{contract-security:mixer-payable} requires $\zethTx.\val$ to be set to a non-zero value, even if $\vin = 0$. To work around this, $\mixer$ must be authored so that it refunds the sender of the Ethereum transaction with the value $\zethTx.\val$ in the case that $\vin = 0$. In this way, clients calling $\mix$ with $\vin = 0$ can set $\zethTx.\val = 1 \wei$, in order to satisfy this requirement without losing any Ether.

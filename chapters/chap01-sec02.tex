@@ -6,9 +6,9 @@ In a nutshell, \ethereum~is a distributed deterministic state machine, consistin
 State transitions in the state machine are represented by transactions on the system. As such, each transaction represents a change in the global state represented as a Merkle Patricia Tree~\cite{patricia-tree} whose nodes are objects called ``accounts'' (\cref{preliminaries:ethereum:eth-account}). The Ethereum Virtual Machine (\evm) allows state transitions to be specified by creating a type of accounts which are associated with a piece of code (smart-contracts). The code of such accounts, and so, the corresponding state transitions, can be executed to transition to another state in the automata, by creating a transaction that calls the given piece of code (\cref{preliminaries:ethereum:eth-tx}).
 
 To prevent unbounded state transitions in the state machine, each instruction executed by the \evm~is associated with a cost in \wei, referred to as ``the gas necessary to run the operation''. The ``gas cost'' of a transaction needs to be paid by the transaction originator (deduced from their account balance), and is awarded to the miner (added to their account balance) who successfully mines the block containing the transaction.
-In addition to the cost of every instruction executed as part of a state transition, every transaction has an intrinsic ``gas cost'' of $\txDefaultGas$ \wei~\cite[Appendix G]{ethyellowpaper}. Bounding modifications to the Ethereum state by the amount of \wei~held in the transaction originator's account allows the system to avoid the Halting problem\footnote{\url{https://en.wikipedia.org/wiki/Halting\_problem}} and protect against a range of Denial of Service (\dos) attacks.
+In addition to the cost of every instruction executed as part of a state transition, every transaction has an intrinsic ``gas cost'' of $\txDefaultGas$ \wei~\cite[Appendix G]{ethyellowpaper}. Bounding modifications to the $\ethereum{}$ state by the amount of \wei~held in the transaction originator's account allows the system to avoid the Halting problem\footnote{\url{https://en.wikipedia.org/wiki/Halting\_problem}} and protects against a range of Denial of Service (\dos) attacks.
 
-\subsection{Ethereum Account}\label{preliminaries:ethereum:eth-account}
+\subsection{Ethereum account}\label{preliminaries:ethereum:eth-account}
 
 An \ethereum~account~\cite[Section 4.1]{ethyellowpaper} is an object containing 4 attributes, as represented~\cref{preliminaries:tab:eth-account}.
 We distinguish two types of accounts:
@@ -17,13 +17,13 @@ We distinguish two types of accounts:
     \item Smart-contract accounts, that are derived from \evm~code specifying a state transition on the state machine.
 \end{itemize}
 
-Each account object is accessible in the Merkle Patricia Tree representing the ``World state'', by a unique $\addressLen$-bit long identifier called the address.
-In the context of \eoa, the address is obtained by generating a new \ecdsa~\cite{johnson2001elliptic} key pair $\smalltuple{\sk, \vk}$ over curve \secpCurve~\cite{qu1999sec} and taking the the rightmost $\addressLen$ bits of the \keccak{256} hash of the verification key $\vk$.
+Each account object is accessible in the Merkle Patricia Tree representing the ``World state'' by a unique $\addressLen$-bit long identifier called the address.
+In the context of \eoa, the address is obtained by generating a new \ecdsa~\cite{johnson2001elliptic} key pair $\smalltuple{\sk, \vk}$ over curve \secpCurve~\cite{qu1999sec} and taking the rightmost $\addressLen$ bits of the \keccak{256} hash of the verification key $\vk$.
 
 \begin{table}[H]
     \centering
     \begin{tabular}{cp{25em}c}
-        Field           & Description & Value\\ \toprule
+        Field           & Description & Data type\\ \toprule
         $\nonce$        & The nonce of an account is a scalar value representing the number of transactions that have originated from the account, starting at 0. & $\NN_\ethWordLen$ \\ \midrule
         $\balance$      & The balance of an account is a scalar value representing the amount of \wei~in the account. & $\NN_\ethWordLen$\\ \midrule
         $\sroot$        & The storage root is the \keccak{256} hash representing the storage of the account. & $\BB^{\keccakTwoDigestLen}$\\ \midrule
@@ -33,24 +33,24 @@ In the context of \eoa, the address is obtained by generating a new \ecdsa~\cite
 \end{table}
 
 \begin{notebox}
-In the rest of this document, we will refer to an \emph{Ethereum user} $\eparty{U}$ as a person, modeled as an object, holding \emph{one}\footnote{The same physical person may correspond to multiple ``Ethereum users'' and thus control multiple accounts in the Merkle Patricia Tree.} secret key, $\sk$ (object attribute), associated with an existing \eoa~in the ``World state''. We denote by $\eparty{U}.\addr$ the \ethereum~address of $\eparty{U}$ derived from $\eparty{U}.\sk$, and which allows $\eparty{U}$ to access the state of their account $\wstate[\eparty{U}.\addr]$.
+In the rest of this document, we will refer to an \emph{Ethereum user} $\eparty{U}$ as a person, modeled as an object, holding \emph{one}\footnote{The same physical person may correspond to multiple ``$\ethereum{}$ users'' and thus control multiple accounts in the Merkle Patricia Tree.} secret key, $\sk$ (object attribute), associated with an existing \eoa~in the ``World state''. We denote by $\eparty{U}.\addr$ the \ethereum~address of $\eparty{U}$ derived from $\eparty{U}.\sk$, and which allows $\eparty{U}$ to access the state of their account $\wstate[\eparty{U}.\addr]$.
 
 We denote by $\contractstyle{SmartC}$ a smart-contract instance/object (i.e.~deployed smart-contract with an address,~\cref{preliminaries:ethereum:eth-tx}), and denote by $\contractstyle{SmartC}.\addr$ its address.
 \end{notebox}
 
-\subsection{Ethereum Transaction}\label{preliminaries:ethereum:eth-tx}
+\subsection{Ethereum transaction}\label{preliminaries:ethereum:eth-tx}
 
 We now briefly mention what \ethereum~transactions~\cite[Section 4.2]{ethyellowpaper} are, and how they are created, signed and validated. Once more, the reader is highly encouraged to refer to~\cite{ethyellowpaper} for a detailed presentation.
 %\subsubsection{Transaction}
 Informally, a transaction object ($\tx$) is a signed message originating from an \ethereum~user $\eparty{U}$ (the \emph{transaction originator}, or simply \emph{sender}) that represents a state transition on the distributed state machine (i.e.~a change in the ``World state'' $\wstate$).
 
-\subsubsection{Raw Transaction}\label{preliminaries:ethereum:eth-tx:raw}
+\subsubsection{Raw transaction}\label{preliminaries:ethereum:eth-tx:raw}
 In the following, we define a raw transaction as an unsigned transaction (\cref{preliminaries:tab:eth-unsigned}).
 
 \begin{table}[H]
     \centering
     \begin{tabular}{ccc}
-        Field			    & Description & Value \\\toprule
+        Field			    & Description & Data type \\\toprule
         $\nonce$            & Transaction nonce & $\NN_{\ethWordLen}$\\\midrule
         $\gasp$		        & gasPrice & $\NN_{\ethWordLen}$\\\midrule
         $\gasl$		        & gasLimit & $\NN_{\ethWordLen}$\\\midrule
@@ -67,7 +67,7 @@ A raw transaction needs to be finalized to be accepted. In the context of this d
 \begin{table}[H]
     \centering
     \begin{tabular}{ccc}
-        Field           & Description & Value \\ \toprule
+        Field           & Description & Data type \\ \toprule
         $\rawTx$      & Raw transaction object & $\txRawDType$ \\ \midrule
         $\sigv$         & Field $\sigv$ of $\ecdsa$ signature used for public key recovery & $\BB^{\byteLen}$\\ \midrule
         $\sigr$         & Field $\sigr$ of $\ecdsa$ signature~\cite{rfc6979} & $\FFx{\pSecp}$\\ \midrule
@@ -76,7 +76,7 @@ A raw transaction needs to be finalized to be accepted. In the context of this d
     \caption{Structure of a (finalized) \emph{transaction data type} $\txDType$}\label{preliminaries:tab:eth-signed}
 \end{table}
 
-We define the transaction generation function~\cref{preliminaries:fig:txgen} as the function taking the sender's \ecdsa~signing key and the components of a raw transaction as arguments, and returning a signed (or finalized) transaction ($\finalTx$ or $\tx$ for short).
+We define the transaction generation function, cf.~\cref{preliminaries:fig:txgen}, as the function taking the sender's \ecdsa~signing key and the components of a raw transaction as arguments, and returning a signed (or finalized) transaction ($\finalTx$ or $\tx$ for short).
 \begin{align*}
     \finalTx &= \txgen(\sk_{\ecdsa}, \inp{\nonce}, \inp{\gasp}, \inp{\gasl}, \inp{\tto}, \inp{\val}, \inp{\init}, \inp{\data})\\
     \finalTx &= \{ \\
@@ -100,7 +100,7 @@ We define the transaction generation function~\cref{preliminaries:fig:txgen} as 
                 \}
 \end{align*}
 
-To sign a transaction, the sender first computes the hash of the raw transaction using $\keccak{256}$ (\cref{preliminaries:eq:tx-sig-hash}), and then uses their \ecdsa~signing key, $\sk_\ecdsa$, to sign the obtained digest (\cref{preliminaries:eq:tx-sig-sig}). The signature is then appended to the raw transaction to obtain a finalized transaction (\cref{preliminaries:fig:txgen}).
+To sign a transaction, the sender first computes the hash of the raw transaction using $\keccak{256}$, cf.~\cref{preliminaries:eq:tx-sig-hash}, and then uses their \ecdsa~signing key, $\sk_\ecdsa$, to sign the obtained digest. cf.~\cref{preliminaries:eq:tx-sig-sig}. The signature is then appended to the raw transaction to obtain a finalized transaction, cf.~\cref{preliminaries:fig:txgen}.
 
 \begin{align}
     \digest_\ecdsa &= \keccak{256}(\inp{\nonce}, \inp{\gasp}, \inp{\gasl}, \inp{\tto}, \inp{\val}, \inp{\init}/\inp{\data}) \label{preliminaries:eq:tx-sig-hash} \\
@@ -110,7 +110,7 @@ To sign a transaction, the sender first computes the hash of the raw transaction
 \begin{figure}[H]
     \centering
     \procedure[linenumbering]{$\txgen(\sk_\ecdsa, \inp{\nonce}, \inp{\gasp}, \inp{\gasl}, \inp{\tto}, \inp{\val}, \inp{\init}, \inp{\data})$}{%
-    \pcif \inp{\tto} == \emptyset \pcdo\\
+    \pcif \inp{\tto} = \emptyset \pcdo\\
     \t \rawTx \gets \{\nonce: \inp{\nonce}, \gasp: \inp{\gasp}, \gasl: \inp{\gasl}, \tto: \inp{\tto}, \val: \inp{\val}, \init: \inp{\init}\}; \\
     \pcelse \\
     \t \rawTx \gets \{\nonce: \inp{\nonce}, \gasp: \inp{\gasp}, \gasl: \inp{\gasl}, \tto: \inp{\tto}, \val: \inp{\val}, \data: \inp{\data}\}; \\
@@ -133,11 +133,11 @@ While only two types of transactions are described in~\cite[Section 4.2]{ethyell
 \medskip
 
 Informally, a transaction can be used to achieve three things: transferring \wei~from an \eoa~to another \eoa, creating a new account with associated code (i.e.~``deploying a smart-contract''), and calling a function of a smart-contract. We will detail here the differences between these usages.
-\begin{itemize}
-    \item Creating a contract: The $\tx.\tto$ address is set to $\emptyset$ in the transaction. The contract creation data ($\tx.\init$) includes the new contract's code. The contract address is computed as the rightmost $\addressLen$ bits of the \keccak{256} hash of the \rlp~encoding~\cite{ethrlp} of the transaction originator's address and account nonce~\cite[Section 6]{ethyellowpaper}.
-    \item Calling a contract function: The $\tx.\tto$ address is set to the address of the contract. The message call data byte array ($\tx.\data$) is set to the contract's function address (or \emph{``Function Selector''}~\cite{abi-function-selector}) which are the first 4 bytes of the \keccak{256} hash of the function signature, and the function input arguments ($\ethWordLen$ bits per input)~\cite[Section 8]{ethyellowpaper}.
-    \item Transferring \wei~from an \eoa~to another \eoa: This corresponds to a ``plain transaction'' spending \wei~from an address to send them to another. In that case the $\tx.\tto$ address corresponds to the recipient's address while the the transaction data is left empty.
-\end{itemize}
+\begin{description}
+    \item[Creating a contract] The $\tx.\tto$ address is set to $\emptyset$ in the transaction. The contract creation data ($\tx.\init$) includes the new contract's code. The contract address is computed as the rightmost $\addressLen$ bits of the \keccak{256} hash of the \rlp~encoding~\cite{ethrlp} of the transaction originator's address and account nonce~\cite[Section 6]{ethyellowpaper}.
+    \item[Calling a contract function] The $\tx.\tto$ address is set to the address of the contract. The message call data byte array ($\tx.\data$) is set to the contract's function address (or \emph{``Function Selector''}~\cite{abi-function-selector}) which are the first 4 bytes of the \keccak{256} hash of the function signature, and the function input arguments ($\ethWordLen$ bits per input)~\cite[Section 8]{ethyellowpaper}.
+    \item[Transferring \wei~from an \eoa~to another \eoa] This corresponds to a ``plain transaction'' spending \wei~from an address to send them to another. In that case the $\tx.\tto$ address corresponds to the recipient's address while the transaction data is left empty.
+\end{description}
 
 \begin{notebox}
     In order to keep notations simple, we assume, in the rest of the document, that smart-contract functions are uniquely determined by their name. As such, we denote by $\funcSelec{\cdot} \colon \BB^{*} \to \BB^{4 \cdot \byteLen}$ the function that takes a function name as input and returns its function selector.
@@ -146,7 +146,7 @@ Informally, a transaction can be used to achieve three things: transferring \wei
 \subsubsection{Transaction validity}\label{preliminaries:ethereum:eth-tx:tx-validity}
 
 Importantly, not all finalized transactions constitute valid state transitions on the state machine~\cite[Section 6]{ethyellowpaper}.
-We denote by \ethVerifyTx~the function that takes an \ethereum~transaction object $\tx$ as input and return $\true$ (resp. $\false$) if $\tx$ is valid (resp.~invalid). To be deemed valid, a transaction $\MUST$ satisfy \emph{all} the following conditions:
+We denote by \ethVerifyTx~the function that takes an \ethereum~transaction object $\tx$ as input and return $\true$ (resp.~$\false$) if $\tx$ is valid (resp.~invalid). To be deemed valid, a transaction $\MUST$ satisfy \emph{all} the following conditions:
 \begin{enumerate}
     \item The transaction is correctly \rlp~encoded, with no additional trailing bytes;
     \item the transaction signature $\smalltuple{\sigv, \sigr, \sigs}$ is valid;
@@ -164,10 +164,10 @@ Once \tx~is selected from the transaction pool, it is validated (fed into \ethVe
 
 \subsection{Ethereum events and Bloom filters}\label{sssec:ethereum-events}
 
-The \evm~contains the set of ``LOGX'' instructions enabling smart-contract functions to ``emit events'' (i.e.~log data) when they are executed\footnote{see:\url{https://ethgastable.info/}}
+The \evm~contains the set of ``LOGX'' instructions enabling smart-contract functions to ``emit events'' (i.e.~log data) when they are executed\footnote{see~\url{https://ethgastable.info/}}
 
 As such, when a block is generated by a miner or verified by the rest of the network, the address of any logging contract, and all the indexed fields from the logs generated by executing those transactions are added to a Bloom filter~\cite{DBLP:journals/cacm/Bloom70}, which is included in the block header~\cite[Section 4.3]{ethyellowpaper}. Importantly, the actual logs \emph{are not included in the block data} in order to save space.
-    As such, when an application wants to find (``consume'') all the log entries from a given contract, or with specific indexed fields (or both), the node can quickly scan over the header of each block, checking the bloom filter to see if it may contain relevant logs. If it does, \emph{the node re-executes the transactions from that block, regenerating the logs, and returning the relevant ones to the application}~\cite{eth-bloom-filters}.
+    As such, when an application wants to find (``consume'') all the log entries from a given contract, or with specific indexed fields (or both), the node can quickly scan over the header of each block, checking the Bloom filter to see if it may contain relevant logs. If it does, \emph{the node re-executes the transactions from that block, regenerating the logs, and returning the relevant ones to the application}~\cite{eth-bloom-filters}.
 
 \begin{notebox}
     The ability for a smart-contract function to ``emit'' some pieces of data when executed, and for an application to ``consume'' such pieces of data, is used in \zeth~in order to construct a \emph{confidential receiver-anonymous channel}~\cite{DBLP:conf/pet/KohlweissMOTV13}.

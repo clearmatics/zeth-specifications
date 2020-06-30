@@ -1,4 +1,4 @@
-\documentclass[11pt,letterpaper,oneside]{report}
+\documentclass[11pt,a4paper,oneside]{report}
 
 % Import the configuration files
 \input{./config/packages.tex}
@@ -9,34 +9,42 @@
 % See: https://www.overleaf.com/learn/latex/Nomenclatures
 \usepackage{nomencl}
 \makenomenclature%
-\renewcommand{\nomname}{Notations}
+\renewcommand{\nomname}{Notation}
 \usepackage{etoolbox}
 \renewcommand\nomgroup[1]{%
     \item[\bfseries
-    \ifstrequal{#1}{A}{Basic mathematical notations}{%
-    \ifstrequal{#1}{B}{Algorithmic notations}{%
-    \ifstrequal{#1}{C}{Cryptography notations}{%
-    \ifstrequal{#1}{D}{Zeth notations}{%
-    \ifstrequal{#1}{E}{Ethereum notations}{%
+    \ifstrequal{#1}{A}{Basic mathematical notation}{%
+    \ifstrequal{#1}{B}{Algorithmic notation}{%
+    \ifstrequal{#1}{C}{Cryptography notation}{%
+    \ifstrequal{#1}{D}{Zeth notation}{%
+    \ifstrequal{#1}{E}{Ethereum notation}{%
     \ifstrequal{#1}{F}{Constants}{%
     \ifstrequal{#1}{G}{Other Symbols}{}}}}}}}%
 ]}
 \newcommand{\nomunit}[1]{%
 \renewcommand{\nomentryend}{\hspace*{\fill}#1}}
 
-\newtheorem{theorem}{Theorem}
-\newtheorem{definition}{Definition}
-\newtheorem{remark}{Remark}
-\newtheorem{proposition}{Proposition}
-\newtheorem{lemma}{Lemma}
-\newtheorem{secproof}{Security Proof}
-\newtheorem{example}{Example}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{secproof}[theorem]{Security Proof}
+% Command for unnumbered corollary
+\newtheorem*{cor}{Corollary}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+
+% \theoremstyle{remark}
+\newtheorem{remark}[definition]{Remark}
+\newtheorem{example}[definition]{Example}
+
+\newtheorem{claim}{Claim}
 
 \mathchardef\mhyphen="2D
 \providecommand{\keywords}[1]{\textbf{\textit{Keywords---}} #1}
 
 \newcommand{\secfix}[1]{\textcolor{red}{#1}} % Security fix
-\newcommand{\veryimportant}[1]{\textcolor{orange}{#1}} % Security fix
+\newcommand{\veryimportant}[1]{\textcolor{red}{#1}} % Security fix
 \newcommand{\optimiz}[1]{\textcolor{blue}{#1}} % optimization
 
 % Render the glossary
@@ -46,6 +54,8 @@
 
 \title{Zeth Protocol Specification}
 \author{Clearmatics Cryptography R\&D}
+
+\allowdisplaybreaks
 
 \begin{document}
 \maketitle

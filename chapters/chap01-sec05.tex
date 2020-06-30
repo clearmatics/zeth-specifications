@@ -1,26 +1,430 @@
 % !TEX root = ../zeth-protocol-specification.tex
 
-\section{Security Assumptions}\label{preliminaries:sec-assumptions}
+\section{Definitions}\label{preliminaries:definitions}
 
-\begin{definition}[Discrete Log (\dlog) based on Bellare and Shoup~\cite{bellare2007two}]
-Let $\gset$ denote a group whose order $p$ is prime and written over $\secpar$ bits. We let $\log_{\ggen}(h)$ denote the discrete logarithm of $h$ in the basis $\ggen$. We assume $\gset$, $p$ are fixed and known to all parties. Let us denote the advantage of a \ppt~adversary $\adv$ in attacking the discrete logarithm problem as follows,
+\subsection{Negligible function}\label{preliminaries:definitions:neg-func}
+
+\begin{definition}[Negligible function, {\cite[Definition 3.4]{katz2014introduction}}]
+    A function $f$ from $\NN$ to $\RR^{+}$ (positive real numbers) is negligible if for every positive polynomial $p$ there exists $N$ such that for all integers $n>N$ it holds that $f(n)< \frac{1}{p(n)}$.
+\end{definition}
+
+\subsection{Basic algebra notions}\label{preliminaries:definitions:basic-algebra}
+
+\begin{definition}[Group, {see~\cite[Section I.4]{bourbaki2003elements}}]
+    A group is given by a tuple $(\gset, \otimes)$, where $\gset$ is a set and $\otimes$ is a binary operation in $\gset$, i.e. $\otimes:\gset\times\gset\to \gset$, with the following properties:
+    \begin{itemize}
+        \item $(\gel{g} \otimes \gel{h}) \otimes \gel{k} = \gel{g} \otimes (\gel{h} \otimes \gel{k})$ (associativity)
+        \item There exists an element $\gel{\epsilon} \in \gset$ \suchthat{} for each $\gel{g} \in \gset$, $\gel{g} \otimes \gel{\epsilon} = \gel{\epsilon} \otimes \gel{g} = \gel{g}$ (identity element).
+        \item For each $\gel{g} \in \gset$ there exist $\gel{h} \in \gset$ \suchthat{} $\gel{g} \otimes \gel{h} = \gel{h} \otimes \gel{g} = \epsilon$ (inverse element).
+    \end{itemize}
+\end{definition}
+
+For simplicity, we may also use the additive notation for groups: $\otimes$ is denoted as $+$, the identity element as $\gel{0}$ and the inverse element of $\gel{g}$ as $-\gel{g}$. Given $\gel{g} \in \gset$ and $x \in \mathbb{Z}$, we have that:
+\[x \cdot \gel{g} =
+\begin{cases}
+    \gel{0} & \mbox{if } x = 0\\
+    \gel{g} + \ldots + \gel{g}, (x \mbox{ times}) & \mbox{if } x > 0 \\
+    -\gel{g} + \ldots + (-\gel{g}), (x \mbox{ times}) & \mbox{if } x < 0
+\end{cases}.
+\]
+\begin{definition}[Finite Cyclic Group, {adapted from~\cite[Sections 7.1.3, 7.3.2]{katz2014introduction}}]
+    A finite cyclic group is given by a tuple $(q, \gset, \ggen, \otimes)$, called the \emph{group description}, where $\gset$ represents the set of group elements, $\ggen$ is a generator and $q$ is the order. The generator $\ggen$ generates the group; namely, each $\gel{h} \in \gset$ can be expressed by the generator as $\gel{h} = \ggen \otimes \ldots \otimes \ggen $.
+    Given a scalar $x$, we denote by $\groupenc{x}$ the \emph{encoding} of $x$ in $\gset$: i.e. $\groupenc{x} = \ggen \otimes \ldots \otimes \ggen$ ($x$ times). As consequence, $\groupenc{1} = \ggen$.
+\end{definition}
+
+For theoretical purposes, we introduce the \groupSetup{} algorithm that for a given security parameter \secpar{} outputs a cyclic group, formally:
+\begin{definition}[Group Setup Algorithm, {taken from~\cite[Sections 7.1.3, 7.3.2]{katz2014introduction}}]
+    A group setup algorithm \groupSetup{} is a \ppt{} algorithm which takes as input a security parameter \secparam{} and outputs a group description $(q, \gset, \ggen, \otimes)$, where the binary representation of $q$ is given by $\secpar$ bits and each group element can be represented by $\groupLen(\secpar)$ bits. Note that \groupLen{} is \poly.\footnote{For simplicity, we may denote \groupLen(\secpar) as \groupLen{}.}
+\end{definition}
+
+
+\subsection{Security assumptions}\label{preliminaries:sec-assumptions}
+\begin{definition}[Discrete Log Problem(\dlog), cf.~\cite{bellare2007two}]
+Let $\gset$ denote a group (\cref{preliminaries:definitions:basic-algebra}) whose order $p$ is prime and written over $\secpar$ bits. We let $\log_{\ggen}(h)$ denote the discrete logarithm of $h$ in the basis $\ggen$. We assume $\gset$, $p$ are fixed and known to all parties.
+We denote the advantage of a \ppt~adversary $\adv$ in attacking the discrete logarithm problem as
 \[
     \advantage{\dlog}{\gset, \adv}[] = \prob{\ggen \sample \gset^{*},\ x \sample \FFx{p},\ x' \gets \adv(\groupenc{1}, \groupenc{x}):\ \groupenc{x'}{} = \groupenc{x}}
 \]
-We say that the $\dlog$ is hard in $\gset$ if and only if $\advantage{\dlog}{\adv}$ is negligible.
+We say that the $\dlog$ is hard in $\gset$ if and only if $\advantage{\dlog}{\gset, \adv}$ is negligible for any $\ppt$ adversary $\adv$.
 \end{definition}
 
-\begin{definition}[One More Discrete Log ($\omdlog$) based on Paillier and Vergnaud~\cite{paillier2005discrete}]\label{preliminaries:def:om-dlog}
+\begin{definition}[One More Discrete Log Problem ($\omdlog$), cf.~\cite{paillier2005discrete}]\label{preliminaries:def:om-dlog}
 Let $\gset$ denote a group whose order $p$ is prime and written over $\secpar$ bits. We let $\log_{\ggen}(h)$ denote the discrete logarithm of $h$ in the basis $\ggen$.
-    A \ppt~adversary \adv~solving the \omdlog~is given $\queryBound+1$ random group elements as well as a limited access to a discrete logarithm oracle $\oracleDLog{\ggen}(\queryBound)$. \adv~is allowed to query this oracle at most $\queryBound$ times, thus obtaining the discrete logarithm of $\queryBound$ group elements of his choice with respect to a fixed base $\ggen$. Eventually, \adv~must output the $\queryBound+1$ discrete logarithms. Let us denote the advantage of a \ppt~adversary $\adv$ in attacking the one more discrete logarithm problem as follows,
+    A \ppt~adversary \adv~solving the \omdlog~is given $\queryBound+1$ random group elements as well as limited access to a discrete logarithm oracle $\oracleDLog{\ggen}(\queryBound)$. \adv~is allowed to query this oracle at most $\queryBound$ times, thus obtaining the discrete logarithm of $\queryBound$ group elements of his choice with respect to a fixed base $\ggen$. Eventually, \adv~must output the $\queryBound+1$ discrete logarithms.
+    We denote the advantage of a \ppt~adversary $\adv$ in attacking the one more discrete logarithm problem as
 \[
-    \advantage{\omdlog}{\adv} = \prob{
+    \advantage{\omdlog}{\gset, \adv} = \prob{
         \begin{array}{c}
             \ggen \sample \gset^{*},\ \indexedset{\groupenc{r_i}{}}{i \in [\queryBound+1]} \sample \gset^{\queryBound+1}, \\
             \indexedset{r'_i}{i \in [\queryBound+1]} \gets \adv^{\oracleDLog{\ggen}(\queryBound)}(\groupenc{1}, \indexedset{\groupenc{r_i}{}}{i \in [\queryBound+1]}): \\
-            \forall i \leq \queryBound+1,\ r'_i = \log_\ggen(\groupenc{r_i}{}) \\
+            \forall i \in [\queryBound+1],\ r'_i = \log_\ggen(\groupenc{r_i}{}) \\
         \end{array}
     }
 \]
-We say that the $\omdlog$ is hard in $\gset$ if and only if $\advantage{\omdlog}{\adv}$ is negligible.
+We say that the $\omdlog$ is hard in $\gset$ if and only if $\advantage{\omdlog}{\gset, \adv}$ is negligible for any $\ppt$ adversary $\adv$.
+\end{definition}
+
+
+\subsection{Symmetric encryption}\label{preliminaries:definitions:sym-enc}
+
+\begin{definition}[Symmetric Encryption,{\cite[Definition 3.8]{katz2014introduction}}]
+    A symmetric encryption scheme \sym{} is given by a tuple of \ppt{} algorithms $(\kgen,\enc, \dec)$ where:
+\begin{itemize}
+    \item \kgen{}, the key generation algorithm, takes a security parameter \secparam{} and outputs a secret key \ek; we assume, without loss of generality, that $\symKeyLen (\secpar) = \len{\ek}\geq \secpar$. Note that $\symKeyLen(\secpar)$ is a polynomial function in \secpar.\footnote{For simplicity, we may denote \symKeyLen(\secpar) as \symKeyLen{}.}
+    \item \enc{}, the encryption algorithm, takes a key \ek{}, a plaintext $\msg\in\bin^{*}$ and returns a ciphertext $\ct$.
+    \item \dec{}, the decryption algorithm, takes a key \ek{} and a ciphertext $\ct$, and returns a message $\msg$. We assume, without loss of generality, that \dec{} is deterministic.
+\end{itemize}
+    For every security parameter $\secpar{}$, key $\ek$ output by $\kgen{(\secparam{})}$, and message $\msg \in \bin^{*}$, it holds that $\dec(\ek, \enc(\ek, \msg)) = \msg$ (\emph{correctness property}).
+\end{definition}
+
+Let $(\kgen,\enc, \dec)$ be a symmetric encryption scheme. If there exists a polynomial $l$ such that, for all $\secpar > 0$ and key $\ek$ output by $\kgen{(\secparam)}$, $\enc(\ek, \cdot)$ is only defined for messages $\msg\in\bin^{l(\secpar)}$, then we say that $(\kgen,\enc,\dec)$ is a \emph{fixed-length symmetric encryption scheme} with \emph{length parameter} $l(\secpar)$. A security notion for \sym{} follows:
+
+\begin{figure}[h!]
+    \centering
+    \procedure[syntaxhighlight=auto, space=auto]{$\indcpa (\secpar)$}{
+        \ek\gets\kgen{(\secparam{})} \\
+        (\msg_0, \msg_1, \state)\gets{} \adv^{\oracle{\enc_{\ek}}}\ \mbox{with}\ \len{\msg_0} = \len{\msg_1}\\
+        b \sample{}\bin{} \\
+        \ct\gets{} \enc(\ek,\msg_b) \\
+        \widetilde{b}\gets{} \adv^{\oracle{\enc_{\ek}}} (\ct, \state)\\
+        \pcreturn{} \widetilde{b} = b\\
+    }
+    \caption{\indcpa{} game for \sym.}\label{fig:indcpa}
+\end{figure}
+
+\begin{definition}[\indcpa]
+    Let $\sym$ be a symmetric encryption scheme and let \adv{} be an adversary. Consider the \indcpa{} game described in Figure~\ref{fig:indcpa}.
+    We define the \indcpa{} advantage of \adv{} as follows:
+    \[
+        \advantage{\indcpa}{\sym, \adv} =  \abs{2\cdot\prob{\indcpa(\secpar) = 1} - 1}.
+    \]
+    \sym{} is said to be \indcpa{} secure if, for every \ppt{} adversary \adv{}, the advantage \advantage{\indcpa}{\sym, \adv} is a negligible function.
+\end{definition}
+
+\subsection{Asymmetric encryption}\label{preliminaries:definitions:asym-enc}
+
+\begin{definition}[Asymmetric encryption, {\cite[Definition 10.1]{katz2014introduction}}]
+    An \emph{asymmetric encryption scheme} \aSym{} is given by a tuple of \ppt{} algorithms $(\kgen,\enc,\dec)$ where:
+    \begin{itemize}
+        \item \kgen{}, the key generation algorithm, takes a security parameter $\secparam{}$ and returns a pair of keys $(\sk,\pk)$. We refer to the first of these as the \emph{private key} and the second as the \emph{public key}. We assume for convenience that $\pk$ and $\sk$ each have length at least $\secpar{}$, and that $\secpar{}$ can be determined from $\pk$, $\sk$;
+        \item \enc{}, the encryption algorithm, takes a public key $\pk$, a plaintext $\msg$, from some underlying plaintext space (that may depend on \pk) and returns a ciphertext $\ct$;
+        \item \dec{}, the decryption algorithm, takes a private key $\sk$ and a ciphertext $\ct$, and returns a message $\msg$ or a special symbol $\bot$ denoting decryption failure. We assume, without loss of generality, that \dec{} is deterministic.
+    \end{itemize}
+    We require that for all $(\sk,\pk)$ returned by $\kgen$, and every message $\msg$ in the appropriate underlying plaintext space, it holds that $\dec(\sk, \enc(\pk,\msg)) = \msg$ (\emph{correctness property}).
+\end{definition}
+
+Secure communication usually requires ciphertext indistinguishability  (e.g. \indccaii{} \cite[Definition 8]{abdalla1999dhaes}). In \zeth, however, the key privacy property \ikcca{}~\cite{bellare2001key} is also required -- it ensures indistinguishability of the key under which an encryption is performed.
+
+\begin{figure}[h!]
+    \centering
+    \procedure[syntaxhighlight=auto, space=auto]{$\ikcca (\secpar)$}{
+        (\sk_0,\pk_0), (\sk_1,\pk_1) \gets\kgen{(\secparam{})}\\
+        (\msg, \state)\gets{} \adv^{\oracle{\dec_{\sk_0}}, \oracle{\dec_{\sk_1}}} (\pk_0,\pk_1)\\
+        b \sample{} \bin{} \\
+        \ct \gets{} {} \enc(\pk_b, \msg)\\
+        \widetilde{b}\gets{} {} \adv^{\oracle{\dec_{\sk_0}}, \oracle{\dec_{\sk_1}}} {(\ct,\state)}\\
+        \pcreturn{} \widetilde{b} = b
+    }
+\caption{\ikcca{} game.}\label{fig:ikcca}
+\end{figure}
+
+\begin{definition}[\ikcca]\label{preliminaries:def:ikcca}
+    Let $\aSym = (\kgen,\enc, \dec)$ be an asymmetric encryption scheme and let \adv{} be an adversary. Given the \ikcca{} game described in Figure~\ref{fig:ikcca}, with the condition that \adv{} cannot query $\oracle{\dec_{\sk_0}}$ or $\oracle{\dec_{\sk_1}}$ on the challenge ciphertext $\ct$\footnote{$\state$ is some state information that the adversary outputs after the choice of the message to encrypt. It can be some preprocessed information that can be helpful to win the game}, we define the \ikcca{} advantage of \adv{} as follows:
+    \[
+        \advantage{\ikcca}{\aSym,\adv} =  \abs{2\cdot\prob{\ikcca(\secpar) = 1} - 1}
+    \]
+    We say that \aSym{} is \ikcca{} secure if for every \ppt{} adversary \adv{} the advantage \advantage{\ikcca}{\aSym,\adv} is a negligible function.
+\end{definition}
+
+\subsection{Block cipher-based compression functions}\label{preliminaries:definitions:hashcomp}
+
+\begin{definition}
+    Let $\kl, \il > 1$. A \emph{block cipher} is a map $\Enc \colon \bin^{\kl} \times \bin^{\il} \to \bin^{\il}$ where, for each key $\key \in \bin^{\kl}$, the function $\Enc_\key(\cdot) = \Enc(\key, \cdot)$ is a permutation on $\bin^{\il}$. If \Enc~is a block cipher then $\Dec$ is its inverse, that on input $(\key, y)$ returns $\msg$ such that $\Enc_\key(\msg) = y$.
+\end{definition}
+
+Let $\blockSet(\kl, \il)$ be the set of all block ciphers $\Enc \colon \bin^{\kl} \times \bin^{\il} \to \bin^{\il}$. In order to analyse the security properties of block cipher-based cryptographic constructions it is common to use a security model denoted \emph{the ideal cipher model (ICM)}. Informally speaking, in ICM attackers are allowed to query an oracle simulating a random block cipher, but have no information about the oracle's internal structure. We formalize this notion in the following definition:
+
+\begin{definition}[Ideal Cipher Model~\cite{holenstein2011equivalence}]\label{preliminaries:def:ICM}
+    The Ideal Cipher Model (ICM), is a security model where all parties are granted access to an ideal cipher $\Enc \colon \bin^{\kl} \times \bin^\il \to \bin^\il$, a random primitive such that $\Enc (\key, \cdot )$ for $\key \in \bin^{\kl}$ are $2^{\kl}$ independent random permutations.
+\end{definition}
+
+For fixed $\kl$ and $\il$, each party is given access to the oracles \oracleEnc{} and \oracleDec{}, simulating $\Enc$ and $\Dec$, which can be queried for encryption and decryption a polynomial number of times. The encryption oracle takes as input a key, $\key\in \bin^{\kl}$, and a preimage, $\msg \in \bin^{\il}$, and returns a tuple comprising the image, $y \in \bin^{\il}$, along with the inputs, $\key$ and $\msg$. If $(\key, \msg)$ is queried for the first time, the image $y$ is taken uniformly at random from $\bin^{\il}$ and added to the oracle's table. Otherwise, the oracle returns  $y$ associated with query $(\key, \msg)$ in its table. The decryption oracle is defined similarly with the image and key defined as inputs and the preimage chosen randomly, for details see~\cref{preliminaries:fig:icm-oracles}.
+
+\begin{figure}
+    \begin{pchstack}[center]
+        \procedure[syntaxhighlight=auto]{$\oracleEnc (\key, \msg)$}{
+            if (\key, \msg, \cdot) \notin\text{Table}_{\oracle{}} \\
+            \t y \sample \bin^\il \\
+            \t \text{Table}_{\oracle{}}\text{.append} (\key, \msg, y)\\
+            \pcelse{} y \gets \text{Table}_{\oracle{}} (\key, \msg) \\
+            return (\key, \msg, y) \\
+        }
+        \procedure[syntaxhighlight=auto]{$\oracleDec (\key, y)$}{
+            if (\key, \cdot, y) \notin\text{Table}_{\oracle{}}\\
+            \t \msg \sample \bin^\il\\
+            \t \text{Table}_{\oracle{}}\text{.append} (\key, \msg, y)\\
+            \pcelse{} \msg \gets \text{Table}_{\oracle{}} (\key, y)\\
+            return (\key, \msg, y)
+        }
+    \end{pchstack}
+    \caption{Oracles of an ideal block cipher, with $\text{Table}_{\oracle{}}$ being a table of tuples (key, preimage, image) of queries already answered by the oracle.}\label{preliminaries:fig:icm-oracles}
+\end{figure}
+
+\begin{definition}[Block cipher-based compression function~\cite{black2002black}]\label{preliminaries:definitions:compression-function}
+    A \emph{block cipher-based compression function} is a map $\fFunc$ such that
+    \[
+        \fFunc \colon \blockSet(\kl, \il) \times \bin^a \times \bin^b \to \bin^c
+    \]
+    where $\kl,\ \il,\ a,\ b,\ c > 1$ and $a+b > c$. The function \fFunc, given $\msg \in  \bin^a \times \bin^b$, computes $\fFunc(\Enc, \msg)$ using an \Enc-oracle.
+\end{definition}
+
+\begin{remark}
+    We use \FEnc{} to denote a block cipher-based compression function \fFunc{} restricted to a given block cipher \Enc, i.e. $\FEnc: \bin^a \times \bin^b \to \bin^c$ and $\FEnc = \fFunc(\Enc, \cdot)$, for $a, b, c$ as given in the definition above.
+\end{remark}
+
+Let \fFunc{} be a compression function based on a block cipher. Fix a constant $h_0 \in \bin^c$ and an adversary \adv. We define the advantage in finding a collision in \fFunc{} as
+\[
+    \advColl =
+    \prob{
+        \begin{aligned}
+            &\Enc \sample \blockSet(\kl, \il); ((\key,\msg), (\key',\msg')) \gets \adv^{\oracleEnc, \oracleDec}(\FEnc, h_0):\\
+            &((\key, \msg) \neq (\key',\msg') \land \FEnc(\key, \msg) = \FEnc(\key', \msg')) \lor \FEnc(\key, \msg) = h_0
+        \end{aligned}
+    }.
+\]
+
+The previous definition gives credit for finding an $(\key, \msg)$ such that $\FEnc(\key, \msg) = h_0$ for a fixed $h_0 \in \bin^c$.
+
+\subsection{Hash functions}\label{preliminaries:definitions:hash-function}
+
+\begin{definition}[Hash function, {\cite[Definition 4.9]{katz2014introduction}}]
+    A hash function \hashSet{} is a pair of algorithms $(\hashSetup, \hash)$ fulfilling the following properties:
+    \begin{itemize}
+        \item \hashSetup{} is a \ppt{} algorithm which takes as input a security parameter \secparam{} and outputs a key $\hk$. We assume that \secparam{} is included in $\hk$.
+        \item $\hash$ is (deterministic) polynomial-time algorithm that takes as input a key $\hk$ and any string $x\in\bin^{*}$, and outputs a string $\hash(\hk, x) = \hash_{\hk}(x)\in\bin^{\hashLen}$, where $\hashLen$ is a polynomial in \secpar.\footnote{For simplicity, we may denote \hashLen(\secpar) as \hashLen{}.}
+    \end{itemize}
+    If for every \secpar{} and \hk{}, $\hash_{\hk}$ is defined only over inputs of length $\hashInpLen(\secpar)$ and $\hashInpLen(\secpar) > \hashLen(\secpar)$, then we say that \hashSet{} is a \emph{fixed-length hash function} with length parameter $\hashInpLen$. Note that $\hashInpLen(\secpar)$ is a polynomial in \secpar.
+\end{definition}
+
+Informally, for a given function $f$ we say that $(x,y)$ is a \emph{collision} if $f(x) = f(y)$ and $x \neq y$. In the following, we formalize this notion for a hash function $\hashSet$.
+
+\begin{definition}[Collision Resistance{~\cite[Definitions 4.10]{katz2014introduction}}]\label{preliminaries:def:collision-resistance}
+    A hash function $\hashSet = (\hashSetup, \hash)$ is collision resistant if for all $\ppt$ adversaries $\adv$ there exists a negligible function $\negl$ such that:
+\[
+    \advantage{\colres}{\hashSet, \adv} = \prob{
+        \hk \gets \hashSetup(\secparam), (x, y) \gets \adv(\hk): \ x \neq y \land \hash_{\hk}(x) = \hash_{\hk}(y)
+    } \leq \negl\,.
+\]
+\end{definition}
+
+\subsubsection{\hdhi{} and \hdhii{} assumptions}
+
+The Hash Diffie-Helmann Independence (\hdhi{}) assumption states that, given \hash{} in \hashSet{} and a group description $(p, \gset, \ggen, \otimes)$, for $\groupenc{u}$ and $\groupenc{v}$, with $u,v$ sampled at random, it is hard for an attacker to distinguish $\hash(\groupenc{u} \concat \groupenc{uv})$ from a random string of the same size.\footnote{Note that \hash{} takes as inputs bit strings, so technically we should make use of an encoding function from \gset to $\bin{}^{\groupLen}$ but we may omit this step through the document to improve readability.} This is formalized in \cref{def:hdhi}, where an attacker can also access an oracle $\oracleHdhi{v}$ that on input $\gel{x} \in \gset$ returns $\hash(\gel{x} \concat v\cdot \gel{x})$ (queries on $\groupenc{u}$ are forbidden).\footnote{In~\cite[Section 3.2.1]{abdalla1999dhaes} this notion is denoted as adaptive HDH independence assumption. Since we only introduce the adaptive version we denote it as \hdhi{}.}. In other words, the \hdhi{} assumption measures the sense in which \hash{} is ``independent'' of the underlying Diffie-Hellman problem.
+
+\begin{definition}[\hdhi, {\cite[Definition 7]{abdalla1999dhaes}}]\label{def:hdhi}
+    Let $\hashSet$ be a hash function, $\groupSetup$ be a group generation algorithm and \adv{} be an adversary. Consider the \hdhi{} game described in Figure~\ref{fig:hdhi}. We define the advantage of \adv{} in violating the \hdhi{} assumption as:
+    \[
+        \advantage{\hdhi}{\hashSet,\groupSetup, \adv} =  \abs{2\cdot\prob{\hdhi(\secpar) = 1} - 1}.
+    \]
+
+\end{definition}
+Note that the above definition corresponds to~\cite[Section 3.2.1, Definition 3]{abdalla1999dhaes}. In the following, we introduce a similar notion denoted as \hdhii{} (this is an adaptation of the \odhii{} notion in~\cite[Section 6]{abdalla2010robust}) which will be useful in the \ikcca{} proof~\cref{instantiation:enc:security}.
+
+\begin{definition}[\hdhii]\label{preliminaries:definitions:hdhii}
+    Let $\hashSet$ be a hash function, $\groupSetup$ a group generation algorithm and let \adv{} be an adversary. Consider the \hdhii{} game described in Figure~\ref{preliminaries:fig:hdhii}. We define the advantage of \adv{} in violating the \hdhii{} assumption as:
+    \[
+        \advantage{\hdhii}{\hashSet, \groupSetup, \adv} =  \abs{2 \cdot \prob{\hdhii(\secpar) = 1} - 1}.
+    \]
+\end{definition}
+
+\begin{figure}[ht]
+    \begin{minipage}[t]{0.5\textwidth}
+        \centering
+        \procedure[syntaxhighlight=auto, space=auto]{$\hdhi (\secpar)$}{
+            \hk \gets{} \hashSet.\hashSetup{(\secparam{})}\\
+            (q, \gset, \ggen, \otimes) \gets{} \groupSetup(\secparam{})\\
+            u,v \sample{} [q] \\
+            w_{0} \gets{} \hashSet.\hash_{\hk} (\groupenc{u} \concat \groupenc{uv})\\
+            w_{1} \sample{} \bin^{\hashLen}\\
+            b \sample{} \bin{} \\
+            \widetilde{b} \gets{} \adv^{\oracleHdhi{v}} (\groupenc{u},\groupenc{v},w_{b})\\
+            \pcreturn{}\widetilde{b} = b
+        }
+        \caption{\hdhi{} game.}\label{fig:hdhi}
+    \end{minipage}%
+    \begin{minipage}[t]{0.5\textwidth}
+        \centering
+        \procedure[syntaxhighlight=auto, space=auto]{$\hdhii (\secpar)$}{
+            \hk \gets{} \hashSet.\hashSetup{(\secparam{})}\\
+            (q, \gset, \ggen, \otimes) \gets{} \groupSetup(\secparam{})\\
+            u,v_0, v_1 \sample{} [q] \\
+            w_{0,0}\gets{} \hashSet.\hash_\hk (\groupenc{u} \concat \groupenc{uv_0}), w_{0,1}\gets{} \hashSet.\hash_\hk(\groupenc{u} \concat \groupenc{uv_1})\\
+            w_{1,0} \sample{} \bin^{\hashLen}, w_{1,1} \sample{} \bin^{\hashLen}\\
+            b \sample{} \bin{} \\
+            \widetilde{b} \gets{} \adv^{\oracleHdhi{v_0}, \oracleHdhi{v_1}} (\groupenc{u}, \groupenc{v_0}, \groupenc{v_1}, w_{b,0}, w_{b,1})\\
+            \pcreturn{}\widetilde{b} = b
+        }
+        \caption{\hdhii{} game.}\label{preliminaries:fig:hdhii}
+    \end{minipage}%
+\end{figure}
+
+\begin{lemma}\label{preliminaries:lemma:hdhi_hdhii}
+    Let \adv{} be an adversary with advantage \advantage{\hdhii}{\hashSet, \groupSetup, \adv}[] in solving the \hdhii{} problem. Then there exists an adversary \bdv{} such that
+    \[
+        \advantage{\hdhii}{\hashSet, \groupSetup{}, \adv} \leq 2 \cdot \advantage{\hdhi}{\hashSet, \groupSetup{}, \bdv}.
+    \]
+\end{lemma}
+\begin{proof}
+    We reuse the proof described in~\cite[Lemma 6.1]{abdalla2010robust} by applying minor modifications. In fact, \hdhi{} and \hdhii{} are, respectively, slightly different from \odh{} and \odhii{} notions: in the related security games, if $b=0$ the challenges are constructed as $\hash{(\groupenc{u} \concat \groupenc{uv})}$ and $\{\hash{(\groupenc{u} \concat \groupenc{uv_0})}, \hash{(\groupenc{u} \concat \groupenc{uv_1})}\}$ instead of $\hash{(\groupenc{uv})}$ and $\{\hash{(\groupenc{uv_0})}, \hash{(\groupenc{uv_1})}\}$. By accordingly changing the instances of $\hash{}$ in the games $\gamestyle{G_0},\gamestyle{G_1}, \gamestyle{G_2}$ of~\cite[Lemma 6.1]{abdalla2010robust} our lemma follows.
+\end{proof}
+
+\subsection{Pseudo Random Functions}\label{preliminaries:definitions:prfs}
+
+Informally, a pseudorandom function family $\prfSet = \indexedset{\prf_{\key}: \mathit{D} \to \mathit{C}}{\key \in \keyspace}$ is a collection of functions such that for a randomly chosen $\key \in \keyspace$, the function $\prf_{\key}$ is indistinguishable from a random function that maps $\mathit{D}$ to $\mathit{C}$.
+
+\begin{definition}[PRF Family{~\cite[Definition 3.23]{katz2014introduction}}]
+Let $\funcSet: \bin^* \times \bin^* \to \bin^*$ be an efficient, length-preserving, keyed function. We say $\funcSet$ is a pseudo random function if for all probabilistic polynomial-time distinguishers $\distinguisher$, there exists a negligible function $\negl[]$ such that:
+\[
+	\advantage{\prf}{\funcSet, \distinguisher} = \abs*{\prob{ \distinguisher^{\funcSet_k(\cdot)}(\secparam)=1 } - \prob{ \distinguisher^{f_\secpar(\cdot)}(\secparam)=1 }} \leq \negl\,,
+\]
+where $k \sample \keyspace = \bin^\secpar$ is chosen uniformly at random and $f_\secpar$ is chosen uniformly at random from the set of functions mapping $\secpar$-bit strings to $\secpar$-bit strings.
+\end{definition}
+
+\subsection{Commitment scheme}\label{preliminaries:definitions:commitment-sc}
+
+\begin{definition}[Non-interactive commitment scheme{~\cite[Section 2.1]{bootle2015short}}]
+    A non-interactive commitment scheme $\comm$ is defined by the following algorithms:
+    \begin{itemize}
+        \item $\setup$, is a \ppt{} algorithm that takes a security parameter \secparam{} and outputs public parameters $\pparams$.
+        \item $\commit{}{}$, is a polynomial-time algorithm that takes a message $m \in\BB^\il $, a random coin $r \in \BB^\nl$ and outputs a commitment $\cm{} \in \BB^\ol$.
+    \end{itemize}
+\end{definition}
+
+We assume that $\pparams$ is implicitly passed to $\commit{}{}$.
+
+\begin{definition}[Computational hiding]\label{preliminaries:definitions:commitment-hiding}
+We say that a commitment scheme is computationally hiding if for all \ppt{} adversary \adv{}, the advantage:
+\[
+\abs*{
+    \prob{
+    \begin{aligned}
+        & \pparams \gets{} \setup(\secparam), (\msg_0,\msg_1) \gets \adv(pp), b \sample \bin,\\
+        & r \sample \BB^\nl, \cm{} \gets \commit{\msg_b}{r}, \widetilde{b} \gets \adv(\cm{}), b=\widetilde{b}
+    \end{aligned}
+    }
+    - \frac{1}{2}
+}
+\]
+is at most negligible in $\secpar$.
+\end{definition}
+
+\begin{definition}[Computational binding]\label{preliminaries:def:comp-binding}
+We say that a commitment scheme is computationally binding if for all \ppt{} adversary \adv{}, the advantage:
+\[
+    \prob{
+    \begin{aligned}
+        & pp \gets{} \setup(\secparam), (\msg_0, r_0,\msg_1, r_1) \gets \adv(pp)\\
+        & m_0 \neq m_1 \land \commit{\msg_0}{r_0} = \commit{\msg_1}{r_1}
+    \end{aligned}
+    }
+\]
+is at most negligible in $\secpar$.
+\end{definition}
+
+Note that the previous definitions can be made \emph{statistical} if we consider unbounded attackers \adv.
+
+\subsection{Digital Signature}\label{preliminaries:definitions:digital-signature}
+
+\begin{definition}[Digital signature{~\cite[Definition 12.1]{katz2014introduction}}]
+    A digital signature scheme $\sigscheme$ is defined by the tuple of functions $\sigscheme = (\kgen, \sig, \verify)$,
+    \begin{itemize}
+        \item $(\sk, \vk) \gets \kgen(\secparam)$. Key Generation randomized algorithm takes as input the security parameter \secparam~and returns a signing key \sk~and verifying key \vk.
+        \item $\sigma \gets \sig(\sk, \msg)$. Given a signing key \sk~and a message $\msg$, the $\sig$ algorithm computes and outputs a signature $\sigma$.
+        \item $\bin \gets \verify(\vk, \msg, \sigma)$. Given a verification key \vk, a message $\msg$ and a signature $\sigma$, the $\verify$ algorithm returns 1 if $\sigma$ is a valid signature else 0.
+    \end{itemize}
+\end{definition}
+
+A signature scheme must satisfy the \emph{correctness property} (i.e~$\verify(\vk, \msg, \sig(\sk, \msg)) = \true$, where $(\sk, \vk) \gets \kgen(\secparam)$) and be \emph{unforgeable} (i.e.~it is intractable to produce a signature, without knowing the signing key $\sk$, on a message that has not been signed yet). In addition to these properties, certain digital signature schemes have an additional property called \emph{one-timeness}, also defined below.
+
+\begin{figure}
+    \begin{minipage}[t]{.5\textwidth}
+        \centering
+        \procedure[linenumbering]{$\ufcma(\secparam, \timeBound, \queryBound)$}{%
+            (\sk, \vk) \gets~\kgen(\secparam) \\
+            \state \gets~\adv^{\oracleSig} (\vk,\cdot) \\
+            \pccomment{$\state = \indexedset{(\msg_i, \sigma_i)}{i \in [\queryBound]}$ where $\msg_i$ denotes} \\
+            \pccomment{the ith query made to $\oracleSig$ and} \\
+            \pccomment{$\sigma_i$ denotes the ith oracle answers} \\
+            (\msg^{*}, \sigma^{*}) \gets~\adv(\state) \\
+            \pcreturn \verify(\vk, \msg^{*}, \sigma^{*}) = 1 \\
+            \t \land \msg^{*} \not \in \indexedset{\msg_i}{i \in [\queryBound]}
+        }
+        \caption{\ufcma~game}\label{preliminaries:fig:uf-cma-game}
+    \end{minipage}%
+    \begin{minipage}[t]{.5\textwidth}
+        \centering
+        \procedure[linenumbering]{$\sufcma(\secparam, \timeBound, \queryBound)$}{%
+            (\sk, \vk) \gets \kgen(\secparam) \\
+            \state \gets \adv^{\oracleSig} (\vk,\cdot) \\
+            \pccomment{$\state = \indexedset{(\msg_i, \sigma_i)}{i \in [\queryBound]}$ where $\msg_i$ denotes} \\
+            \pccomment{the ith query made to $\oracleSig$ and} \\
+            \pccomment{$\sigma_i$ denotes the ith oracle answers} \\
+            (\msg^{*}, \sigma^{*}) \gets~\adv(\state) \\
+            \pcreturn \verify(\vk, \msg^{*}, \sigma^{*}) = 1 \\
+            \t \land (\msg^{*}, \sigma^{*}) \not \in \indexedset{(\msg_i, \sigma_i)}{i \in [\queryBound]}
+        }
+        \caption{\sufcma~game}\label{preliminaries:fig:suf-cma-game}
+    \end{minipage}%
+\end{figure}
+
+
+\begin{definition}[Unforgeability (\ufcma){~\cite[Definition 12.2]{katz2014introduction}}]\label{preliminaries:def:ufcma}
+A digital signature scheme $\sigscheme$ is \ufcma{} if for any \ppt~adversary $\adv$, the probability that $\adv$ wins the \ufcma~game, depicted in~\cref{preliminaries:fig:uf-cma-game}, is negligible.
+\end{definition}
+
+\begin{definition}[Strong Unforgeability (\sufcma)]\label{preliminaries:def:sufcma}
+A digital signature scheme $\sigscheme$ is \sufcma{} if the probability that any \ppt~adversary $\adv$ wins the \sufcma~game, depicted in~\cref{preliminaries:fig:suf-cma-game}, is negligible.
+\end{definition}
+
+\begin{definition}[One-Time (OT) Signature{~\cite[Definition 12.6]{katz2014introduction}}]\label{preliminaries:def:ot-sig}
+    A \emph{one-time} signature scheme is a digital signature scheme that uses each key-pair at most once.
+\end{definition}
+
+\begin{remark}
+    It is worth noting that users may use one-time signing keys to sign multiple messages. In this case no security claims can be made.
+\end{remark}
+\subsection{Message Authentication Code}
+A message authentication code is a scheme that enables users to tag data for the purpose of authenticity and integrity. Formally:
+
+\begin{definition}[Message Authentication Code,{\cite[Definition 4.1]{katz2014introduction}}]
+A message authentication code \mac{} is given by a tuple of \ppt{} algorithms $(\kgen,\tagg, \verify)$ where:
+    \begin{itemize}
+        \item \kgen{}, the key generation algorithm, takes a security parameter \secparam{}, and returns a key $\mk \in \bin^{\macKeyLen(\secpar)}$.\footnote{For simplicity, we may denote \macKeyLen(\secpar) as \macKeyLen{}.}
+        \item \tagg{}, the tag generation algorithm, takes a key $\mk$ and a message $ y\in\bin^{*} $ and returns a string $\tau\in\bin^{*}$, called \emph{tag}.
+        \item  \verify{}, the tag verification algorithm, takes a key $\mk$, a message $ y \in \bin^{*} $ and a tag $\tau \in \bin^{*}$. It returns a value in $\bin$ where: $0$ denotes that the message was rejected (i.e.~deemed unauthentic) and $1$ denotes that the message was accepted (i.e.~deemed authentic).
+    \end{itemize}
+    We require that for all $\mk \in \bin^{\secpar}$ and $y \in \bin^{*}$ we have $\verify(\mk, y, \tagg(\mk,y)) = 1$. If $\tagg(\mk,\cdot)$ is defined only over messages of length $l(\secpar)$ and $\verify(\mk,y,\tau)$ outputs $0$ for every $y$ that is not of length $l(\secpar)$, then we say that $(\kgen,\tagg, \verify)$ is a \emph{fixed-length} \mac{} with length parameter $l(\secpar)$.
+\end{definition}
+
+A security notion for \mac{} follows:
+
+\begin{figure}
+    \centering
+    \procedure[syntaxhighlight=auto, space=auto]{\sufcma(\secpar)}{
+        \mk\gets{} \kgen{(\secparam{})}\\
+        (\overline{y}, \overline{\tau})\gets{} \adv^{\oracle{\tagg_{\mk}}, \oracle{\verify_{\mk}}}\\
+        \pcreturn{} \verify(\mk, \overline{y}, \overline{\tau}) = 1
+    }
+    \caption{\sufcma{} game.}\label{fig:sufcma}
+\end{figure}
+
+\begin{definition}[\sufcma,{\cite[Section 3.2.3]{abdalla1999dhaes}}]
+    Let $\mac = (\kgen,\tagg, \verify)$ be a message authentication scheme and let \adv{} be an adversary. Consider the \sufcma{} game described in Figure~\ref{fig:sufcma}, with the condition that $\tagg (\mk, \overline{y}) \neq \overline{\tau}$. We say that an adversary \adv{} has \emph{forged} a tag when it outputs a pair $(\overline{y}, \overline{\tau})$ such that $\verify_k(\overline{y},\overline{\tau}) = 1$, where $(\overline{y},\overline{\tau})$ was not previously obtained via a query to the tag oracle.
+
+    We define the \sufcma{} advantage of \adv{} as follows:
+    \[
+        \advantage{\sufcma}{\mac, \adv} =  \prob{\sufcma(\secpar) = 1}
+    \]
+
+    We say that \mac{} is \sufcma{} secure if for every \ppt{} adversary \adv{} the advantage \advantage{\sufcma}{\mac, \adv} is a negligible function.
 \end{definition}

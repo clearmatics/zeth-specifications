@@ -1,21 +1,25 @@
 % !TEX root = ../zeth-protocol-specification.tex
 
-\section{Data Structures and Representation}\label{preliminaries:structured-data}
+\section{Data structures and representation}\label{preliminaries:structured-data}
 
 \newcommand{\STR}{\mathsf{STR}}
 
-\subsection{Structured Data}\label{preliminaries:data-types:formulation}
+\subsection{Structured data}\label{preliminaries:data-types:formulation}
 
-When describing the operations to be performed and the data to be manipulated as part of the protocol, we commonly employ tuples of related data where each element of the tuple has some associated semantic meaning often must satisfy some conditions. In this section, we develop a framework to reason about such \emph{structured} data, where a single datum may consist of one or more logical parts (called \emph{fields}). The framework is built on top of simple mathematical concepts such as sets, and mappings between them, ensuring that we can always reason about structured data in a rigorous way. We also define notation to aid the specification of structured data, and to refer to specific components of a datum. This will be used extensively in the specification of the protocol.
+When describing the operations to be performed and the data to be manipulated as part of the protocol, we commonly employ tuples of related data where each element of the tuple has some associated semantic meaning and which must often satisfy some conditions. In this section, we develop a framework to reason about such \emph{structured} data, where a single datum may consist of one or more logical parts (called \emph{fields}). The framework is built on top of simple mathematical concepts such as sets, and mappings between them, ensuring that we can always reason about structured data in a rigorous way. We also define notation to aid the specification of structured data, and to refer to specific components of a datum. This will be used extensively in the specification of the protocol.
 
-As a simple motivating example, consider a protocol that processes data relating to individual people. This fictional system may send and receive data such as \emph{name}, \emph{age} or \emph{address} for a single person, grouping this data into a logical unit. Further, each piece of data must satisfy specific conditions (\emph{name} must be a series of characters from some alphabet, \emph{age} must be a positive integer, etc.) We shall make use of this example several times during the formulation below.
+As a simple motivating example, consider a protocol that processes data relating to individual people. This fictional system may send and receive data such as \emph{name}, \emph{age} and \emph{address} for a single person, grouping this data into a logical unit. Further, each piece of data must satisfy specific conditions (\emph{name} must be a series of characters from some alphabet, \emph{age} must be a positive integer, etc.) We shall make use of this example several times during the formulation below.
 
-In what follows, let $\STR = \smallset{a, b, \ldots, y, z}^{*}$ (the Kleene star of the \emph{Roman alphabet}). In our formulation, field names $f_i$ will be elements in this set. (Note that a similar formulation could be made using an arbitrary set, such as the same alphabet augmented with specific symbols, or the alphabet of a different language. Our choice of $\STR{}$ here is for simplicity).
+In what follows, let $\STR = \smallset{a, b, \ldots, y, z}^{*}$ (the Kleene star of the \emph{Roman alphabet}). In our formulation, field names $f_i$ will be elements in this set.
 
-We begin by defining a datatype as a set of values called ``fields'', each with a ``name'' from $\STR$. Abstract sets are used constrain the values of each field.
+\begin{remark}
+  Note that a similar formulation could be made using an arbitrary set, such as the same alphabet augmented with specific symbols, or the alphabet of a different language. Our choice of $\STR{}$ here is for simplicity.
+\end{remark}
+
+We begin by defining a data type as a set of values called ``fields'', each with a ``name'' from $\STR$. Abstract sets are used to constrain the values of each field.
 
 \begin{definition}[Structured Data Type]\label{preliminaries:def:datatype}
-  Let $f_0, \ldots, f_{n-1}$ be $n$ distinct elements of $\STR$ and let $V_0, \ldots, V_{n-1}$ be sets, for some $n \in \NN$. We define \emph{the structured datatype $\datatypestyle{T}$ with fields $\smallset{(f_i, V_i)}_{i \in [n]}$} to be a set of values:
+  Let $f_0, \ldots, f_{n-1}$ be $n$ distinct elements of $\STR$ and let $V_0, \ldots, V_{n-1}$ be sets, for some $n \in \NN$. We define \emph{the structured data type $\datatypestyle{T}$ with fields $\smallset{(f_i, V_i)}_{i \in [n]}$} to be a set of values:
   \[
     \datatypestyle{T} = V_0 \times \cdots \times V_{n-1}
   \]
@@ -42,14 +46,14 @@ We begin by defining a datatype as a set of values called ``fields'', each with 
   \end{align*}
 \end{example}
 
-For clarity, structured data types may be specified using tables of names, descriptions and value sets, rather than sets of the form $\smallset{(f_i, V_i)}_{i \in [n]}$. Similarly, it is frequently convenient to specify the \emph{field names} alongside values in tuples when defining structured data values.
+For clarity, structured data types may be specified using tables of names, descriptions and value sets, rather than sets of the form $\smallset{(f_i, V_i)}_{i \in [n]}$. Similarly, it is frequently convenient to include the \emph{field names} alongside values when specifying structured data values.
 
 \begin{example}\label{preliminaries:eg:datatype-person-table}
   $\datatypestyle{Person}$ from \cref{preliminaries:eg:datatype-person} might be described in table-form as follows:
   \begin{table}[H]
     \centering
-    \begin{tabular}{cp{20em}c}
-      Field                & Description        & Values \\ \toprule
+    \begin{tabular}{cp{15em}c}
+      Field                & Description        & Data type \\ \toprule
       $\varstyle{name}$   & Name of the person & $\STR{}$ \\ \midrule
       $\varstyle{age}$    & Age in years       & $\NN$ \\ \midrule
       $\varstyle{height}$ & Height in meters   & $\RR^+$ \\ \midrule
@@ -61,9 +65,9 @@ For clarity, structured data types may be specified using tables of names, descr
   The values $\mathbf{a}$ and $\mathbf{b}$ in \cref{preliminaries:eg:datatype-person} might be written as follows:
   \begin{align*}
     \mathbf{a} &=
-    (\varstyle{name}:\: \varstyle{alice}, \; \varstyle{age}:\: 28, \; \varstyle{height}:\: 1.65) \\
+    \{\varstyle{name}:\: \varstyle{alice}, \; \varstyle{age}:\: 28, \; \varstyle{height}:\: 1.65\} \\
     \mathbf{b} &=
-    (\varstyle{name}:\: \varstyle{bob}, \; \varstyle{age}:\: 31, \; \varstyle{height}:\: 1.74)
+    \{\varstyle{name}:\: \varstyle{bob}, \; \varstyle{age}:\: 31, \; \varstyle{height}:\: 1.74\}
   \end{align*}
 \end{example}
 
@@ -97,7 +101,7 @@ We define one further operator and related assignment notation, convenient in ca
 \end{definition}
 
 \begin{remark}[Square bracket operators in assignment]
-  Similarly to the notation in \cref{preliminaries:rem:dot-assignment}, we develop notation for square bracket operator $[\ ]$ in assignment statements.
+  Similarly to \cref{preliminaries:rem:dot-assignment}, we develop assignment notation for the square bracket operator $[\ ]$.
   Let $\mathbf{x} = (x_0, \ldots, x_{m-1})$ be a member of $X^m$, and $x_i^\prime$ be some element in $X$. The statement:
   \[
     \mathbf{x}[i] \gets x_i^\prime
@@ -110,7 +114,7 @@ We define one further operator and related assignment notation, convenient in ca
 \end{remark}
 
 \begin{remark}[Deep structures and chained ``dot'' operators]
-Consider the case of structured data $\datatypestyle{T}$ with fields $\{(f_i, V_i)\}_{i \in [n]}$ for $n \in \NN$. Let $\datatypestyle{T^\prime}$ be another structured data type with fields $\{(f^\prime_i, V^\prime_i)\}_{n^\prime-1}$ for $n^\prime \in \NN$, and assume that $V_j = \datatypestyle{T^\prime}$ for some $j \in [n]$. Informally, the values of the $j$-th field of elements of $\datatypestyle{T}$ are themselves structured data of type $\datatypestyle{T^\prime}$.
+Consider the case of structured data $\datatypestyle{T}$ with fields $\{(f_i, V_i)\}_{i \in [n]}$ for $n \in \NN$. Let $\datatypestyle{T^\prime}$ be another structured data type with fields $\{(f^\prime_i, V^\prime_i)\}_{i \in [n^\prime]}$ for $n^\prime \in \NN$, and assume that $V_j = \datatypestyle{T^\prime}$ for some $j \in [n]$. Informally, the values of the $j$-th field of elements of $\datatypestyle{T}$ are themselves structured data of type $\datatypestyle{T^\prime}$.
 
 In this case, ``dot'' operators may be \emph{chained}, so that $\mathbf{x}.f_j.f^\prime_k$ refers to the $k$-th field $v^\prime_k$ of the $j$-th field $v_j$ of $\mathbf{x} \in \datatypestyle{T}$.
 \end{remark}
@@ -119,8 +123,8 @@ In this case, ``dot'' operators may be \emph{chained}, so that $\mathbf{x}.f_j.f
   Define a structured data type $\datatypestyle{Address}$ with fields $(\varstyle{country}, \STR{}), (\varstyle{zipcode}, \STR{})$. We redefine the structured data type $\datatypestyle{Person}$ from \cref{preliminaries:eg:datatype-person}, with an extra field $\varstyle{address}$ of type $\datatypestyle{Address}$. That is, $\datatypestyle{Person}$ is the structured data type with fields:
   \begin{table}[H]
     \centering
-    \begin{tabular}{cp{20em}c}
-      Field                 & Description           & Values \\ \toprule
+    \begin{tabular}{cp{15em}c}
+      Field                 & Description           & Data type \\ \toprule
       $\varstyle{name}$    & Name of the person    & $\STR{}$ \\ \midrule
       $\varstyle{age}$     & Age in years          & $\NN$ \\ \midrule
       $\varstyle{height}$  & Height in meters      & $\RR^+$ \\ \midrule
@@ -129,11 +133,13 @@ In this case, ``dot'' operators may be \emph{chained}, so that $\mathbf{x}.f_j.f
   \end{table}
   An example element $\mathbf{a}$ in $\datatypestyle{Person}$ is:
   \begin{align*}
-    \mathbf{a} = ( & \varstyle{name}:\: \varstyle{alice}, \\
-    & \varstyle{age}:\: 28, \\
-    & \varstyle{height}:\: 1.65, \\
-    & \varstyle{address}:\:
-    (\varstyle{country}:\: \varstyle{UK}, \varstyle{zipcode}:\: \varstyle{SW1A}) )
+    \mathbf{a} =
+    \{ &\\
+       & \varstyle{name}:\: \varstyle{alice}, \\
+       & \varstyle{age}:\: 28, \\
+       & \varstyle{height}:\: 1.65, \\
+       & \varstyle{address}:\: (\varstyle{country}:\: \varstyle{UK}, \varstyle{zipcode}:\: \varstyle{SW1A})\\
+    \}
   \end{align*}
   In this case, the following equalities using the dot and square bracket operators all hold:
   \begin{align*}
@@ -167,7 +173,7 @@ This is used to define the following functions to \emph{encode} data to its bit-
 
 Without ambiguity, we overload the functions $\encode{}{}$ and $\decode{}{}$ to mean $\encode{}{X}$ and $\decode{}{X}$ where the set $X$ is clear from context.
 
-In the following sections, we assume that elements of $\NN$ are encoded as big-endian binary numbers in the natural way. We denote by $\NN_{b}$ the set of natural numbers that can be uniquely encoded in this way using $b$ bits. In other words,
+In the following sections, we assume that elements of $\NN$ are encoded as big-endian binary numbers in the natural way. We denote by $\NN_{b}$ the set of natural numbers that can be uniquely encoded in this way using $b$ bits (possibly with padding). In other words,
 \[
   \NN_{b} = \smallset{x \in \NN\ \suchthat\ \encode{x}{\NN} \in \BB^{b}}
 \]

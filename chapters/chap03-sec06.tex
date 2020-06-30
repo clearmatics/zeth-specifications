@@ -1,12 +1,12 @@
 % !TEX root = ../zeth-protocol-specification.tex
 
-\section{Instantiate $\zksnark$}\label{instantiation:zksnark}
+\section{$\zksnark$ instantiation}\label{instantiation:zksnark}
 
-The Groth's zkSNARK $\groth$ \cite{groth2016size} is the most efficient (in terms of the proof size and proof and verification cost) known zkSNARK for QAPs, thus one of the most efficient zkSNARK for proving statements on arithmetic circuits. Below we present $\groth$'s key generation, prover, verifier, and simulator algorithms, adjusted as described in \cite{bowe2017mpc} to further reduce the size of $\srs$ and proofs, and to make the $\kgen$ algorithm more amenable to implementation as a multi-party computation.
+Groth's proof system $\groth$ \cite{groth2016size} is the most efficient known zk-SNARK (in terms of the proof size and proof and verification cost) for QAPs, and thus one of the most efficient $\nizk$ for proving statements on arithmetic circuits. Below we present $\groth$'s key generation, prover, verifier, and simulator algorithms, adjusted as described in \cite{bowe2017mpc} to further reduce the size of $\srs$ and proofs, and to make the $\kgen$ algorithm more amenable to implementation as a multi-party computation.
 
 In what follows, let the number $\constno$ of constraints in the relation $\REL$ be fixed. Without loss of generality we consider $\constno$ to be an \emph{upper bound} on the number of constraints in the $\REL$ parameter, and assume that there exists some $\constno$-th root of unity $\omega \in \FFx{\rBN}$. Define $\ell_i(\xchi)$ to be the $i$-th Lagrange polynomial of degree $(\constno - 1)$ over the set $\smallset{\omega^i}_{i \in [\constno]}$, and let $\ell(\xchi)$ be the unique non-zero polynomial of degree $\constno$ that satisfies $\ell(\omega^i) = 0$ for all $i \in [\constno]$.
 
-We note that the requirement that there exists a $\constno$-th root of unity $\omega$ imposes a restriction on the maximum number of constraints in $\REL$ that the scheme can support. In particular case of $\omega \in \FFx{\rBN}$, the restriction becomes $\constno \leq 2^{28}$.
+We note that the requirement that there exists a $\constno$-th root of unity $\omega$ imposes a restriction on the maximum number of constraints in $\REL$ that the scheme can support. In the particular case of $\omega \in \FFx{\rBN}$, the restriction becomes $\constno \leq 2^{28}$.
 
 %% For future reference (if it becomes necessary to explain MPC details):
 %%
@@ -99,7 +99,7 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
       & + \groupenci{\alpha}{1} \pair \groupenci{\beta}{2}
     \end{align*}
   \end{compactenum}
-  Note that $\groupenci{\alpha}{1}$ and $\groupenci{\beta}{2}$ are stored individually and used by the prover to recompute $\groupenci{\alpha \beta}{T}$ seemingly redundantly. This is required in order to leverage the pairing check functionality built in to \ethereum, which accepts a sequence of tuples in $\gset_1 \times \gset_2$ and returns true if and only if the product of the resulting pairings equals $\groupenci{1}{T}$.
+  Note that $\groupenci{\alpha}{1}$ and $\groupenci{\beta}{2}$ are stored individually and used by the prover to recompute $\groupenci{\alpha \beta}{T}$ seemingly redundantly. This is required in order to leverage the pairing check functionality built in to \ethereum, which accepts a sequence of tuples in $\gset_1 \times \gset_2$ and returns $\true$ if and only if the product of the resulting pairings equals $\groupenci{1}{T}$.
 
 %% Simulator
 \item[$\simulator(\REL, \srs, \td, \priminputs)$:]\hfill

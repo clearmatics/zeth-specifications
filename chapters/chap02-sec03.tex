@@ -2,18 +2,18 @@
 
 \section{Generating the inputs of the $\mix$ function (\inp{\mix})}\label{zeth-protocol:mix-inp}
 
-In the following section, we assume that the system is initialized. In other words, we assume that a ledger $\ledger$ is available (i.e.~an \ethereum~network is operated by a set of miners), the $\mixer$ contract is deployed on $\ledger$. Likewise, we assume that the public parameters $\pparams_{\zksnark} \gets \zksnark.\kgen(\secparam, \RELCIRC)$ are available to $\mixer$ and to all parties willing to call the $\mix$ function of $\mixer$. Furthermore, we assume that there exists as set of \ethereum~and \zeth~users, and that the \emph{payment address} of each \zeth~user is easily discoverable. In the rest of this section, the set of \emph{payment addresses} discovered by a zeth user $\zparty{U}$ is represented as a list attribute $\zparty{U}.\keystore$ indexed by usernames.
+In the following section, we assume that the system is initialized. In other words, we assume that a ledger $\ledger$ is available (i.e.~an \ethereum~network is operated by a set of miners), the $\mixer$ contract is deployed on $\ledger$. Likewise, we assume that the public parameters $\pparams_{\zksnark} \gets \zksnark.\kgen(\secparam, \RELCIRC)$ are available to $\mixer$ and to all parties willing to call the $\mix$ function of $\mixer$. Furthermore, we assume that there exists a set of \ethereum~and \zeth~users, and that the \emph{payment address} of each \zeth~user is easily discoverable. In the rest of this section, the set of \emph{payment addresses} discovered by a zeth user $\zparty{U}$ is represented as a list attribute $\zparty{U}.\keystore$ indexed by usernames.
 
 \medskip
 
-In order for $\zparty{U}$ to transact via \zeth, $\zparty{U}$ needs to create an object $\inp{\mix}$ of type $\mixInputDType$ in order to call the $\mix$ function of $\mixer$:
+In order for $\zparty{U}$ to transact via \zeth, $\zparty{U}$ needs to create an object $\inp{\mix}$ of type $\mixInputDType$ to pass to the $\mix$ function of $\mixer$:
 \begin{enumerate}
     \item Create an object $\priminputs$ of type $\primInputDType$ to represent the primary input, and an object $\auxinputs$ of type $\auxInputDType$ to represent the auxiliary input, where:
     \begin{enumerate}
         \item $\priminputs.\mkroot \in \rootset$, where $\rootset$ is the set of \emph{all} Merkle roots corresponding to one of the state of the Merkle tree on $\mixer$ containing \emph{all} the commitments to the input notes, in $\auxinputs.\jsins{}$, in its set of leaves.
         \item $\auxinputs.\znotes{j}.\noter \sample \BB^{\noterLen}, \forall j \in [\jsout]$, and $\auxinputs.\pphi \sample \BB^{\phiLen}$
         \item The public values $(\auxinputs.\vin, \auxinputs.\vout) \in {(\BB^{\zvalueLen})}^{2}$, $\auxinputs.\znotes{j}.\notev$ and $\auxinputs.\znotes{j}.\apk\ \forall j \in [\jsout]$ are all set by the sender, $\zparty{U}$, as desired as long as they satisfy the \gls{joinsplit-eq}.
-        \item All attributes of the $\priminputs$ and $\auxinputs$ objects should be derived as specified in the statement (see:~\cref{zeth-protocol:statement}) \secfix{alongside a signature hash ($\auxinputs.\hsig$) that is generated as the hash of the nullifiers and a one-time signing verification key (malleability fix, see:~\cref{appendix:trnm}), using the desired signature scheme $\otsigscheme$ (see:~\cref{instantiation:otsig}):}
+        \item All attributes of the $\priminputs$ and $\auxinputs$ objects should be derived as specified in the statement (see~\cref{zeth-protocol:statement}), alongside a signature hash ($\auxinputs.\hsig$) that is generated as the hash of the nullifiers and a one-time signing verification key (non-malleability, see~\cref{appendix:trnm}), using the desired signature scheme $\otsigscheme$ (see~\cref{instantiation:otsig}):
             \begin{align}
                 & (\sk_{\otsig}, \vk_{\otsig}) = \otsigscheme.\kgen(\secparam) \label{zeth-protocol:otsig-generation} \\
                 & \auxinputs.\hsig = \crhhsig{\indexedset{\auxinputs.\jsins{i}.\nf{}}{i \in [\jsin]}, \vk_{\otsig}}
@@ -23,26 +23,23 @@ In order for $\zparty{U}$ to transact via \zeth, $\zparty{U}$ needs to create an
     \begin{notebox}
         If one of the attributes of $\priminputs$ and $\auxinputs$ is not correctly generated, then the proof of computational integrity generated in the next step will be rejected on $\mixer$, and the state of $\mixer$ will not be modified.
     \end{notebox}
-\item Generate a zk-snark \zkp~to prove, in zero-knowledge, that the relation $\RELCIRC$ (\cref{zeth-protocol:statement}) holds on the primary and auxiliary inputs, using the desired zk-snark scheme $\zksnark$ (see:~\cref{instantiation:zksnark}):
+\item Generate a zk-SNARK proof \zkp~to prove, in zero-knowledge, that the relation $\RELCIRC$ (\cref{zeth-protocol:statement}) holds on the primary and auxiliary inputs, using the desired zk-SNARK scheme $\zksnark$ (see~\cref{instantiation:zksnark}):
     \begin{enumerate}
-        \item
-            \[
-                \zkp \gets \zksnark.\prover(\pparams_{\zksnark}, \priminputs, \auxinputs)
-            \]
+        \item $\zkp \gets \zksnark.\prover(\pparams_{\zksnark}, \priminputs, \auxinputs)$
         \item $\inp{\mix}.\zkproof \gets \zkp$
     \end{enumerate}
 
-\item Encrypt all the $\auxinputs.\znotes{}$ using the recipient's \emph{payment address}, using the encryption scheme $\encscheme$ (see:~\cref{instantiation:enc}).
+\item Encrypt all the $\auxinputs.\znotes{}$ using the recipient's \emph{payment address}, using the encryption scheme $\encscheme$ (see~\cref{instantiation:enc}).
     \begin{enumerate}
         \item For all $j \in [\jsout]$, do:
         \begin{align*}
-            & \ct_j = \encscheme.\enc(\auxinputs.\znotes{j}, \zparty{U}.\keystore[\varstyle{recipient}_j].\pubaddr.\pkenc)
+            & \ct_j \gets \encscheme.\enc(\auxinputs.\znotes{j}, \zparty{U}.\keystore[\varstyle{recipient}_j].\pubaddr.\pkenc)
         \end{align*}
         \item $\inp{\mix}.\ciphers \gets \indexedset{\ct_j}{j \in [\jsout]}$
     \end{enumerate}
-\item \secfix{Generate a signature $\otsSigma$ on the inputs of the \mix~function, in order to prevent any malleability attacks~(c.f.~\cref{appendix:trnm}), using the desired signature scheme $\otsigscheme$ (see:~\cref{instantiation:otsig}):}
+\item Generate a signature $\otsSigma$ on the inputs of the \mix~function, in order to prevent any malleability attacks~(c.f.~\cref{appendix:trnm}), using the desired signature scheme $\otsigscheme$ (see~\cref{instantiation:otsig}):
     \begin{enumerate}
-        \item The one-time signature keypair has already been generated in~\cref{zeth-protocol:otsig-generation}.
+        \item Using the one-time signature keypair generated in~\cref{zeth-protocol:otsig-generation}, do:
             \begin{align*}
                 & \datatobesigned = \eparty{S}.\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\zkp \concat \inp{\mix}.\ciphers \\
                 & \otsSigma = \otsigscheme.\sig(\sk_{\otsig}, \crhots{\datatobesigned})
@@ -50,5 +47,5 @@ In order for $\zparty{U}$ to transact via \zeth, $\zparty{U}$ needs to create an
         \item $\inp{\mix}.\otssig \gets \otsSigma$
         \item $\inp{\mix}.\otsvk \gets \vk_{\otsig}$
     \end{enumerate}
-    Here, $\eparty{S}.\addr$ represents the address of the Ethereum user $\eparty{S}$ who must sign the transaction (see:~\cref{zeth-protocol:create-tx}). In general, this is likely to be owned by the holder $\zparty{U}$ of the Zeth notes to be spent, but this is not a requirement.
+    Here, $\eparty{S}.\addr$ represents the address of the $\ethereum{}$ user $\eparty{S}$ who must sign the transaction (see~\cref{zeth-protocol:create-tx}). In general, this is likely to be owned by the holder $\zparty{U}$ of the $\zeth{}$ notes to be spent, but this is not a requirement.
 \end{enumerate}

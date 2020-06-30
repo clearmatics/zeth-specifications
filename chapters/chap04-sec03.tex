@@ -1,54 +1,54 @@
 % !TEX root = ../zeth-protocol-specification.tex
 
-\section{Efficiency and Scalability}\label{implementation:efficiency}
+\section{Efficiency and scalability}\label{implementation:efficiency}
 
 \newcommand{\primeF}{\ensuremath{\algostyle{prime}}\xspace}
 \newcommand{\decF}{\ensuremath{\algostyle{dec}}\xspace}
 \newcommand{\getsigma}{\ensuremath{\algostyle{getSigma}}\xspace}
 
-\subsection{Importance of Performance}\label{implementation:efficiency:importance-of-performance}
+\subsection{Importance of performance}\label{implementation:efficiency:importance-of-performance}
 
 Poor performance and scalability has several impacts on the viability of the system.
 
-Efficiency and performance are arguably most important for the $\mixer$ contract, where gas usage directly affects the monetary cost of using Zeth to transfer value. That is, high gas costs could make transactions very expensive, and therefore not practical for many use-cases, undermining the utility and viability.
+Efficiency and performance are arguably most important for the $\mixer$ contract, where gas usage directly affects the monetary cost of using $\zeth{}$ to transfer value. That is, high gas costs could make transactions very expensive, and therefore not practical for many use-cases, undermining the utility and viability.
 
-High storage or compute requirements on the client would severely restrict the set of devices on which Zeth client software can run, and long delays when sending or receiving transactions can adversely affect the user-experience, discouraging some users and undermining the privacy promises of the system.
+High storage or compute requirements on the client would severely restrict the set of devices on which $\zeth{}$ client software can run, and long delays when sending or receiving transactions can adversely affect the user-experience, discouraging some users and undermining the privacy promises of the system.
 
-Although the proof-of-concept implementation of Zeth is not intended to be used in a production environment, one of its aims is to demonstrate the practicality of the protocol in terms of transaction costs. Therefore, some of the techniques described here have been included in the proof-of-concept implementation, while in some cases implementors of production software may wish to make different trade-offs.
+Although the proof-of-concept implementation of $\zeth{}$ is not intended to be used in a production environment, one of its aims is to demonstrate the practicality of the protocol in terms of transaction costs. Therefore, some of the techniques described here have been included in the proof-of-concept implementation, while in some cases implementers of production software may wish to make different trade-offs.
 
-\subsection{Cost Centers}\label{implementation:efficiency:cost-centers}
+\subsection{Cost centers}\label{implementation:efficiency:cost-centers}
 
-One important performance factor, primarily affecting client performance, is the cost of zero-knowledge proof generation. This is directly related to the number of constraints used to represent the statement in \cref{zeth-protocol:statement}, which in turn depends on the specific cryptographic primitives used (see \cref{chap:instantiation}).
+One important factor, primarily affecting client performance, is the cost of zero-knowledge proof generation. This is directly related to the number of constraints used to represent the statement in \cref{zeth-protocol:statement}, which in turn depends on the specific cryptographic primitives used (see \cref{chap:instantiation}).
 
 Note that cryptographic primitives which are ``snark-friendly'' (i.e.~can be implemented using fewer gates in an arithmetic circuit) may not necessarily run efficiently on the \evm~or on standard hardware. As such, trade-offs must be made between proof generation cost and the gas costs of state transitions. An example of this is the hash function used in the Merkle tree of commitments. This is not only used in the statement of \cref{zeth-protocol:statement} (to verify Merkle proofs, see \cref{zeth-protocol:statement}), but also on the client (to create Merkle proofs, see \cref{zeth-protocol:mix-inp}) and in the $\mixer$ contract (to compute the Merkle root, see \cref{zeth-protocol:process-tx}).
 
-Aside from the specific hash function used, implementors have some freedom in the data structures and algorithms used to maintain the Merkle tree and generate proofs. Because of this freedom, and the importance of the chosen algorithms on performance across all components of the system, the majority of this section focuses on the details of the Merkle tree.
+Aside from the specific hash function used, implementers have some freedom in the data structures and algorithms used to maintain the Merkle tree and generate proofs. Because of this freedom, and the importance of the chosen algorithms on performance across all components of the system, the majority of this section focuses on the details of the Merkle tree.
 
-As described in \cref{chap:zeth-protocol}, Zeth notes are maintained and secured by the Merkle tree, whose depth $\mkTreeDepth$ must be fixed when the contract is deployed. Therefore, $\mkTreeDepth$ determines the maximum number of notes ($2^\mkTreeDepth$) that may be created over the lifetime of the deployment. To ensure the utility of \zeth, $\mkTreeDepth$ must be sufficiently large, and therefore the following includes discussion of \emph{scalability} with respect to $\mkTreeDepth$.
+As described in \cref{chap:zeth-protocol}, $\zeth{}$ notes are maintained and secured by the Merkle tree, whose depth $\mkTreeDepth$ must be fixed when the contract is deployed. Therefore, $\mkTreeDepth$ determines the maximum number of notes ($2^\mkTreeDepth$) that may be created over the lifetime of the deployment. To ensure the utility of \zeth, $\mkTreeDepth$ must be sufficiently large, and therefore the following includes a discussion of \emph{scalability} with respect to $\mkTreeDepth$.
 
 Also, due to the fact that $\mkTreeDepth$ is fixed, we assume that Merkle proofs are computed as $\mkTreeDepth$-tuples, no matter how many leaves have been populated. Unpopulated leaves are assumed to take some default value (usually a string of zero bits).
 
-\subsection{Client Performance}\label{implementation:efficiency:client-performance}
+\subsection{Client performance}\label{implementation:efficiency:client-performance}
 
 %% As described above, the primary potential costs for Zeth clients relate to the storage and compute requirements of the Merkle tree of commitments, and generation of the zero-knowledge proof.
 
-\subsubsection{Commitment Merkle Tree}
+\subsubsection{Commitment Merkle tree}
 
 The simplest possible implementation, which stores only the data items at the leaves of the tree, requires $2^\mkTreeDepth - 1$ hash invocations to compute the Merkle root or to generate a Merkle proof. The cost of this is too high to be practical for non-trivial values of $\mkTreeDepth$.
 
-An immediate improvement in compute costs can be achieved by simply storing all nodes (or all nodes whose value is not the default value) and updating only those necessary as new commitments are added. This reduces the cost of updating the tree to a fixed number (linear in $\log_2(\jsout)$ and $\mkTreeDepth$), but doubles the storage cost.
+An immediate improvement in compute costs can be achieved by simply storing all nodes (or all nodes whose value is not the default value) and updating only those necessary as new commitments are added. When adding $\jsout$ consecutive leaves to the tree, after $\bigO{\log_2(\jsout)}$ layers (requiring $\bigO{\jsout}$ hashes) we reach the common ancestor of all new leaves and can update the Merkle tree by proceeding along a single branch (of approximately $\mkTreeDepth - \log_2(\jsout)$ layers). Thus, the cost of updating the Merkle tree for a single transaction has a fixed bound which is linear in $\jsout$ and $\mkTreeDepth$. However, this doubles the storage cost of the tree since non-leaf nodes must also be persisted.
 
-In the case of the client, the Merkle tree will only be used to generate proofs for notes owned by the user of the client. Thereby clients need only store nodes of the Merkle tree that are required for this purpose, and may discard all others. In particular, any full sub-tree need only contain nodes that are part of Merkle paths associated with the user's notes. Implementations that discard unnecessary nodes achieve vast savings in storage space.
+In the case of the client, the Merkle tree will only be used to generate proofs for notes owned by the user of the client. Thereby $\zeth{}$ clients need only store nodes of the Merkle tree that are required for this purpose, and may discard all others. In particular, any full sub-tree need only contain nodes that are part of Merkle paths associated with the user's notes. Implementations that discard unnecessary nodes can achieve vast savings in storage space.
 
-\subsubsection{Zero-Knowledge Proof Generation}
+\subsubsection{Zero-knowledge proof generation}
 
-As well as keeping the number of constraints as low as possible, it is important to ensure that the prover implementation is optimal to ensure proving times are not unnecessarily long. Proof generation should also exploit any available parallelism, to help reduce the time taken. This may require specific programming languages or frameworks to be used, necessitating that proof generation be performed by some external process (as is the case in the proof-of-concept implementation).
+As well as keeping the number of constraints as low as possible, it is important to ensure that the prover implementation is optimal and thereby that proving times are as short as possible. Proof generation should also exploit any available parallelism, to help reduce the time taken. This may require specific programming languages or frameworks to be used, necessitating that proof generation be performed by some external process (as is the case in the proof-of-concept implementation).
 
-The proof generation process can also be very memory intensive (in part due to the FFT calculations required), and so ensuring that enough RAM is present in the system is important to avoid long proof times.
+The proof generation process can also be very memory intensive (in part due to the \fft~calculations required), and so ensuring that enough \ram~is present in the system is important to avoid long proof times.
 
 See \cref{appendix:sca-attacks:proof-generation} for a discussion of related security concerns.
 
-\subsection{Contract Performance}\label{implementation:efficiency:contract-performance}
+\subsection{Contract performance}\label{implementation:efficiency:contract-performance}
 
 For most components of the contract, the set of operations to be performed is strictly defined and the set of possible algorithmic optimizations that can be made is limited. In these cases, it is important to ensure that code is benchmarked and optimized to a reasonable degree, to minimize gas costs. We note that apart from the number and type of compute instructions executed, store and lookup operations have a significant impact on the gas used. In particular, storing new values is more expensive than overwriting existing values, and a gas rebate is made when contracts release stored values. See~\cite[Appendix H.1]{ethyellowpaper} for further details.
 
@@ -58,7 +58,7 @@ As in \cref{implementation:efficiency:client-performance}, the simplest possible
 
 The first-pass optimization (also described in \cref{implementation:efficiency:client-performance}) can be used to ensure that the cost of updating the Merkle tree (number of hash computations, stores and loads) is bounded by a constant that is linear in the Merkle tree depth. This is the strategy used in the proof-of-concept implementation of $\mixer$.
 
-It may be possible to gain further improvements in gas costs by discarding nodes from the Merkle Tree that are not required. Unlike clients, $\mixer$ is only required to compute the new Merkle root, and does not need to create or validate Merkle proofs (as these are checked as part of the zero-knowledge proof). Consequently, \emph{all} nodes in a sub-tree can be discarded when the sub-tree is full, and the optimization is much simpler to implement than on the client.
+It may be possible to gain further improvements in gas costs by discarding nodes from the Merkle tree that are not required. Unlike clients, $\mixer$ is only required to compute the new Merkle root, and does not need to create or validate Merkle proofs (as these are checked as part of the zero-knowledge proof). Consequently, \emph{all} nodes in a sub-tree can be discarded when the sub-tree is full, and the optimization is much simpler to implement than on the client.
 
 Another possible strategy for decreasing the gas costs associated with Merkle trees is \emph{Merkle Shrubs}, described in~\cite[Section 2.2]{merkle-shrubs}. Under this scheme, the contract maintains a ``frontier'' of roots of sub-trees and Merkle proofs provided by clients (as auxiliary inputs to the $\RELCIRC$ circuit) contain a path from the leaf to one of the nodes in the frontier. The gas savings in this scheme are due to the fact that, for new commitments, the contract need only recompute the value of nodes from the leaf to the ``frontier'' (not all the way to the root of the tree). However this comes at the cost of complexity in the arithmetic circuit, which must verify a Merkle path to one of several frontier nodes.
 
@@ -69,20 +69,20 @@ When choosing cryptographic primitives to be used on the \evm~(and considering t
 After presenting \blake{2s}{} circuit and its components working on little endian variables, we show a few optimizations.
 
 \subsubsection{Helper circuits}\label{implementation:efficiency:blake:helper-circuits}
-We first define the following helper circuits needed in the \blake{2s}{} routine working on $w$-bit long words.
+We first define the following helper circuits needed in the \blake{2s}{} routine, operating on $w$-bit long words.
 
 \paragraph{$\xortxt$ circuits}
 
-The following $\xortxt$ circuits on $w$-bit long variables have been implemented, \veryimportant{we assume the inputs are boolean (this is not checked)},
+The following $\xortxt$ circuits on $w$-bit long variables have been implemented, we assume the inputs are boolean (this is not checked in these circuits),
 \begin{itemize}
   \item ``Classic'' $\xortxt$ circuit, which xors 2 variables,\\ $a \xor b = c$;
   \item $\xortxt$ with constant, which xors two variables and a constant,\\ $a \xor b \xor c = d$, with $c$ constant;
   \item $\xortxt$ with rotation, which xors two variables and rotates the result.\\
   $a \xor b \ggg r = c$, with $r$ constant, and $\ggg$ the rightward rotation~\cite[Section 2.3]{blakecompietf};
-  i.e.~for and constant $r < w$ we have $\forall 0 < i < w$, $a_i \xor b_i = c_{i+r \pmod w}$
+  i.e.~for and constant $r < w$ we have $a_i \xor b_i = c_{i+r \pmod w}$, for $i = 0, \ldots, w$,
 \end{itemize}
 
-Each of these circuits presents $w$ constraints. Assuming that the inputs are boolean, the output is automatically boolean. To ascertain that both inputs are boolean ($a$ and $b$), we would need $2\cdot w$ more gates per circuit.
+Each of these circuits presents $w$ constraints. Assuming that the inputs are boolean, the output is automatically boolean. To ascertain that both inputs are boolean ($a$ and $b$), we would need $2\cdot w$ more gates per circuit.\footnote{Making sure that no gates are duplicated in the circuit is very important to keep the proving time as small as possible. One challenge of writing R1CS programs is to make sure that the statement is correctly represented, without redundancy, in order to keep the constraint system as small as possible.}
 
 
 \paragraph{Modular addition}\label{implementation:efficiency:blake:helper-circuits:modular-addition}
@@ -91,9 +91,9 @@ We present here two circuits to verify modular arithmetic.
 
 \subparagraph{Double modular addition: {\boldmath $a + b = c \pmod {2^w}$}.}
 
-This circuit checks that the sum of two $w$-bit long variables in little endian format modulo ${2^w}$ is equal to a $w$-bit long variable. More precisely, it checks the equality of the modular addition of $a+b \pmod {2^w}$ and $c$ and the booleaness of the later. \veryimportant{We assume the inputs are boolean (this is not checked).}
+This circuit checks that the sum of two $w$-bit long variables in little endian format modulo ${2^w}$ is equal to a $w$-bit long variable. More precisely, it checks the equality of the modular addition of $a+b \pmod {2^w}$ and $c$ and the booleaness of the later. We assume the inputs are boolean (this is not checked in this circuit).
 
-As the addition of two $w$-bit long integers results in at most an $w+1$-bit integer however, we consider $c$ to be $w+1$ bit-long. We do not care about the last bit value, $c_w$, however but have to ensure its booleaness.
+As the addition of two $w$-bit long integers results in at most an $(w + 1)$-bit integer, we consider $c$ to be $(w + 1)$-bit long. We do not care about the last bit value, $c_w$, but have to ensure its booleaness.
 
 The circuit presents the following $w+2$ constraints, for $a$ and $b$ of size $w$, where $w=32$ in practice, and variable $c$ of size $w+1$, that:
 
@@ -103,41 +103,41 @@ The circuit presents the following $w+2$ constraints, for $a$ and $b$ of size $w
 \end{equation}
 \begin{equation}
   \label{implementation:eq:modular_bool}
-  \forall j \in [ 0, w ],\ (c_j - 0) \cdot (c_j - 1) = 0
+  \forall j \in \range{0}{w},\ (c_j - 0) \cdot (c_j - 1) = 0
 \end{equation}
 
 \subparagraph{Triple modular addition: {\boldmath $a + b + c = d \pmod {2^w}$}.}
 
-This circuit checks the equality of a $w$-bit long variable $d$ with the sum of three $w$-bit long variables in little endian format modulo ${2^w}$. More precisely, it checks the equality of the modular addition of $a+b+c \pmod {2^w}$ and $d$ and the booleaness of the later. \veryimportant{We assume the inputs are boolean (this is not checked).}
+This circuit checks the equality of a $w$-bit long variable $d$ with the sum of three $w$-bit long variables in little endian format modulo ${2^w}$. More precisely, it checks the equality of the modular addition of $a+b+c \pmod {2^w}$ and $d$ and the booleaness of the latter. We assume the inputs are boolean (this is not checked in this circuit).
 
-As the addition of three $w$-bit long integers results in at most an $w+2$-bit integer however, we consider $d$ to be $w+2$ bit-long. We do not care about the last two bits' values however ($d_w$ and $d_{w+1}$), but have to ensure their booleaness.
+As the addition of three $w$-bit long integers results in at most an $(w + 2)$-bit integer, we consider $d$ to be $(w + 2)$-bit long. We do not care about the values of the last two bits ($d_w$ and $d_{w+1}$), but have to ensure their booleaness.
 
 The circuit presents the following $w+3$ constraints, for $a$, $b$ and $c$ of size $w$, where $w=32$ in practice, and variable $d$ of size $w+2$, that:
 \begin{align}
   \sum_{i=0}^{w - 1} \left( a_i + b_i + c_i \right ) \cdot 2^i = \sum_{j=0}^{w+1} d_j \cdot 2^j \label{implementation:eq:triple_modular_sum} \\
-  \forall j \in [ 0, w+1 ],\ (d_j - 0) \cdot (d_j - 1) = 0 \label{implementation:eq:triple_modular_bool}
+  \forall j \in \range{0}{w + 1},\ (d_j - 0) \cdot (d_j - 1) = 0 \label{implementation:eq:triple_modular_bool}
 \end{align}
 
 \subsubsection{\blake{2s}{} routine circuit}\label{implementation:efficiency:blake:g-circuit}
 
-We define in this section the circuit of \blake{2}{} routine (see:~\cite[Section 3.1]{blakecompietf} and~\cref{implementation:alg:g}), also known as ``$\blakeG$ function''~\cite[Section 2.4]{aumasson2013blake2}. $\blakeG$ is based on ChaCha encryption~\cite{bernstein2008chacha}, works on $w$-bit long words, and presents $8 \cdot w+10$ constraints. The function mixes a state ($a$, $b$, $c$, and $d$) with the inputs ($x$, and $y$) and returns the updated state.
+We define in this section the circuit of the \blake{2}{} routine (see~\cite[Section 3.1]{blakecompietf} and~\cref{implementation:alg:g}) known as ``$\blakeG$ function''~\cite[Section 2.4]{aumasson2013blake2}. $\blakeG$ is based on $\chacha{}$ encryption~\cite{bernstein2008chacha}. It works on $w$-bit long words, and presents $8 \cdot w+10$ constraints. The function mixes a state ($a$, $b$, $c$ and $d$) with the inputs ($x$ and $y$) and returns the updated state.
 
-\veryimportant{This circuit does not check the booleaness of the inputs or state.} However, given that the state is boolean, the output is automatically boolean due to the use of the modular addition circuits.
+This circuit does not check the booleaness of the inputs or state. However, given that the state is boolean, the output is automatically boolean due to the use of the modular addition circuits.
 
 For \blake{2s}{}, we have $w=32$, $r_1=16$, $r_2 = 12$, $r_3=3$ and $r_4=7$.
 
 \begin{figure*}
   \begin{minipage}[t]{.4\textwidth}
     \centering
-    \procedure[linenumbering]{$\blakeG({a}, {b}, {c}, {d}; {x}, {y}) \to ({a_2}, {b_2}, {c_2}, {d_2})$}{%
-      a_{1} = a + b + x \pmod {2^w} \\
-      d_{1} = d \xor a_{1} \ggg r_1 \\
-      c_{1} = c + d_{1} \pmod {2^w} \\
-      b_{1} = b \xor c_{1} \ggg r_2 \\
-      a_{2} = a_{1} + b_{1} + {y} \pmod {2^w} \\
-      d_{2} = d_{1} \xor a_{2} \ggg r_3 \\
-      c_{2} = c_{1} + d_{2} \pmod {2^w} \\
-      b_{2} = b_{1} \xor c_{2} \ggg r_4 \\
+    \procedure[linenumbering]{$\blakeG({a}, {b}, {c}, {d}; {x}, {y}) \mapsto ({a_2}, {b_2}, {c_2}, {d_2})$}{%
+      a_{1} \gets a + b + x \pmod {2^w} \\
+      d_{1} \gets d \xor a_{1} \ggg r_1 \\
+      c_{1} \gets c + d_{1} \pmod {2^w} \\
+      b_{1} \gets b \xor c_{1} \ggg r_2 \\
+      a_{2} \gets a_{1} + b_{1} + {y} \pmod {2^w} \\
+      d_{2} \gets d_{1} \xor a_{2} \ggg r_3 \\
+      c_{2} \gets c_{1} + d_{2} \pmod {2^w} \\
+      b_{2} \gets b_{1} \xor c_{2} \ggg r_4 \\
       \pcreturn a_2, b_2, c_2, d_2
     }
     \caption{$\blakeG$ primitive~\cite[Section 3.1]{blakecompietf}}\label{implementation:alg:g}
@@ -146,16 +146,16 @@ For \blake{2s}{}, we have $w=32$, $r_1=16$, $r_2 = 12$, $r_3=3$ and $r_4=7$.
     \centering
     \procedure[linenumbering]{$\getsigma()$}{%
       \blakePermutation{} \in (\NN^{16})^{10} \\
-      \blakePermutation{0} = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15) \\
-      \blakePermutation{1} = (14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3) \\
-      \blakePermutation{2} = (11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4) \\
-      \blakePermutation{3} = (7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8) \\
-      \blakePermutation{4} = (9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13) \\
-      \blakePermutation{5} = (2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9) \\
-      \blakePermutation{6} = (12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11) \\
-      \blakePermutation{7} = (13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10) \\
-      \blakePermutation{8} = (6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5) \\
-      \blakePermutation{9} = (10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0) \\
+      \blakePermutation{0} \gets (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15) \\
+      \blakePermutation{1} \gets (14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3) \\
+      \blakePermutation{2} \gets (11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4) \\
+      \blakePermutation{3} \gets (7, 9, 3, 1, 13, 12, 11, 14, 2, 6, 5, 10, 4, 0, 15, 8) \\
+      \blakePermutation{4} \gets (9, 0, 5, 7, 2, 4, 10, 15, 14, 1, 11, 12, 6, 8, 3, 13) \\
+      \blakePermutation{5} \gets (2, 12, 6, 10, 0, 11, 8, 3, 4, 13, 7, 5, 15, 14, 1, 9) \\
+      \blakePermutation{6} \gets (12, 5, 1, 15, 14, 13, 4, 10, 0, 7, 6, 3, 9, 2, 8, 11) \\
+      \blakePermutation{7} \gets (13, 11, 7, 14, 12, 1, 3, 9, 5, 0, 15, 4, 8, 6, 2, 10) \\
+      \blakePermutation{8} \gets (6, 15, 14, 9, 11, 3, 0, 8, 12, 2, 13, 7, 1, 4, 10, 5) \\
+      \blakePermutation{9} \gets (10, 2, 8, 4, 7, 6, 1, 5, 15, 11, 9, 14, 3, 12, 13, 0) \\
       \pcreturn \blakePermutation{}
     }
     \caption{$\blake{2}{}$ permutation table~\cite[Section 2.7]{blakecompietf}}\label{implementation:alg:blake2-perm}
@@ -164,29 +164,29 @@ For \blake{2s}{}, we have $w=32$, $r_1=16$, $r_2 = 12$, $r_3=3$ and $r_4=7$.
 
 \subsubsection{\blake{2s}{} compression function circuit}\label{implementation:efficiency:blake:comp-circuit}
 
-The compression function is defined as follows, for more details see:~\cref{implementation:alg:blake2s_comp},
+The compression function is defined as follows, for more details see~\cref{implementation:alg:blake2s_comp},
 \[
-  \blake{2sC}{} : \BB^n \times \BB^{2n} \times \BB^{n/4} \times \BB^{n/4} \to \BB^n
+  \blake{2sC}{} : \BB^n \times \BB^{2n} \times \BB^{n/4} \times \BB^{n/4} \to \BB^n\,.
 \]
 
-\blake{2C}{} takes as input a state $h \in \BB^n$ which is used as chaining value when hashing, the message to compress $x \in \BB^{2n}$, a message length written in binary $t \in \BB^{n/4}$ which is incremented when hashing and a binary flag $f \in \BB^{n/4}$ to tell whether the current block is the last to be compressed to prevent length extension attacks.
+\blake{2C}{} takes as input a state $h \in \BB^n$ which is used as chaining value when hashing, a message to compress $x \in \BB^{2n}$, a message length written in binary $t \in \BB^{n/4}$ which is incremented when hashing and a binary flag $f \in \BB^{n/4}$ to tell whether the current block is the last to be compressed to prevent length extension attacks.
 
-\blake{2C}{} uses \blakeG function iteratively over \blakeRound rounds on a state and message. We hardcoded the constant initialization vector \blakeIV{} and the permutation table \blakePermutation{}. \blake{2sC}{} works in little endian (see:~\cite[Section 2.4]{blakecompietf}) on $n=256$-bit long variables and $w=32$-bit long words and the rotation constants specified in~\cref{implementation:efficiency:blake:g-circuit} (see:~\cite[Section 2.1]{blakecompietf}). We have the following constants (see:~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
+\blake{2C}{} uses the \blakeG function iteratively over \blakeRound number of rounds on a state and message. The constant initialization vector \blakeIV{} and the permutation table \blakePermutation{} are hard-coded. \blake{2sC}{} works in little endian (see~\cite[Section 2.4]{blakecompietf}) on $n$-bit long variables ($n = 256$), $w$-bit long words ($w = 32$), and the rotation constants specified in~\cref{implementation:efficiency:blake:g-circuit} (see~\cite[Section 2.1]{blakecompietf}). We have the following constants (see~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
 
 \begin{itemize}
-    \item $\blakeIV{}$ is the $8 \cdot w$-bit long Initialisation Vector; it corresponds to the first $w$ bits of the fractional parts of the square roots of the first eight prime numbers ($2, 3, 5, 7, \ldots$) (see:~\cite[Section 2.6]{blakecompietf});
-    \item $\blakePermutation{}$ are the $10 \cdot 16$ permutation constants of $\blake{2}{}$ (see:~\cref{implementation:alg:blake2-perm} and~\cite[Section 2.7]{blakecompietf});
-    \item $\blakeRound$, the number of rounds: $10$ for $\blake{2sC}{}$, $12$ for $\blake{2bC}$.
+    \item $\blakeIV{}$ is the $(8 \cdot w)$-bit long initialization vector; it corresponds to the first $w$ bits of the fractional parts of the square roots of the first eight prime numbers ($2, 3, 5, 7, \ldots$) (see~\cite[Section 2.6]{blakecompietf});
+    \item $\blakePermutation{}$ are the $10 \cdot 16$ permutation constants of $\blake{2}{}$ (see~\cref{implementation:alg:blake2-perm} and~\cite[Section 2.7]{blakecompietf});
+    \item $\blakeRound$, the number of rounds: $10$ for $\blake{2sC}{}$, $12$ for $\blake{2bC}{}$.
   \end{itemize}
-  We have the following variables (see:~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
+  We have the following variables (see~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
   \begin{itemize}
-    \item $\blakeInitState{}$ is the $8 \cdot w$-bit long initial state while $\blakeState{}$ is the $16 \cdot w$-bit long final state;
+    \item $\blakeInitState{}$ is the $(8 \cdot w)$-bit long initial state while $\blakeState{}$ is the $(16 \cdot w)$-bit long final state;
     \item $\blakeDigestLength{i}$ are two $w$-bit long counters encoding the block length;
-    \item $\blakeFlag{i}$ are two $w$-bit long finalization flags. We set the first one $\blakeFlag{0}$ to $2^w-1$ to state when the input block is the last one to be hashed. The second is unused, $\blakeFlag{1}=0$, as it is only used for tree hashing mode which is not our case.
+    \item $\blakeFlag{i}$ are two $w$-bit long finalization flags. We set the first one $\blakeFlag{0}$ to $2^w-1$ to state when the input block is the last one to be hashed. The second, $\blakeFlag{1}=0$ is only set for tree hashing mode (which is not our case) and is therefore unused.
 \end{itemize}
-We introduce the following functions to write \blake{2C}{} (see:~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.6]{blakecompietf}):
+We introduce the following functions to write \blake{2C}{} (see~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.6]{blakecompietf}):
 \begin{itemize}
-  \item The function $\primeF$ takes a positive integer $i$ as input and outputs the $i^{th}$ prime number;
+  \item The function $\primeF$ takes a positive integer $i$ as input and outputs the $i$-th prime number;
   \item The function $\decF$ takes a real number $x$ as input outputs its positive decimal part.
 \end{itemize}
 
@@ -219,30 +219,28 @@ We introduce the following functions to write \blake{2C}{} (see:~specifications~
   \caption{\blake{2}{} compression function~\cite[Section 3.2]{blakecompietf}. Set $n$, $w$ and $\blakeG$'s constants to obtain \blake{2sC}{}.}\label{implementation:alg:blake2s_comp}
 \end{figure*}
 
-This circuit presents $(64 \cdot \blakeRound + 8) \cdot w + 8 \cdot \blakeRound + 10$ constraints. For \blake{2sC}{}, as $w=32$ and $\blakeRound=10$, we have 21536 constraints.
+This circuit presents $((64 \cdot \blakeRound + 8) \cdot w + 8 \cdot \blakeRound + 10)$ constraints. For \blake{2sC}{}, as $w=32$ and $\blakeRound=10$, we have 21536 constraints.
 
-\veryimportant{We do not check the input block booleaness in this circuit}. Given that the initial state is boolean, the output is automatically boolean. This can be proved iteratively by the booleaness of $\blakeG$ primitive's output.
+We do not check the input block booleaness in this circuit. Given that the initial state is boolean, the output is automatically boolean. This can be proved iteratively by the booleaness of $\blakeG$ primitive's output.
 
-\paragraph*{Security requirement}
-
-To ensure the correct use of \blake{2sC}{}, \blake{2sC}{}'s inputs \MUST~be boolean.
+\paragraph*{Security requirement.}  The inputs to \blake{2sC}{} \MUST~be boolean.
 
 \subsubsection{\blake{2s}{} hash function}\label{implementation:efficiency:blake:hash-circuit}
 
-The hash function is defined as follows, for more details see:~\cref{implementation:alg:blake2s_comp},
+The hash function is defined as follows, for more details see~\cref{implementation:alg:blake2s_comp},
 \[
   \blake{2s}{} : \BB^{\leq 2n} \times \BB^{*} \to \BB^n
 \]
 
 \blake{2}{} takes as input a hash key $k \in \BB^n$ and the message to hash $x \in \BB^{2n}$.
-
-\blake{2}{} uses \blake{2C}{} function iteratively over each $2n$-bit long chunk of the padded message. If the key is non null, it is used as the first block to be hashed. We hardcoded the constant initialization vector \blakeIV{} and part of the parameter block $\blakePB{}$. We have the following constants (see:~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
+%
+\blake{2}{} uses the \blake{2C}{} function iteratively over each $2n$-bit long chunk of the padded message. If the key is non null, it is used as the first block to be hashed. The constant initialization vector \blakeIV{} and part of the parameter block $\blakePB{}$ are hard-coded. We have the following constants (see~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
 \begin{itemize}
-    \item $\blakeIV{}$ is the $8 \cdot w$-bit long Initialisation Vector; it corresponds to the first $w$ bits of the fractional parts of the square roots of the first eight prime numbers ($2, 3, 5, 7, \ldots$) (see:~\cite[Section 2.6]{blakecompietf}).
+    \item $\blakeIV{}$ is the $(8 \cdot w)$-bit long Initialization Vector; it corresponds to the first $w$ bits of the fractional parts of the square roots of the first eight prime numbers ($2, 3, 5, 7, \ldots$) (see~\cite[Section 2.6]{blakecompietf}).
 \end{itemize}
-  We have the following variables (see:~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
+  We have the following variables (see~specifications~\cite{aumasson2013blake2} and~\cite[Section 2.2]{blakecompietf}),
   \begin{itemize}
-    \item $\blakePB{}$ is the $16 \cdot w$-bit long parameter block used to initialized the state (see:~\cite[Section 2.5]{blakecompietf}). In big endian, the first byte would correspond to the digest length (fixed to 32 bytes), the second byte to the key length, the third and fourth bytes correspond to the use of the serial mode;
+    \item $\blakePB{}$ is the $(16 \cdot w)$-bit long parameter block used to initialize the state (see~\cite[Section 2.5]{blakecompietf}). In big endian encoding, the first byte corresponds to the digest length (fixed to 32 bytes), the second byte to the key length, the third and fourth bytes correspond to the use of the serial mode;
     \item $\blakeInitState{} \in \BB^\blakeCompLen$, the chaining value.
 \end{itemize}
 
@@ -267,7 +265,7 @@ The hash function is defined as follows, for more details see:~\cref{implementat
   \caption{\blake{2}{} hash function~\cite[Section 3.3]{blakecompietf}. Set $n=16w$ and $\blakeG$'s constants accordingly to obtain \blake{2s}{}.}\label{implementation:alg:blake2s_hash}
 \end{figure*}
 
-\veryimportant{We do not check the input block booleaness in this circuit}. Given that the initial state is boolean, the output is automatically boolean. This can be proved iteratively by the booleaness of $\blake{2C}{}$ primitive's output.
+We do not check the input block booleaness in this circuit. Given that the initial state is boolean, the output is automatically boolean. This can be proved iteratively by the booleaness of $\blake{2C}{}$ primitive's output.
 
 \paragraph*{Security requirement}
 
@@ -275,7 +273,7 @@ To ensure the correct use of \blake{2s}{}, \blake{2s}{}'s inputs \MUST~be boolea
 
 \subsubsection{Optimizing the circuits}\label{implementation:efficiency:blake:optimization}
 
-We presented beforehand helper circuits to build \blake{2s}{} compression function. We show here two exclusive methods to optimize these circuits.
+The above helper circuits form the building blocks of the \blake{2s}{} compression function. We show here two exclusive methods to optimize these circuits.
 
 \paragraph{Optimizing the Modular additions}\label{implementation:efficiency:blake:optimization:mod-circuits}
 
@@ -288,7 +286,7 @@ We present here an optimization on the circuit to save one constraint by merging
 
 \begin{equation}
   \label{implementation:eq:modular_bool_to_prove}
-  \forall j \in [ 0, w - 1 ],\ (c_j - 0) \cdot (c_j - 1) = 0
+  \forall j \in \range{0}{w - 1},\ (c_j - 0) \cdot (c_j - 1) = 0
 \end{equation}
 with $\sum_{i=0}^{w - 1} x_i \cdot 2^i$ a binary encoding of $x$ ($x_i$ is the $i^{th}$ bit of $x$).
 
@@ -300,33 +298,33 @@ The most straightforward way to prove that $a+b=c \pmod{2^w}$ and $c$ booleaness
 As we perform arithmetic modulo $2^w$, we do not care about the value of $c_w$ but would like to ensure its booleaness. As one may notice, the summing constraint~\cref{implementation:eq:modular_sum} is an equality of two linear combinations with no multiplication by a variable. Hence, we can combine it with the boolean constraint of $c_w$ to remove any reference to $c_w$ and still have a bilinear gate. To do so, we first rewrite~\cref{implementation:eq:modular_sum} as an equality check over $c_{w}\cdot 2^{w}$ and multiply~\cref{implementation:eq:modular_bool} for $j=n$ by $2^{2\cdot w}$.
 \begin{equation}
   \label{implementation:eq:modular_sum_proof}
-  \sum_{i=0}^{w - 1} ( a_i + b_i \textcolor{blue}{- c_i}) \cdot 2^i = c_{w} \cdot 2^w
+  \sum_{i=0}^{w - 1} (a_i + b_i - c_i) \cdot 2^i = c_{w} \cdot 2^w
 \end{equation}
 \begin{equation}
   \label{implementation:eq:modular_bool_proof}
-  \textcolor{blue}{2^w \cdot} (c_w - 0) \cdot \textcolor{blue}{2^w \cdot} (c_w - 1)= 0
+  2^w \cdot (c_w - 0) \cdot 2^w \cdot (c_w - 1)= 0
 \end{equation}
 
 We finally replace $c_w \cdot 2^w$ in~\cref{implementation:eq:modular_bool_proof} by the value from~\cref{implementation:eq:modular_sum_proof}.
-\begin{align*}
-  0 &= \textcolor{blue}{2^w \cdot} (c_w - 0) \cdot \textcolor{blue}{2^w \cdot} (c_w - 1) = \textcolor{blue}{2^w \cdot} c_w \cdot (\textcolor{blue}{2^w \cdot} c_w - \textcolor{blue}{2^w})\\
-  &= \left ( \sum_{i=0}^{w - 1} ( a_i + b_i - c_i ) \cdot 2^i \right ) \cdot \left [ \left (\sum_{i=0}^{w - 1} ( a_i + b_i - c_i ) \cdot 2^i \right ) - 2^w \right ]\\
-\end{align*}
-This results in~\cref{implementation:eq:modular_to_prove} and~\cref{implementation:eq:modular_bool_to_prove}. All references to $c_w$ disappeared and, with a single multiplication by a variable, we still have bilinear gates.\end{proof}
+\begin{multline*}
+  0 = 2^w \cdot (c_w - 0) \cdot 2^w \cdot (c_w - 1) = 2^w \cdot c_w \cdot (2^w \cdot c_w - 2^w)\\
+  = \left ( \sum_{i=0}^{w - 1} ( a_i + b_i - c_i ) \cdot 2^i \right ) \cdot \left( \left (\sum_{i=0}^{w - 1} ( a_i + b_i - c_i ) \cdot 2^i \right ) - 2^w \right)
+\end{multline*}
+This results in~\cref{implementation:eq:modular_to_prove} and~\cref{implementation:eq:modular_bool_to_prove}. All references to $c_w$ have disappeared and, with a single multiplication by a variable, we still have bilinear gates.\end{proof}
 
 \subparagraph{Triple modular addition: {\boldmath $a + b + c = d \pmod {2^w}$}.}
 
-To optimize, we will use the former circuit twice. We will define a temporary variable $d'$ such that $a+b = d' \pmod {2^w}$. As such, we have $c+d'= d \pmod {2^w}$. As $d'$ is the addition of two $w$-bit long variables, it is $w+1$ bit long. However as we do the sum modulo $2^w$, we discard the last bit of $d'$. We do similarly for $d$.
+To optimize, we use the above circuit twice. We define a temporary variable $d'$ such that $a+b = d' \pmod {2^w}$. As such, we have $c+d'= d \pmod {2^w}$. As $d'$ is the addition of two $w$-bit long variables, it is $(w + 1)$-bit long. However as we evaluate the sum modulo $2^w$, we discard the last bit of $d'$. We proceed similarly for $d$.
 To ensure that $d$ is boolean, we check the booleaness of the $w+1$ bits of $d$ as well as the booleaness of the last bit of $d'$ (to account for $d$'s ${w+2}^{th}$ bit in the original expression ($a + b + c = d \pmod {2^w}$)).
 
 We thus obtain the following circuit with $w+2$ constraints,
 \begin{align*}
   \left ( \sum_{i=0}^{w - 1} ( a_i + b_i - d'_i ) \cdot 2^i \right ) \cdot \left ( \sum_{i=0}^{w - 1} ( a_i + b_i - d'_i ) \cdot 2^i - 2^w \right ) &= 0 \\
   \left ( \sum_{i=0}^{w - 1} ( c_i + d'_i - d_i ) \cdot 2^i \right ) \cdot \left ( \sum_{i=0}^{w - 1} ( c_i + d'_i - d_i ) \cdot 2^i - 2^w \right ) &= 0 \\
-  \forall j \in [0, w - 1],\ (d_j - 0) \cdot (d_j - 1 ) &= 0
+  \forall j \in \range{0}{w - 1},\ (d_j - 0) \cdot (d_j - 1 ) &= 0
 \end{align*}
 
-These optimizations leads to a gain of 320 constraints ($=4 \cdot 8 \cdot rounds$).
+These optimizations lead to a gain of 320 constraints ($=4 \cdot 8 \cdot \rounds$).
 
 \paragraph{Optimizing Blake2s routine's circuit}\label{implementation:efficiency:blake:optimization:batch-constraints}
 
@@ -342,5 +340,5 @@ Using the more efficient optimization on the modular additions, the \blake{2s}{}
 
 \subsubsection{Increasing the PRF security with Blake}\label{implementation:efficiency:blake-prf}
 
-As \blake{2}{} comprises a personalization tag in its parameter block $\blakePB{}$, one could ensure the independence of the \prf{}s by writing different tags for each of them. We would be able to consider up to $2^{30}$ inputs and outputs and have a security parameter of $\secpar$.
+As \blake{2}{} comprises a personalization tag in its parameter block $\blakePB{}$, one could ensure the independence of the \prf{}s by writing different tags for each of them (we would be able to consider up to $2^{30}$ inputs and outputs).
 We did not choose to write this enhancement in the instantiation to keep a general tagging method in case of a change of hash function.
