@@ -9,7 +9,7 @@ We list below the security requirements to instantiate the primitives of the \ze
     \item $\prfaddr{}{}, \prfnf{}{}, \prfrho{}{}$ and $\prfpk{}{}$ \MUST~be PRF when keyed by $\ask$ and $\phi$, and be collision resistant (see~\cref{preliminaries:def:collision-resistance}, and~\cref{preliminaries:definitions:prfs}).
     \item $\otsigscheme$ \MUST~be $\ufcma$ (see~\cref{preliminaries:def:ufcma} and~\cref{appendix:trnm:preliminaries:ethereum-trnm}).
     \item $\comm$ \MUST~be computationally hiding and binding (see~\cref{preliminaries:definitions:commitment-sc}).
-    \item $\mkhash$ \MUST~be collision resistant with $h_0 = {0}_{\FFx{\rBN}}$ (see~\cref{preliminaries:definitions:hashcomp}).~\footnote{This security requirement is equivalent to the one in~\cite[Section 5.4.1.3]{zcashprotocol} where finding a preimage of $0^\shaTwoDigestLen$ must be hard.}
+    \item $\mkhash$ \MUST~be collision resistant with $h_0 = {0}_{\FFx{\rCURVE}}$ (see~\cref{preliminaries:definitions:hashcomp}).~\footnote{This security requirement is equivalent to the one in~\cite[Section 5.4.1.3]{zcashprotocol} where finding a preimage of $0^\shaTwoDigestLen$ must be hard.}
     \item $\encscheme$ \MUST~be $\indccaii$ and $\ikcca$ (see, respectively,~\cite[Definition 8]{abdalla1999dhaes} and \cref{preliminaries:def:ikcca}).
     % \item $\pack{}{}$, $\packResBits{}$ and $\unpack{}{}$ \MUST~be bijective, i.e.~the encoding (resp.~decoding) of a variable via $\pack{}{}$ and $\packResBits{}$ (resp. $\unpack{}{}$) \MUST~be bijective.
     % \item $\encode{}{}$ and $\decode{}{}$ \MUST~be bijective.
