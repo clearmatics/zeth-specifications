@@ -63,7 +63,6 @@
 \nomenclature[D, 030]{$\mixer$}{The mixer smart-contract instance}
 \nomenclature[D, 040]{$\encscheme$}{In-band encryption scheme used to share \zeth{} notes}
 
-
 % Ethereum notation - E
 \nomenclature[E, 010]{$\accountstyle{Account}$}{Standard notation for an $\ethereum$ account object}
 \nomenclature[E, 020]{$\contractstyle{Cntrct}$}{Standard notation for an $\ethereum$ smart-contract instance}
@@ -72,9 +71,15 @@
 \nomenclature[E, 050]{$\wstate[a]$}{Account object stored at address $a$ in $\wstate$ if it exists, $\perp$ is returned otherwise}
 
 % Constants - F (Alphabetical order, no manual order enforced)
+\nomenclature[F]{$\rCURVE$}{Characteristic of the scalar field of some chosen curve \Curve}
+\nomenclature[F]{$\fieldBitLen$}{Bit-length of elements in field element $x \in \FFx{\rCURVE}$ \nomunit{$\ceil{\log_2{\rCURVE}}$ bits}}
+\nomenclature[F]{$\fieldBitCap$}{Field capacity of $\FFx{\rCURVE}$, defined as the maximum bit length $l$ such that all numbers $x$ encoded on $l$ bits are elements of $\FFx{\rCURVE}$. In other words, $\fieldBitCap = \max_{x \in \FFx{\rCURVE}} \smallset{\ceil{\log_2{x}}} \suchthat \sum_{i \in [\fieldBitCap]} 2^i \in \FFx{\rCURVE}$}
 \nomenclature[F]{$\rBN$}{Characteristic of the scalar field of \BNCurve, $\rBN = \seqsplit{21888242871839275222246405745257275088548364400416034343698204186575808495617}$~\cite{bn-prime}}
-\nomenclature[F]{$\bnFieldBitLen$}{Bit-length of a field element $x \in \FFx{\rBN}$ \nomunit{$\ceil{\log_2{\rBN}} = 254\, bits$}}
-\nomenclature[F]{$\bnFieldBitCap$}{Field capacity of $\FFx{\rBN}$. It is defined as the maximum bit length $l$ such that all numbers $x$ encoded on $l$ bits are elements of $\FFx{\rBN}$. In other words, $\bnFieldBitCap = \max_{x \in \FFx{\rBN}} \smallset{\ceil{\log_2{x}}} \suchthat \sum_{i \in [\bnFieldBitCap]} 2^i \in \FFx{\rBN}$ \nomunit{$\floor{\log_2{\rBN}} = 253\, bits$}}
+\nomenclature[F]{$\bnFieldBitLen$}{Bit-length of a field element $x \in \FFx{\rBN}$ \nomunit{$\ceil{\log_2{\rBN}} = 254$ bits}}
+\nomenclature[F]{$\bnFieldBitCap$}{Field capacity of $\FFx{\rBN}$. \nomunit{$\floor{\log_2{\rBN}} = 253$ bits}}
+\nomenclature[F]{$\rBLS$}{Characteristic of the scalar field of \BLSCurve, $\rBLS = \seqsplit{8444461749428370424248824938781546531375899335154063827935233455917409239041}$~\cite{bowe18zexe}}
+\nomenclature[F]{$\blsFieldBitLen$}{Bit-length of a field element $x \in \FFx{\rBLS}$ \nomunit{$\ceil{\log_2{\rBLS}} = 253$ bits}}
+\nomenclature[F]{$\blsFieldBitCap$}{Field capacity of $\FFx{\rBLS}$. \nomunit{$\floor{\log_2{\rBLS}} = 252$ bits}}
 \nomenclature[F]{$\jsin, \jsout, \jsmax$}{The number of inputs and outputs of a joinsplit and $\jsmax = \max\smallset{\jsin, \jsout}$}
 \nomenclature[F]{$\mkTreeDepth$}{The depth of the Merkle tree used to store commitments}
 \nomenclature[F]{$\addressLen$}{The bit-length of an \ethereum~address \nomunit{$160\, bits$}}
