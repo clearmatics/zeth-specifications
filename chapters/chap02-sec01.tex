@@ -5,8 +5,10 @@
 We begin by describing, and giving intuition about, the data types (see~\cref{preliminaries:structured-data}) used in \zeth.
 We follow some design rationale from \zerocash~\cite{sasson2014zerocash}, and \zcash~\cite{zcashprotocol} in order to prevent the transaction malleability attack, and the Faerie Gold attack\cite[Section 8.4]{zcashprotocol}. We refer the reader to~\cref{appendix:trnm} for more details.
 
+In what follows, \Curve~represents a curve with scalar field $\FFx{\rCURVE}$. Definitions are given in terms of this generic curve, but where appropriate we give examples and notes relating to specific instances. % TODO such as \BNCurve.
+
 \begin{description}
-    \item[\zethNoteDType] Represents a note in \zeth. It comprises the note's owner public address \apk, identifier $\rrho$, randomness \noter{}~and value \notev.
+    \item[\zethNoteDType] Represents a note in \zeth. This data type consists of the note owner's public address \apk, identifier $\rrho$, randomness \noter{}~and value \notev.
         \begin{table}[H]
         \centering
         \begin{tabular}{ccc}
@@ -23,10 +25,10 @@ We follow some design rationale from \zerocash~\cite{sasson2014zerocash}, and \z
         \centering
         \begin{tabular}{cp{20em}c}
             Field & Description & Data type\\ \toprule
-            $\mkpath$ & Merkle authentication path to the commitment corresponding to the $\zethnote$ to spend & $(\FFx{\rBN})^{\mkTreeDepth}$ \\ \midrule
+            $\mkpath$ & Merkle authentication path to the commitment corresponding to the $\zethnote$ to spend & $(\FFx{\rCURVE})^{\mkTreeDepth}$ \\ \midrule
             $\mkaddr$ & Commitment address in the Merkle tree & $\BB^{\mkTreeDepth}$\\ \midrule
             $\znote$ & $\zeth{}$ note object & $\zethNoteDType$ \\ \midrule
-            $\cm{}$ & $\zeth{}$ note commitment & $\FFx{\rBN}$ \\ \midrule
+            $\cm{}$ & $\zeth{}$ note commitment & $\FFx{\rCURVE}$ \\ \midrule
             $\ask$ & Note owner's spending key & $\BB^{\askLen}$\\ \midrule
             $\nf{}$ & Note nullifier & $\BB^{\prfNfOutLen}$\\ \bottomrule
         \end{tabular}
@@ -38,12 +40,12 @@ We follow some design rationale from \zerocash~\cite{sasson2014zerocash}, and \z
         \centering
         \begin{tabular}{cp{20em}c}
             Field & Description & Data type\\ \toprule
-            $\mkroot$ & Merkle root of the Merkle tree & $\FFx{\rBN}$ \\ \midrule
-            $\nfs{}$ & Indexed set of nullifiers of the ``old'' notes to spend (see~\cref{instantiation:statement:pack} for definition of $\nfFLen$) & ${((\FFx{\rBN})^{\nfFLen})}^{\jsin}$\\ \midrule
-            $\cms{}$ & Indexed set of commitments to the newly created notes & ${(\FFx{\rBN})}^{\jsout}$\\ \midrule
-            $\hsig$ & Signature hash (non-malleability, see~\cref{appendix:trnm} and~\cref{instantiation:statement:pack} for definition of $\hsigFLen$)) & $(\FFx{\rBN})^{\hsigFLen}$\\ \midrule
-            $\htags{}$ & Indexed set of message authentication tags (non-malleability, see~\cref{appendix:trnm} and~\cref{instantiation:statement:pack} for definition of $\htagFLen$)) & ${((\FFx{\rBN})^{\htagFLen})}^{\jsin}$\\ \midrule
-            $\resbits$ & Residual bits corresponding to unpacked bits of former fields (see~\cref{instantiation:statement:pack} for definition of $\resBitsFLen$) & $(\FFx{\rBN})^{\resBitsFLen}$\\ \bottomrule
+            $\mkroot$ & Merkle root of the Merkle tree & $\FFx{\rCURVE}$ \\ \midrule
+            $\nfs{}$ & Indexed set of nullifiers of the ``old'' notes to spend (see~\cref{instantiation:statement:pack} for definition of $\nfFLen$) & ${((\FFx{\rCURVE})^{\nfFLen})}^{\jsin}$\\ \midrule
+            $\cms{}$ & Indexed set of commitments to the newly created notes & ${(\FFx{\rCURVE})}^{\jsout}$\\ \midrule
+            $\hsig$ & Signature hash (non-malleability, see~\cref{appendix:trnm} and~\cref{instantiation:statement:pack} for definition of $\hsigFLen$)) & $(\FFx{\rCURVE})^{\hsigFLen}$\\ \midrule
+            $\htags{}$ & Indexed set of message authentication tags (non-malleability, see~\cref{appendix:trnm} and~\cref{instantiation:statement:pack} for definition of $\htagFLen$)) & ${((\FFx{\rCURVE})^{\htagFLen})}^{\jsin}$\\ \midrule
+            $\resbits$ & Residual bits corresponding to unpacked bits of former fields (see~\cref{instantiation:statement:pack} for definition of $\resBitsFLen$) & $(\FFx{\rCURVE})^{\resBitsFLen}$\\ \bottomrule
         \end{tabular}
         \caption{\primInputDType~data type}\label{zeth-protocol:tab:priminputs}
         \end{table}
@@ -80,9 +82,9 @@ We follow some design rationale from \zerocash~\cite{sasson2014zerocash}, and \z
         \centering
         \begin{tabular}{cp{20em}c}
           Field & Description & Data type \\ \toprule
-          $\mkroot$ & New root of Merkle tree of commitments & $\FFx{\rBN}$ \\ \midrule
+          $\mkroot$ & New root of Merkle tree of commitments & $\FFx{\rCURVE}$ \\ \midrule
           $\nfs{}$ & Nullifiers for input notes consumed & ${(\BB^{\prfNfOutLen})}^{\jsin}$ \\ \midrule
-          $\cms{}$ & Commitments to the output notes & ${(\FFx{\rBN})}^{\jsout}$ \\ \midrule
+          $\cms{}$ & Commitments to the output notes & ${(\FFx{\rCURVE})}^{\jsout}$ \\ \midrule
           $\ciphers{}$ & Ciphertexts for the output notes & ${(\BB^{\encZethNoteLen})}^{\jsout}$ \\ \bottomrule
         \end{tabular}
         \caption{\mixEventDType~data type}\label{zeth-protocol:tab:mixoutputs}
