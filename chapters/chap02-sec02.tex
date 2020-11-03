@@ -13,19 +13,19 @@ As explained in~\cite{zethpaper}, the $\mix$ function of $\mixer$ verifies the v
         \item $\auxinputs.\htags{i} = \prfpk{\auxinputs.\jsins{i}.\ask}{i, \auxinputs.\hsig}$ (non-malleability, see~\cref{appendix:trnm})
         \item $(\auxinputs.\jsins{i}.\znote.\notev) \cdot (1 - e)  =  0$ is satisfied for the boolean value $e$ set such that if $\auxinputs.\jsins{i}.\znote.\notev > 0$ then $e = 1$.
         \item The Merkle root $\mkroot'$ obtained after checking the Merkle authentication path $\auxinputs.\jsins{i}.\mkpath$ of commitment $\auxinputs.\jsins{i}.\cm{}$, with $\mkhash$, equals to $\priminputs.\mkroot$ if $e = 1$.
-        \item $\priminputs.\nfs{i}$ \\ $=  \indexedset{\pack{\slice{\auxinputs.\jsins{i}.\nf{}}{k \cdot \bnFieldBitCap}{(k+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}}{k \in [\floor{\prfNfOutLen/\bnFieldBitCap}]}$ (see~\cref{instantiation:statement:pack} for definition of $\pack{}{}$)
-        \item $\priminputs.\htags{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\htags{i}}{k \cdot \bnFieldBitCap}{(k+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}}{k \in [\floor{\prfPkOutLen/\bnFieldBitCap}]}$ (see~\cref{instantiation:statement:pack} for definition of $\pack{}{}$)
+        \item $\priminputs.\nfs{i}$ \\ $=  \indexedset{\pack{\slice{\auxinputs.\jsins{i}.\nf{}}{k \cdot \fieldBitCap}{(k+1) \cdot \fieldBitCap}}{\FFx{\rCURVE}}}{k \in [\floor{\prfNfOutLen/\fieldBitCap}]}$ (see~\cref{instantiation:statement:pack} for definition of $\pack{}{}$)
+        \item $\priminputs.\htags{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\htags{i}}{k \cdot \fieldBitCap}{(k+1) \cdot \fieldBitCap}}{\FFx{\rCURVE}}}{k \in [\floor{\prfPkOutLen/\fieldBitCap}]}$ (see~\cref{instantiation:statement:pack} for definition of $\pack{}{}$)
     \end{enumerate}
     \item For each $j \in [\jsout]$:
         \begin{enumerate}
             \item $\auxinputs.\znotes{j}.\rrho = \prfrho{\auxinputs.\pphi}{j, \auxinputs.\hsig}$ (non-malleability, see~\cref{appendix:trnm})
             \item $\priminputs.\cms{j} =\comm.\commit{\auxinputs.\znotes{j}.\apk,\allowbreak \auxinputs.\znotes{j}.\rrho,\allowbreak \auxinputs.\znotes{j}.\notev}{\auxinputs.\znotes{j}.\noter{}}$
         \end{enumerate}
-    \item $\priminputs.\hsig = \indexedset{\pack{\slice{\auxinputs.\hsig}{k \cdot \bnFieldBitCap}{(k+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}}{k \in [\floor{\crhhsigOutLen/\bnFieldBitCap}]}$ (see~\cref{instantiation:statement:pack} for definition of $\pack{}{}$)
+    \item $\priminputs.\hsig = \indexedset{\pack{\slice{\auxinputs.\hsig}{k \cdot \fieldBitCap}{(k+1) \cdot \fieldBitCap}}{\FFx{\rCURVE}}}{k \in [\floor{\crhhsigOutLen/\fieldBitCap}]}$ (see~\cref{instantiation:statement:pack} for definition of $\pack{}{}$)
     \item $\priminputs.\resbits = \packResBits{\indexedset{\auxinputs.\jsins{i}.\nf{}}{i \in [\jsin]}, \auxinputs.\vin, \auxinputs.\vout, \auxinputs.\hsig, \indexedset{\auxinputs.\htags{i}}{i \in [\jsin]}}$ (see~\cref{instantiation:statement:pack} for definition of $\packResBits{}$)
-    \item Check that the ``\gls{joinsplit} is balanced'', i.e.~check that the \gls{joinsplit-eq} holds:\footnote{where $\pack{x}{\FFx{\rBN}}$ outputs the numerical value of $x$ in $\FFx{\rBN}$.  We rely on the fact that $\zvalueLen < \bnFieldBitCap$ to perform this sum.}
+    \item Check that the ``\gls{joinsplit} is balanced'', i.e.~check that the \gls{joinsplit-eq} holds:\footnote{where $\pack{x}{\FFx{\rCURVE}}$ outputs the numerical value of $x$ in $\FFx{\rCURVE}$.  We rely on the fact that $\zvalueLen < \fieldBitCap$ to perform this sum.}
     \begin{align*}
-        &\pack{\auxinputs.\vin}{\FFx{\rBN}} + \sum_{i \in [\jsin]} \pack{\auxinputs.\jsins{i}.\znote.\notev}{\FFx{\rBN}} \\
-        & = \sum_{j \in [\jsout]} \pack{\auxinputs.\znotes{j}.\notev}{\FFx{\rBN}} + \pack{\auxinputs.\vout}{\FFx{\rBN}}
+        &\pack{\auxinputs.\vin}{\FFx{\rCURVE}} + \sum_{i \in [\jsin]} \pack{\auxinputs.\jsins{i}.\znote.\notev}{\FFx{\rCURVE}} \\
+        & = \sum_{j \in [\jsout]} \pack{\auxinputs.\znotes{j}.\notev}{\FFx{\rCURVE}} + \pack{\auxinputs.\vout}{\FFx{\rCURVE}}
     \end{align*}
 \end{itemize}
