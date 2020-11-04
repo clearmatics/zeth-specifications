@@ -2,10 +2,12 @@
 
 \section{Instantiating $\mkhash$}\label{instantiation:mkhash}
 
+%% TODO: Reword
 In this section, we show how we instantiate $\mkhash$ with a compression function based on \mimc{}~\cite{albrecht2016mimc}. We start by showing how the compression function is constructed. Then, we instantiate \mkhash and  finally prove that our instantiation complies with the security requirements mentioned in~\cref{zeth-protocol:sec-req}
 
 \subsection{\mimc{} Encryption}\label{instantiation:mkhash:mimc-encryption}
 
+%% TODO: Grammar
 \mimc{} is a block cipher with a simple design. During round $i$, the message $\msg$ is first mixed with the encryption key $\key{}$ and a randomly chosen constant $c[i]$. We then apply a permutation function on this result -- by raising it with a carefully chosen exponent $\exponent{}$ (see~\cref{instantiation:mkhash:mimc-encryption:security}). This operation is repeated a specific number of time $\rounds$, where \rounds{} depends on the desired security level $\secpar$. We denote the encryption function by \mimcEnc{} and illustrate it in~\cref{instantiation:fig:mimc}.
 
 \begin{figure*}[ht]
@@ -24,10 +26,12 @@ In this section, we show how we instantiate $\mkhash$ with a compression functio
     \mimc{}_{2^n} &: \FFx{2^n} \times \FFx{2^n} \to \FFx{2^n}
 \end{align*}
 
+%% TODO: Grammar
 We will from now on only consider \mimc{} defined over prime fields as we consider SNARKs based on arithmetic circuits defined over a finite field \FFx{p}, $p$ prime.
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
+%% TODO: Reword
 Assume that prime $p$ is written over at least $\secpar$ bits. To ensure that the exponentiation leads to a permutation in $\FFx{p}$, we have to choose $\exponent{}$ of the form $2^t-1$ such that $\gcd(\exponent{}, p-1) = 1$. To achieve a security of $\secpar$, we furthermore define the number of rounds as follows, $\rounds = \left\lceil \frac{\log_2 p}{\log_2 \exponent{}} \right\rceil. $\footnote{We do not consider exponents of type $2^t+1$ since the polynomial representing $\mimcEnc$ would be sparse and as such, the number of rounds becomes constant (see~\cite[Section 5.3]{albrecht2016mimc}).}
 
 We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. We can note that $\mimcPrime{p}$ does not suffer from \emph{inversion subfield attacks} as the only subgroups of a prime order group are the group itself and the trivial group (containing the identity as the only element).
