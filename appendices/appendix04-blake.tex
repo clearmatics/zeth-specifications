@@ -193,7 +193,7 @@ Given a commitment scheme $\comm^*$, the bijective function $\decode{\cdot}{\NN}
     & \comm'.\setup(\secparam{}) = (\comm^*.\setup(\secparam{}), p_\secpar{})\\
     & \comm'.\commit{\msg}{r} = \decode{\comm^*.\commit{\msg}{\noter}}{\NN} \pmod{p_{\secpar}}\ \text{for}\ \msg= (\apk \concat \rrho \concat \notev)
 \end{align*}
-Note that $\comm$ (see~\cref{instantiation:prf-comm-crh:comm}) is a particular instantiation of $\comm'$ where $\Enc^*$ is set as \chacha{} encryption scheme~\cite{bernstein2008chacha}, $k^*$ is a random key, and $p_\secpar{}$ is $\rBN$.
+Note that $\comm$ (see~\cref{instantiation:prf-comm-crh:comm}) is a particular instantiation of $\comm'$ where $\Enc^*$ is set as \chacha{} encryption scheme~\cite{bernstein2008chacha}, $k^*$ is a random key, and $p_\secpar{}$ is $\rCURVE$.
 
 \begin{theorem}[Hiding]\label{instantiation:th:com-bin-field-hiding}
     If $\comm^*$ is hiding then $\comm'$ is hiding.
@@ -245,7 +245,7 @@ Hence, we have a collision in $\comm'$ if there exists $k \in [l]$, $l$ being th
 \end{proof}
 
 \begin{remark}\label{instantiation:remark:rbn-blackcomplen}
-	Note that in \zeth's commitment scheme, we set $p_\secpar{} = \rBN$ and $2^\secpar = 2^\blakeCompLen$, and thus have $l = 6$. Therefore, the probability of an attacker breaking the binding property due to reduction modulo by $\rBN$ increases by a factor of approximately $6$. This is still negligible.
+	Note that in \zeth's commitment scheme, we set $p_\secpar{} = \rCURVE$ and $2^\secpar = 2^\blakeCompLen$. Thus, for \BNCurve and \BLSCurve have $l = 6$ and $l = 14$, respectively. Therefore, the probability of an attacker breaking the binding property due to reduction modulo $\rCURVE$ increases approximately by these factors. This is still negligible.
 \end{remark}
 
 \begin{cor}
