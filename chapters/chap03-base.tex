@@ -4,6 +4,14 @@
 
 In this chapter, we start by instantiating the cryptographic building blocks used in previous sections to describe the \zeth~\dapscheme~design. Finally, we proceed by providing security proofs justifying that our instantiation complies with the security requirements listed in previous sections.
 
+Note that, in several cases, it is necessary to specify details in terms of concrete properties of the curve \Curve~and associated scalar field $\FFx{\rCURVE}$. In these cases, we focus on two curves of interest: \BNCurve~and \BLSCurve. We note, however, that other suitable curves could be used.
+
+\BNCurve~\cite{bn-prime} has several properties that make it implementation-friendly. Elements of both the base field and scalar field can be represented in \ethWordLen~bits (the native word size of the \evm), allowing efficient encoding and manipulation of such elements. Moreover, a subset of operations on \BNCurve are supported by the \evm~through precompiled contracts. These precompiled contracts enable verification of signatures (\cref{instantiation:otsig}) and zero-knowledge proofs (\cref{instantiation:zksnark}), required by this protocol, with minimal gas overhead.
+
+\BLSCurve~\cite{bowe18zexe}, like \BNCurve, has the advantage that scalar field elements can be represented within \ethWordLen-bit words (although the same is not true of base field elements). However, the \evm~provides no native support for \BLSCurve, which increases the complexity of the \mixer~implementation (see \cref{zeth-protocol:process-tx}~for details of the operations to be performed). An advantage that \BLSCurve does provide, is that is it the ``inner'' curve of a one-layer chain (as described in \cite{bowe18zexe,housni2020onelayer}). Therefore zero-knowledge proofs using \BLSCurve can be efficiently verified by statements in other zero-knowledge proofs using an approporiate ``outer'' pairing. Support for \BLSCurve in \zeth~therefore admits several applications (no explicitly covered by this document), such as aggregation of proofs over multiple \zeth~transactions (e.g.~\cite{rondelet2020zecale}).
+
+Further details related to implementation and optimization are given in \cref{chap:implementation}.
+
 \input{./chapters/chap03-sec01.tex} % PRFs, COMM and CRHs (may need to be split if we decide to instantiate these with different functions)
 \input{./chapters/chap03-sec02.tex} % MKHASH
 \input{./chapters/chap03-sec03.tex} % Zeth statement after instantiation

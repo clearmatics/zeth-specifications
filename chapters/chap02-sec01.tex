@@ -5,7 +5,7 @@
 We begin by describing, and giving intuition about, the data types (see~\cref{preliminaries:structured-data}) used in \zeth.
 We follow some design rationale from \zerocash~\cite{sasson2014zerocash}, and \zcash~\cite{zcashprotocol} in order to prevent the transaction malleability attack, and the Faerie Gold attack\cite[Section 8.4]{zcashprotocol}. We refer the reader to~\cref{appendix:trnm} for more details.
 
-In what follows, \Curve~represents a curve with scalar field $\FFx{\rCURVE}$. Definitions are given in terms of this generic curve, but where appropriate we give examples and notes relating to specific instances. % TODO such as \BNCurve.
+In what follows \Curve~represents a curve with scalar field $\FFx{\rCURVE}$, satisfying the requirements of \cref{instantiation:zksnark}. The specification is described in terms of this generic curve, with examples and notes relating to specific instances of interest (namely \BNCurve~and \BLSCurve, see \cref{chap:instantiation}).
 
 \begin{description}
     \item[\zethNoteDType] Represents a note in \zeth. This data type consists of the note owner's public address \apk, identifier $\rrho$, randomness \noter{}~and value \notev.
