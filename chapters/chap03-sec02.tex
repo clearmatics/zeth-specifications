@@ -18,19 +18,19 @@ In this section we describe the instantiation of $\mkhash$ with a compression fu
     \caption{\mimc{} Encryption function.}\label{instantiation:fig:mimc}
 \end{figure*}
 
-\mimcEnc{} can be defined on both binary and prime fields. As such, the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}. We denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. The function signatures thus become,
+\mimcEnc{} can be defined on both binary and prime fields. As such, the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}. For general prime $p$, we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. The function signatures thus become,
 \begin{align*}
     \mimcPrime{p} &: \FFx{p} \times \FFx{p} \to \FFx{p} \\
     \mimc{}_{2^n} &: \FFx{2^n} \times \FFx{2^n} \to \FFx{2^n}
 \end{align*}
 
-From now on, we only consider \mimc{} defined over finite fields $\FFx{p}$, for prime $p > 2$, such that $\FFx{p}$ is the prime field over which \zksnark~operates.
+From now on, we only consider \mimc{} defined over prime fields. In particular, the field $\FFx{\rCURVE}$ with elements written over $\secpar$ bits, over which \zksnark~operates.
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
-Assume that prime $p$ is written over at least $\secpar$ bits. To ensure that the exponentiation leads to a permutation in $\FFx{p}$, $\exponent{}$ of the form $\exponent{} = 2^t-1$ such that $\gcd(\exponent{}, p-1) = 1$. To achieve a security of $\secpar$, we require $\rounds = \left\lceil \frac{\log_2 p}{\log_2 \exponent{}} \right\rceil. $\footnote{We do not consider exponents of type $2^t+1$ since the polynomial representing $\mimcEnc$ would be sparse and as such, the number of rounds becomes constant (see~\cite[Section 5.3]{albrecht2016mimc}).}
+To ensure that the exponentiation leads to a permutation in $\FFx{\rCURVE}$, $\exponent{}$ of the form $\exponent{} = 2^t-1$ such that $\gcd(\exponent{}, \rCURVE-1) = 1$. To achieve a security of $\secpar$, we require $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil. $\footnote{We do not consider exponents of type $2^t+1$ since the polynomial representing $\mimcEnc$ would be sparse and as such, the number of rounds becomes constant (see~\cite[Section 5.3]{albrecht2016mimc}).}
 
-We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{p}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{p}$, for $p$ prime.
+We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
 
 \subsection{\mimc{}-based compression function}\label{instantiation:mkhash:mimc-compressionf}
 
@@ -40,37 +40,37 @@ A Merkle tree is a binary tree of values of fixed size, where the values in each
 
 \subsubsection{Miyaguchi-Preneel compression construct}
 
-Miyaguchi-Preneel (MP)~\cite[$f_3$ function]{black2002black} is a general scheme for constructing compression functions from block ciphers (see~\cref{preliminaries:definitions:hashcomp}). Given a block cipher \Enc, the corresponding compression function by \fMP{} is given in~\cref{instantiation:fig:mp-constructions}. The original construction is defined over binary fields, however \zeth~operates over prime fields. Hence, in the general discussion here we replace the bitwise addition operator $\oplus$ by modular addition in $\FFx{p}$ for some prime $p$ (see~\cite{mp-security-ethsnarks}).
+Miyaguchi-Preneel (MP)~\cite[$f_3$ function]{black2002black} is a general scheme for constructing compression functions from block ciphers (see~\cref{preliminaries:definitions:hashcomp}). Given a block cipher \Enc, the corresponding compression function by \fMP{} is given in~\cref{instantiation:fig:mp-constructions}. The original construction is defined over binary fields, however \zeth~operates over prime fields. Hence, in the general discussion here we replace the bitwise addition operator $\oplus$ by modular addition in $\FFx{\rCURVE}$ (see~\cite{mp-security-ethsnarks}).
 
-We denote by \mimcMP{} the compression function defined by the application of the Miyaguchi-Preneel construct over \mimc{}. Similarly, we define $\mimcMPPrime{p}$ (see~\cref{instantiation:fig:mimc-mp-constructions}) as the compression function defined by application of the Miyaguchi-Preneel construct over $\mimcPrime{p}$.
+We denote by \mimcMP{} the compression function defined by the application of the Miyaguchi-Preneel construct over \mimc{}. Similarly, for general prime $p$ we denote by $\mimcMPPrime{p}$ (see~\cref{instantiation:fig:mimc-mp-constructions}) the compression function defined by application of the Miyaguchi-Preneel construct over $\mimcPrime{p}$.
 
 \begin{figure*}[ht]
     \begin{minipage}[t]{0.50\textwidth}
         \procedure[linenumbering]{$\fMP{} (\key, \msg)$}{
             res \gets \Enc_\key(\msg) \\
-            \pcreturn (res + \msg + \key) \pmod{p}
+            \pcreturn (res + \msg + \key) \pmod{\rCURVE}
         }
-        \caption{\MP{} construct in $\FFx{p}$.}\label{instantiation:fig:mp-constructions}
+        \caption{\MP{} construct in $\FFx{\rCURVE}$.}\label{instantiation:fig:mp-constructions}
     \end{minipage}%
     \begin{minipage}[t]{0.50\textwidth}
-        \procedure[linenumbering]{$\mimcMPPrime{p}(\key, \msg)$}{
-            res \gets \mimcPrime{p}(\key, \msg) \\
-            \pcreturn (res + \key + \msg) \pmod{p}
+        \procedure[linenumbering]{$\mimcMPPrime{\rCURVE}(\key, \msg)$}{
+            res \gets \mimcPrime{\rCURVE}(\key, \msg) \\
+            \pcreturn (res + \key + \msg) \pmod{\rCURVE}
         }
-    \caption{$\mimcMPPrime{p}$ construction.}\label{instantiation:fig:mimc-mp-constructions}
+    \caption{$\mimcMPPrime{\rCURVE}$ construction.}\label{instantiation:fig:mimc-mp-constructions}
     \end{minipage}%
 \end{figure*}
 
 \subsection{An efficient instantiation of \mimc{} primitives}\label{instantiation:mkhash:efficient-instance}
 
-To select appropriate instances of $\mimcPrime{p}$ and $\mimcMPPrime{p}$ for specific values of $p$, we consider the cost (in terms of gas consumption and prover efficiency). For given $\exponent{}$ and $\rounds{}$, the final definition of $\mimcMPPrime{p}$ is given in \cref{instantiation:fig:mimcp-construction} and \cref{instantiation:fig:mimcp-mp-construction}.
+To select appropriate instances of $\mimcPrime{\rCURVE}$ and $\mimcMPPrime{\rCURVE}$, we consider the cost (in terms of gas consumption and prover efficiency). For given $\exponent{}$ and $\rounds{}$, the final definition of $\mimcMPPrime{\rCURVE}$ is given in \cref{instantiation:fig:mimcp-construction} and \cref{instantiation:fig:mimcp-mp-construction}.
 
 \newcommand{\initRoundConstants}{\algostyle{InitRoundConstants}}
 
 \begin{figure*}[ht]
     \begin{minipage}[t]{0.5\textwidth}
         \centering
-        \procedure[linenumbering]{$\mimcPrime{p}(\key, \msg)$}{
+        \procedure[linenumbering]{$\mimcPrime{\rCURVE}(\key, \msg)$}{
             c \gets \initRoundConstants() \\
             \pcforeach i \in [\rounds]:\\
             \t \msg \gets {(\key + c[i] + \msg)}^\exponent{} \pmod{\rCURVE}\\
@@ -88,16 +88,16 @@ To select appropriate instances of $\mimcPrime{p}$ and $\mimcMPPrime{p}$ for spe
             \pcreturn c = (c[0], \ldots, c[\rounds-1])
         }
     \end{minipage}%
-    \caption{$\mimcPrime{p}$ full construction}\label{instantiation:fig:mimcp-construction}
+    \caption{$\mimcPrime{\rCURVE}$ full construction}\label{instantiation:fig:mimcp-construction}
 \end{figure*}
 
 \begin{figure*}[ht]
     \centering
     \begin{minipage}[t]{0.5\textwidth}
-        \procedure{$\mimcMPPrime{p}(\key, \msg)$}{
-            \pcreturn \mimcPrime{p}(\key, \msg) + \msg + \key \pmod{\rCURVE}
+        \procedure{$\mimcMPPrime{\rCURVE}(\key, \msg)$}{
+            \pcreturn \mimcPrime{\rCURVE}(\key, \msg) + \msg + \key \pmod{\rCURVE}
         }
-    \caption{\mimcMPPrime{p} full construction}\label{instantiation:fig:mimcp-mp-construction}
+    \caption{\mimcMPPrime{\rCURVE} full construction}\label{instantiation:fig:mimcp-mp-construction}
     \end{minipage}%
 \end{figure*}
 
@@ -109,7 +109,7 @@ To select appropriate instances of $\mimcPrime{p}$ and $\mimcMPPrime{p}$ for spe
     To increase the security of the $\mathsf{\mkhash}$, different round constants for each level of the Merkle tree could be used.
 \end{remark}
 
-The value of $p$ is set to $\rCURVE$ (specific to the curve being used). Thereby, for input values $m_0$ and $m_1$, we define $\mkhash : \FFx{\rCURVE} \times \FFx{\rCURVE} \to \FFx{\rCURVE}$ by
+We define $\mkhash$ to be $\mimcMPPrime{}$ over $\FFx{\rCURVE}$. Thereby, for input values $m_0$ and $m_1$, $\mkhash : \FFx{\rCURVE} \times \FFx{\rCURVE} \to \FFx{\rCURVE}$ is defined by
 \begin{equation}\label{instantiation:eq:mkhash-instantiation}
     \mkhash(\msg_0, \msg_1) = \mimcMPPrime{\rCURVE}(m_0, m_1)
 \end{equation}
