@@ -34,7 +34,7 @@ For simplicity, we may also use the additive notation for groups: $\otimes$ is d
 
 For theoretical purposes, we introduce the \groupSetup{} algorithm that for a given security parameter \secpar{} outputs a cyclic group, formally:
 \begin{definition}[Group Setup Algorithm, {taken from~\cite[Sections 7.1.3, 7.3.2]{katz2014introduction}}]
-    A group setup algorithm \groupSetup{} is a \ppt{} algorithm which takes as input a security parameter \secparam{} and outputs a group description $(q, \gset, \ggen, \otimes)$, where the binary representation of $q$ is given by $\secpar$ bits and each group element can be represented by $\groupLen(\secpar)$ bits. Note that \groupLen{} is \poly.\footnote{For simplicity, we may denote \groupLen(\secpar) as \groupLen{}.}
+    A group setup algorithm \groupSetup{} is a \ppt{} algorithm which takes as input a security parameter \secparam{} and outputs a group description $(q, \gset, \ggen, \otimes)$, where the binary representation of $q$ is given by $\secpar$ bits and each group element can be represented by $\groupLen(\secpar)$ bits. Note that \groupLen{} is $\poly$.\footnote{For simplicity, we may denote \groupLen(\secpar) as \groupLen{}.}
 \end{definition}
 
 
