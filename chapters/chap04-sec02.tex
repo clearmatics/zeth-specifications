@@ -5,7 +5,7 @@
 \cref{client-security} mentions several considerations for client implementations, concerning how they interact with the contract. These must be taken into account when authoring the contract code, to ensure that clients can securely retrieve the information they need to operate without encouraging them to perform insecure operations.
 
 \begin{enumerate}
-  \item $\mixer$ \MUST{} validate inputs, the contract needs to ensure that the primary inputs are elements of the scalar field \FFx{\rBN} (are in the range $\range{0}{\rBN - 1}$).
+  \item $\mixer$ \MUST{} validate inputs, the contract needs to ensure that the primary inputs are elements of the scalar field \FFx{\rCURVE} (that is, they are in the range $\range{0}{\rCURVE - 1}$).
   \item $\mixer$ \MUST{} output events for valid $\mix$ calls, including:
       \begin{enumerate}
         \item commitment for each new note;

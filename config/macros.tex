@@ -111,6 +111,7 @@
 %
 \newcommand{\rounds}{\ensuremath{\varstyle{rounds}}\xspace} % Notation for Mimc number of rounds
 \newcommand{\exponent}{\ensuremath{\varstyle{e}}} % Notation for Mimc exponent
+\newcommand{\mults}{\ensuremath{\varstyle{mults}}} % Notation for the number of multiplications
 %
 \newcommand{\encTag}{\ensuremath{\constantstyle{encTag}}\xspace} % Encryption tag
 % Function inputs (Add "in" subscript for function inputs to avoid naming collisions)
@@ -153,10 +154,6 @@
 \newcommand{\mimcEnc}{\ensuremath{\algostyle{\mimc{}\pcmathhyphen Encrypt}}\xspace} % Mimc block cipher encrypt
 \newcommand{\mimcMP}{\ensuremath{\algostyle{\mimc{}\pcmathhyphen MP}}\xspace} % Mimc Miyaguchi-Preneel compression function
 \DeclareRobustCommand{\mimcMPPrime}[1]{\ensuremath{\mimcMP\ifthenelse{\equal{#1}{}}{}{_{#1}}}\xspace} % Mimc Miyaguchi-Preneel compression function mod r
-\newcommand{\mimcSeven}{\ensuremath{\algostyle{\mimc[7]}}\xspace} % Mimc block cipher with (e=7)
-\newcommand{\mimcSevenPrime}{\ensuremath{\mimcSeven_\rBN}\xspace} % Mimc block cipher with (e=7) mod r
-\newcommand{\mimcSevenMP}{\ensuremath{\algostyle{\mimcSeven\pcmathhyphen\MP}}\xspace} % Mimc MP compression function with with (e=7)
-\newcommand{\mimcSevenMPPrime}{\ensuremath{\mimcSevenMP_\rBN}\xspace} % Mimc MP compression function with with (e=7) mod r
 %%% General algorithms
 \newcommand{\xortxt}{\ensuremath{\algostyle{XOR}}\xspace} % XOR algorithm
 %% Definitions and preliminaries
@@ -244,7 +241,6 @@
 
 %%%%% Curves %%%%%
 \newcommand{\curvestyle}[1]{\mathsf{#1}}
-\newcommand{\BNCurve}{\ensuremath{\curvestyle{BN\mhyphen{}254}}\xspace}
 \newcommand{\secpCurve}{\ensuremath{\curvestyle{secp256k1}}\xspace}
 \newcommand{\curve}[1]{\ensuremath{\curvestyle{Curve#1}}\xspace} % general curve format macro
 \newcommand{\xscalarmult}[1]{\ensuremath{\algostyle{X#1}}\xspace} % Scalar multiplication on Curve25519
@@ -387,11 +383,21 @@
 \newcommand{\addressLen}{\ensuremath{\constantstyle{ADDRLEN}}\xspace} % Bit length of an Ethereum address
 \newcommand{\ethWordLen}{\ensuremath{\constantstyle{ETHWORDLEN}}\xspace} % Bit length of an Ethereum word
 \newcommand{\txDefaultGas}{\ensuremath{\constantstyle{DGAS}}\xspace} % Intrinsic gas cost of an Ethereum transaction
+%% The general group and field
+\newcommand{\Curve}{\ensuremath{\curvestyle{Curve}}\xspace} % Chosen curve
+\newcommand{\rCURVE}{\ensuremath{\constantstyle{r}}\xspace} % Prime that defines the scalar field \FFx{\rCURVE} of \Curve
+\newcommand{\fieldBitLen}{\ensuremath{\constantstyle{FIELDLEN}}\xspace} % Bit-length of elements in \FFx{\rCURVE}
+\newcommand{\fieldBitCap}{\ensuremath{\constantstyle{FIELDCAP}}\xspace} % Bit-capacity of elements in \FFx{\rCURVE}
 %% Remarkable groups and fields
-\newcommand{\bnFieldBitLen}{\ensuremath{\constantstyle{BNFIELDLEN}}\xspace} % Bit length of an element of the BN254 scalar field
-\newcommand{\bnFieldBitCap}{\ensuremath{\constantstyle{BNFIELDCAP}}\xspace} % Maximum bit length such that all elements of that bit length are in BN254 scalar field
+\newcommand{\BNCurve}{\ensuremath{\curvestyle{BN\mhyphen{}254}}\xspace}
+\newcommand{\rBN}{\ensuremath{\constantstyle{r_{BN}}}\xspace} % Instance of \r for the scalar field of BN254
+\newcommand{\bnFieldBitLen}{\ensuremath{\constantstyle{FIELDLEN_{BN}}}\xspace} % Instance of \fieldBitLen for the BN254 scalar field
+\newcommand{\bnFieldBitCap}{\ensuremath{\constantstyle{FIELDCAP_{BN}}}\xspace} % Instance of \fieldBitCap for the BN254 scalar field
+\newcommand{\BLSCurve}{\ensuremath{\curvestyle{BLS12\mhyphen{}377}}\xspace}
+\newcommand{\rBLS}{\ensuremath{\constantstyle{r_{BLS}}}\xspace} % Instance of \r for the scalar field of BLS12-377
+\newcommand{\blsFieldBitLen}{\ensuremath{\constantstyle{FIELDLEN_{BLS}}}\xspace} % Instance of \fieldBitLen for the BLS12-377 scalar field
+\newcommand{\blsFieldBitCap}{\ensuremath{\constantstyle{FIELDCAP_{BLS}}}\xspace} % Instance of \fieldBitCap for the BLS12-377 scalar field
 \newcommand{\secpFieldBitLen}{\ensuremath{\constantstyle{SECPFIELDLEN}}\xspace} % Bit length of an element of the Secp256k1 scalar field
-\newcommand{\rBN}{\ensuremath{\constantstyle{r_{BN}}}\xspace} % Prime scalar field BN254
 \newcommand{\pSecp}{\ensuremath{\constantstyle{p_{SECP}}}\xspace} % Prime scalar field Secp256k1
 %% Zeth constants
 \newcommand{\jsmax}{\ensuremath{\constantstyle{JSMAX}}\xspace} % Number of inputs in each Joinsplit

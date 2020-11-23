@@ -16,7 +16,7 @@ Thus, $\mix$ proceeds as follows:
 \begin{enumerate}
     \item Check that all the values of the primary inputs' ($\inp{\mix}.\primInp$) entries are elements of the scalar field over which the zk-proof is generated:
         \[
-            \inp{\mix}.\primInp \in \FFx{\rBN}^*
+            \inp{\mix}.\primInp \in \FFx{\rCURVE}^*
         \]
     \item Unpack the nullifiers, signature hash and public values (see~\cref{instantiation:statement:pack} for the definitions of the $\unpack{}{}$ functions):
         \begin{align*}

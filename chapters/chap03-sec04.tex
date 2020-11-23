@@ -2,7 +2,9 @@
 
 \section{Instantiate $\sigscheme_{\otsig}$}\label{instantiation:otsig}
 
-In \zeth, we chose to use the one-time Schnorr-based signature scheme introduced by Bellare and Shoup~\cite{bellare2007two}, over $\BNCurve$, for its long proven security, simplicity, speed and size. Its security relies on the one-more discrete log problem (see~\cref{preliminaries:def:om-dlog}) and the collision resistance of the underlying hash function $\crh$ (see~\cref{preliminaries:def:collision-resistance}) that we instantiate with \sha{256}.
+\zeth~uses the one-time Schnorr-based signature scheme introduced by Bellare and Shoup~\cite{bellare2007two} for its long proven security, simplicity, speed and size. Its security relies on the one-more discrete log problem (see~\cref{preliminaries:def:om-dlog}) and the collision resistance of the underlying hash function $\crh$ (see~\cref{preliminaries:def:collision-resistance}) that we instantiate with \sha{256}.
+
+Note that no signature operations or data are used in the arithmetic circuit describing the \zeth~statement. Hence the curve used for the signature scheme can be chosen independently of \Curve (the scalar field of which is used for the arithmetic circuit, and consequently for commitments and bit string encodings described in \cref{instantiation:prf-comm-crh} and \cref{instantiation:mkhash}). $\BNCurve$ is used since it is supported by the \evm, in the form of precompiled contracts. This allows a gas-efficient implementation in the \mixer~contract.
 
 This one-time signature scheme (see~\cref{preliminaries:def:ot-sig}) is defined by the two-tier signature scheme over a cyclic group $(p, \gset, \langle \ggen \rangle, \otimes)$.
 In the two-tier signature scheme, the hash function $\crh$ only needs to be collision resistant (the random oracle model is not used). Similarly, the variable $\hk$ represents the key of the hash function (a particular instance).
@@ -67,7 +69,7 @@ We now prove that this signature scheme satisfies all the security requirements 
 
 \subsection{Data types}\label{instantiation:otsig:data-types}
 
-We now describe the data types associated with this signature scheme defined over $\BNCurve$.
+We now describe the data types and operations associated with this signature scheme.
 
 \begin{description}
     \item[\vkOtsDType] Denotes the verification key associated with the one-time signature scheme.

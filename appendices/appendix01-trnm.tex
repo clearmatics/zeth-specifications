@@ -45,8 +45,8 @@ First, we start by assuming that none of the checks related to transaction malle
         \item $\auxinputs.\jsins{i}.\nf{} = \blake{2s}{\taggednf \concat \auxinputs.\jsins{i}.\znote.\rho}$ \\ with $\taggednf$ defined in~\cref{instantiation:prf-comm-crh:prf}
         \item $\auxinputs.\jsins{i}.\cm{} = \blake{2s}{\auxinputs.\jsins{i}.\znote.\noter{} \concat \msg}$ \\ with $\msg = \auxinputs.\jsins{i}.\znote.\apk \concat \auxinputs.\jsins{i}.\znote.\rrho \concat \auxinputs.\jsins{i}.\znote.\notev$
         \item $(\auxinputs.\jsins{i}.\znote.\notev) \cdot (1 - e)  =  0$ is satisfied for the boolean value $e$ set such that if $\auxinputs.\jsins{i}.\znote.\notev > 0$ then $e = 1$.
-        \item The Merkle root $\mkroot'$ obtained after checking the Merkle authentication path $\auxinputs.\jsins{i}.\mkpath$ of commitment $\auxinputs.\jsins{i}.\cm{}$, with $\mimcSevenMPPrime{}$, is equal to $\priminputs.\mkroot$ if $e = 1$.
-        \item $\priminputs.\nfs{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\jsins{i}.\nf{}}{k \cdot \bnFieldBitCap}{(k+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}}{k \in [\floor{\prfNfOutLen/\bnFieldBitCap}]}$
+        \item The Merkle root $\mkroot'$ obtained after checking the Merkle authentication path $\auxinputs.\jsins{i}.\mkpath$ of commitment $\auxinputs.\jsins{i}.\cm{}$, with $\mkhash{}$, is equal to $\priminputs.\mkroot$ if $e = 1$.
+        \item $\priminputs.\nfs{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\jsins{i}.\nf{}}{k \cdot \fieldBitCap}{(k+1) \cdot \fieldBitCap}}{\FFx{\rCURVE}}}{k \in [\floor{\prfNfOutLen/\fieldBitCap}]}$
     \end{enumerate}
     \item For each $j \in [\jsout]$:
     \begin{enumerate}
@@ -55,8 +55,8 @@ First, we start by assuming that none of the checks related to transaction malle
     \item $\priminputs.\resbits = \packResBits{\indexedset{\auxinputs.\jsins{i}.\nf{}}{i \in [\jsin]}, \auxinputs.\vin, \auxinputs.\vout}$
     \item Check that the ``\gls{joinsplit} is balanced'', i.e.~check that the \gls{joinsplit-eq} holds:
     \begin{align*}
-        &\pack{\auxinputs.\vin}{\FFx{\rBN}} + \sum_{i \in [\jsin]} \pack{\auxinputs.\jsins{i}.\znote.\notev}{\FFx{\rBN}} \\
-        & = \sum_{j \in [\jsout]} \pack{\auxinputs.\znotes{j}.\notev}{\FFx{\rBN}} + \pack{\auxinputs.\vout}{\FFx{\rBN}}
+        &\pack{\auxinputs.\vin}{\FFx{\rCURVE}} + \sum_{i \in [\jsin]} \pack{\auxinputs.\jsins{i}.\znote.\notev}{\FFx{\rCURVE}} \\
+        & = \sum_{j \in [\jsout]} \pack{\auxinputs.\znotes{j}.\notev}{\FFx{\rCURVE}} + \pack{\auxinputs.\vout}{\FFx{\rCURVE}}
     \end{align*}
 \end{itemize}
 

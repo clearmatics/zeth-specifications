@@ -329,8 +329,8 @@ These optimizations lead to a gain of 320 constraints ($=4 \cdot 8 \cdot \rounds
 \paragraph{Optimizing Blake2s routine's circuit}\label{implementation:efficiency:blake:optimization:batch-constraints}
 
 As seen in~\cref{implementation:alg:g}, our routine presents 2 double and 2 triple modular additions. Each of these circuits comprises at least one modular constraint which pack several $w$-bit long variables.
-The circuit is however processed in	$\FFx{\rBN}$, that is to say most integers can be written over $\bnFieldBitCap$ bits. We can thus batch the modular constraints.
-As the $\blakeG$ primitive performs 2 double modular and 2 triple modular, we have in total 6 modular checks per iteration. We can batch up to $\bnFieldBitCap / w$ constraints together. For $w=32$ and $\bnFieldBitCap=253$, we can encode up to 7 words per field element, that is to say we can include all the modular constraints into a single one.
+The circuit is however processed in $\FFx{\rCURVE}$, that is to say most integers can be written over $\fieldBitCap$ bits. We can thus batch the modular constraints.
+As the $\blakeG$ primitive performs 2 double modular and 2 triple modular, we have in total 6 modular checks per iteration. We can batch up to $\fieldBitCap / w$ constraints together. For $w=32$ and $\fieldBitCap \geq 224$ (which holds for \BNCurve and \BLSCurve), we can encode up to 7 words per field element, that is to say we can include all the modular constraints into a single one.
 
 This optimization leads to a gain of $274$ constraints ($= 4\cdot8\cdot10-\ceil{\frac{4\cdot8\cdot10}{7}}$).
 

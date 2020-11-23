@@ -1,11 +1,11 @@
 \chapter{Double spend attack on equivalent class}\label{appendix:dbspd}
 
-The primary inputs of our zk-SNARK are elements of $\FFx{\rBN}$ and they can be written over $\bnFieldBitLen$ bits. Note that the projection of $\BB^\bnFieldBitLen$ onto $\FFx{\rBN}$ formed by interpreting elements in $\BB^\bnFieldBitLen$ as $\bnFieldBitLen$-bit numbers and reducing modulo $\rBN$, is surjective.
+The primary inputs of our zk-SNARK are elements of $\FFx{\rCURVE}$ and they can be written over $\fieldBitLen$ bits. Note that the projection of $\BB^\fieldBitLen$ onto $\FFx{\rCURVE}$ formed by interpreting elements in $\BB^\fieldBitLen$ as $\fieldBitLen$-bit numbers and reducing modulo $\rCURVE$, is surjective.
 
-When we pass the primary inputs to the $\mixer$ contract, they are interpreted as elements of $\BB^\ethWordLen$, and $\BB^\bnFieldBitLen \subset \BB^\ethWordLen$. As previously noted, this means that there exist pairs of elements in $\BB^\ethWordLen$ with the same projection in $\FFx{\rBN}$. An adversary could make use of this to perform a double spend attack.
+When we pass the primary inputs to the $\mixer$ contract, they are interpreted as elements of $\BB^\ethWordLen$, and $\BB^\fieldBitLen \subset \BB^\ethWordLen$. As previously noted, this means that there exist pairs of elements in $\BB^\ethWordLen$ with the same projection in $\FFx{\rCURVE}$. An adversary could make use of this to perform a double spend attack.
 
-Indeed, to check that a note is not double spent, the contract stores the nullifiers of spent notes (as elements of $\BB^\ethWordLen$) and verifies that the nullifier of the note to be spent is not stored. The adversary could thus modify the nullifier to a different value with the same projection. As the SNARK verification operates in $\FFx{\rBN}$, the proof would still be valid. However, the value stored for this nullifier would be different from the adversarial one. Hence, the nullifier would be validated, the transaction would succeed and the note would be double spent.
-In practice, the adversary can perform the attack by simply adding $\rBN$ to one of the elements representing the nullifier.
+Indeed, to check that a note is not double spent, the contract stores the nullifiers of spent notes (as elements of $\BB^\ethWordLen$) and verifies that the nullifier of the note to be spent is not stored. The adversary could thus modify the nullifier to a different value with the same projection. As the SNARK verification operates in $\FFx{\rCURVE}$, the proof would still be valid. However, the value stored for this nullifier would be different from the adversarial one. Hence, the nullifier would be validated, the transaction would succeed and the note would be double spent.
+In practice, the adversary can perform the attack by simply adding $\rCURVE$ to one of the elements representing the nullifier.
 
-To prevent this attack, the contract checks that all primary inputs are elements of $\FFx{\rBN}$, that is to say that they are smaller than $\rBN$.
+To prevent this attack, the contract checks that all primary inputs are elements of $\FFx{\rCURVE}$, that is to say that they are smaller than $\rCURVE$.
 As one may see, the attack described above is not due to the packing of hash digests into field elements but to the contract storage of field elements as $\ethereum$ words.

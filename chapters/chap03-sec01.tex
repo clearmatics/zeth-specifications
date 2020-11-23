@@ -33,14 +33,14 @@ We use this result in~\cref{appendix:blake:proofs} to show the collision resista
 We define our commitment scheme as follows,
 \begin{align*}
 	& \comm.\setup &&: \smallset{\secparam\ s.t\ \secpar \in \NN} \to \BB^{*} \\
-	& \comm.\commit{}{} &&: \left( \BB^\prfAddrOutLen \times \BB^\prfRhoOutLen \times \BB^\zvalueLen \right ) \times \BB^\noterLen \to \FFx{\rBN}
+	& \comm.\commit{}{} &&: \left( \BB^\prfAddrOutLen \times \BB^\prfRhoOutLen \times \BB^\zvalueLen \right ) \times \BB^\noterLen \to \FFx{\rCURVE}
 \end{align*}
 
 We instantiate the commitment scheme with $\blake{2s}{}$ as follows,
 \begin{align*}
-	\pparams &= \comm.\setup(\secparam)\ (\text{corresponds to \blake{2s}{}'s constant } \blakePB{}\ \text{and}\ \rBN) \\
+	\pparams &= \comm.\setup(\secparam)\ (\text{corresponds to \blake{2s}{}'s constant } \blakePB{}\ \text{and}\ \rCURVE) \\
 	\cm{} &= \comm.\commit{\msg = (\apk, \rrho, \notev)}{\noter} \\
-	&= \decode{\blake{2s}{\noter \concat \apk \concat \rrho \concat \notev}}{\NN} \pmod{\rBN}
+	&= \decode{\blake{2s}{\noter \concat \apk \concat \rrho \concat \notev}}{\NN} \pmod{\rCURVE}
 \end{align*}
 
 \begin{remark}
@@ -49,7 +49,7 @@ We set the commitment digest length in the parameter block $\blakePB{}$~\cite{bl
 
 \subsubsection{Security proof}\label{instantiation:prf-comm-crh:comm:sec-proof}
 
-The commitment scheme defined above is computationally hiding and binding in the WICM, see~\cref{appendix:blake:full-comm}. However, because of the modulo $\rBN$ operation, the scheme is only $(\bnFieldBitLen / 2)$-bit binding.
+The commitment scheme defined above is computationally hiding and binding in the WICM, see~\cref{appendix:blake:full-comm}. However, because of the modulo $\rCURVE$ operation, the scheme is only $(\fieldBitLen / 2)$-bit binding.
 
 \subsection{PRFs}\label{instantiation:prf-comm-crh:prf}
 

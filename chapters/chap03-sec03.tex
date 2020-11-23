@@ -12,21 +12,21 @@ After instantiating the various primitives and providing security proofs to just
         \item $\auxinputs.\jsins{i}.\cm{} = \blake{2s}{\auxinputs.\jsins{i}.\znote.\noter{} \concat \msg}$ \\ with $\msg = \auxinputs.\jsins{i}.\znote.\apk \concat \auxinputs.\jsins{i}.\znote.\rrho \concat \auxinputs.\jsins{i}.\znote.\notev$
         \item $\auxinputs.\htags{i} = \blake{2s}{ \taggedpk \concat \priminputs.\hsig}$ (malleability fix, see~\cref{appendix:trnm}) with $\taggedpk$ defined in~\cref{instantiation:prf-comm-crh:prf}
         \item $(\auxinputs.\jsins{i}.\znote.\notev) \cdot (1 - e) = 0$ is satisfied for the boolean value $e$ set such that if $\auxinputs.\jsins{i}.\znote.\notev > 0$ then $e = 1$.
-        \item The Merkle root $\mkroot'$ obtained after checking the Merkle authentication path $\auxinputs.\jsins{i}.\mkpath$ of commitment $\auxinputs.\jsins{i}.\cm{}$, with $\mimcSevenMPPrime{}$, equals to $\priminputs.\mkroot$ if $e = 1$.
-        \item $\priminputs.\nfs{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\jsins{i}.\nf{}}{k \cdot \bnFieldBitCap}{(k+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}}{k \in [\floor{\prfNfOutLen/\bnFieldBitCap}]}$
-        \item $\priminputs.\htags{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\htags{i}}{k \cdot \bnFieldBitCap}{(k+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}}{k \in [\floor{\prfPkOutLen/\bnFieldBitCap}]}$
+        \item The Merkle root $\mkroot'$ used to check the Merkle authentication path $\auxinputs.\jsins{i}.\mkpath$ of commitment $\auxinputs.\jsins{i}.\cm{}$, with $\mimcMPPrime{\rCURVE}$, equals $\priminputs.\mkroot$ if $e = 1$.
+        \item $\priminputs.\nfs{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\jsins{i}.\nf{}}{k \cdot \fieldBitCap}{(k+1) \cdot \fieldBitCap}}{\FFx{\rCURVE}}}{k \in [\floor{\prfNfOutLen/\fieldBitCap}]}$
+        \item $\priminputs.\htags{i}$ \\ $= \indexedset{\pack{\slice{\auxinputs.\htags{i}}{k \cdot \fieldBitCap}{(k+1) \cdot \fieldBitCap}}{\FFx{\rCURVE}}}{k \in [\floor{\prfPkOutLen/\fieldBitCap}]}$
     \end{enumerate}
     \item For each $j \in [\jsout]$:
     \begin{enumerate}
         \item $\auxinputs.\znotes{j}.\rrho = \blake{2s}{ \taggedrho \concat \priminputs.\hsig}$ (malleability fix, see~\cref{appendix:trnm}) with $\taggedrho$ defined in~\cref{instantiation:prf-comm-crh:prf}
         \item $\priminputs.\cms{j} = \blake{2s}{\auxinputs.\znotes{j}.\noter{} \concat \msg }$ \\ with $\msg = \auxinputs.\znotes{j}.\apk \concat \auxinputs.\znotes{j}.\rrho \concat \auxinputs.\znotes{j}.\notev$
     \end{enumerate}
-    \item $\priminputs.\hsig = \indexedset{\pack{\slice{\auxinputs.\hsig}{k \cdot \bnFieldBitCap}{(k+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}}{k \in [\floor{\crhhsigOutLen/\bnFieldBitCap}]}$
+    \item $\priminputs.\hsig = \indexedset{\pack{\slice{\auxinputs.\hsig}{k \cdot \fieldBitCap}{(k+1) \cdot \fieldBitCap}}{\FFx{\rCURVE}}}{k \in [\floor{\crhhsigOutLen/\fieldBitCap}]}$
     \item $\priminputs.\resbits = \packResBits{\indexedset{\auxinputs.\jsins{i}.\nf{}}{i \in [\jsin]}, \auxinputs.\vin, \auxinputs.\vout, \auxinputs.\hsig, \indexedset{\auxinputs.\htags{i}}{i \in [\jsin]}}$
     \item Check that the ``\gls{joinsplit} is balanced'', i.e.~check that the \gls{joinsplit-eq} holds:
     \begin{align*}
-        &\pack{\auxinputs.\vin}{\FFx{\rBN}} + \sum_{i \in [\jsin]} \pack{\auxinputs.\jsins{i}.\znote.\notev}{\FFx{\rBN}} \\
-        & = \sum_{j \in [\jsout]} \pack{\auxinputs.\znotes{j}.\notev}{\FFx{\rBN}} + \pack{\auxinputs.\vout}{\FFx{\rBN}}
+        &\pack{\auxinputs.\vin}{\FFx{\rCURVE}} + \sum_{i \in [\jsin]} \pack{\auxinputs.\jsins{i}.\znote.\notev}{\FFx{\rCURVE}} \\
+        & = \sum_{j \in [\jsout]} \pack{\auxinputs.\znotes{j}.\notev}{\FFx{\rCURVE}} + \pack{\auxinputs.\vout}{\FFx{\rCURVE}}
     \end{align*}
 \end{itemize}
 
@@ -49,7 +49,7 @@ The set of primary inputs is composed of the input nullifiers, the output commit
 
 The primary inputs that consist of binary strings are: the nullifiers $\nfs{}$, the public values $\vin$ and $\vout$, the signature hash $\hsig$ and the authentication tags $\htags{}$.
 
-For a binary string $x$, let $\alpha_x = \ceil{\len{x} / \bnFieldBitCap}$ be the number of field elements required to completely encode $x$ and let $\beta_x = \floor{\len{x} / \bnFieldBitCap}$ be the number of field elements whose capacity is fully used. Let $\gamma_x = \len{x} \pmod{\bnFieldBitCap}$ be the number of ``residual'' bits remaining after fully using $\beta_x$ field elements.
+For a binary string $x$, let $\alpha_x = \ceil{\len{x} / \fieldBitCap}$ be the number of field elements required to completely encode $x$ and let $\beta_x = \floor{\len{x} / \fieldBitCap}$ be the number of field elements whose capacity is fully used. Let $\gamma_x = \len{x} \pmod{\fieldBitCap}$ be the number of ``residual'' bits remaining after fully using $\beta_x$ field elements.
 
 \begin{example}\label{instantiation:eg:packing}
     Consider binary strings $A \in \bin^7$ of length 7, to be encoded over the field $\FFx{41}$. This field has a capacity of $5$ bits, and therefore $\alpha_A = 2$, $\beta_A = 1$, and $\gamma_A = 2$. That is, $A$ can be represented as 2 field elements, or as 1 field element with 2 ``residual'' bits.
@@ -63,9 +63,9 @@ For a binary string $x$, let $\alpha_x = \ceil{\len{x} / \bnFieldBitCap}$ be the
     \caption{Packing of string $A$ (see~\cref{instantiation:eg:packing})}\label{instantiation:fig:packingA}
 \end{figure}
 
-We now consider strategies to pack all primary inputs that are binary strings. A naive approach is to encode each binary string $x$ as $\alpha_x$ field elements. In general, this results in significant waste (and consequently more field elements than necessary), especially when the number of residual bits is small compared to $\bnFieldBitCap$ (see~\cref{instantiation:fig:packing-multi-strings}). An alternative strategy could be to concatenate all binary strings into a single string $y$ and pack this string into $\alpha_y$ field elements. While this approach minimizes the set of unused bits, each unpack operation would require different shift and mask operations over 2 or 3 field elements. This significantly increases the complexity of the unpacking operation that must be performed on-chain, resulting in a higher gas cost (due to extra logic) or more contract code (if each unpack operation is hard-coded).
+We now consider strategies to pack all primary inputs that are binary strings. A naive approach is to encode each binary string $x$ as $\alpha_x$ field elements. In general, this results in significant waste (and consequently more field elements than necessary), especially when the number of residual bits is small compared to $\fieldBitCap$ (see~\cref{instantiation:fig:packing-multi-strings}). An alternative strategy could be to concatenate all binary strings into a single string $y$ and pack this string into $\alpha_y$ field elements. While this approach minimizes the set of unused bits, each unpack operation would require different shift and mask operations over 2 or 3 field elements. This significantly increases the complexity of the unpacking operation that must be performed on-chain, resulting in a higher gas cost (due to extra logic) or more contract code (if each unpack operation is hard-coded).
 
-The \zeth~protocol requires that each binary string variable $x$ is packed into $\beta_x$ field elements, and the residual bits from all binary strings, along with the public values $\vin$ and $\vout$, are aggregated into a variable $\resbits$. Let $\resBitsBLen$ be the total number of residual bits, and $\resBitsFLen$ be the number of field elements required to represent $\resbits$. We assume that $\zvalueLen < \bnFieldBitCap$, and define the notation $\gamma_\notev = \zvalueLen$ for the bit lengths of public values $\vin$ and $\vout$. Thus $\resBitsBLen$ is given by
+The \zeth~protocol requires that each binary string variable $x$ is packed into $\beta_x$ field elements, and the residual bits from all binary strings, along with the public values $\vin$ and $\vout$, are aggregated into a variable $\resbits$. Let $\resBitsBLen$ be the total number of residual bits, and $\resBitsFLen$ be the number of field elements required to represent $\resbits$. We assume that $\zvalueLen < \fieldBitCap$, and define the notation $\gamma_\notev = \zvalueLen$ for the bit lengths of public values $\vin$ and $\vout$. Thus $\resBitsBLen$ is given by
 \[
     \resBitsBLen = \gamma_\hsig + 2 \cdot \gamma_\notev + \jsin \cdot (\gamma_{\nf{}} + \gamma_{\htag{}} )
 \]
@@ -74,7 +74,7 @@ and the lengths, in field elements, of each of the correponding public inputs ar
     \nfFLen &= \beta_{\nf{}} \\
     \hsigFLen &= \beta_{\hsig} \\
     \htagFLen &= \beta_{\htag{}} \\
-    \resBitsFLen &= \ceil{\resBitsBLen / \bnFieldBitCap}
+    \resBitsFLen &= \ceil{\resBitsBLen / \fieldBitCap}
 \end{align*}
 
 \begin{figure}[ht]
@@ -92,29 +92,29 @@ where $\widetilde{\hsig}, \widetilde{\nfs{}}, \widetilde{\htags{}}$ are, respect
 Note that the public values are packed into the ``last'', or lowest order, $2 \cdot \gamma_\notev$ bits of the resulting field element(s). In this way, their unpack functions are independent of the values $\jsin$ and $\jsout$ and of the number of residual bits required for each bit string (and consequently, independent of the finite field used).
 
 To format the unpacked primary inputs into field elements, we define the following functions.
-Given a bit string of length less than $\bnFieldBitCap$, the algorithm \pack{}{} (see~\cref{zeth-protocol:fig:packing-alg}) returns a field element. Given the nullifiers, public values and authentication tags, the algorithm \packResBits{}{} (see~\cref{zeth-protocol:fig:packing-resbits-alg}) outputs the residual bits. Given a set of packed field elements and the residual bits, the algorithm \unpack{}{} returns the variables reassembled as binary strings. In particular, we have that $\unpack{\priminputs.\nfs{}, \resbits}{\nf{}} = \indexedset{\auxinputs.\jsins{i}.\nf{}}{i \in [\jsin]}$.
+Given a bit string of length less than $\fieldBitCap$, the algorithm \pack{}{} (see~\cref{zeth-protocol:fig:packing-alg}) returns a field element. Given the nullifiers, public values and authentication tags, the algorithm \packResBits{}{} (see~\cref{zeth-protocol:fig:packing-resbits-alg}) outputs the residual bits. Given a set of packed field elements and the residual bits, the algorithm \unpack{}{} returns the variables reassembled as binary strings. In particular, we have that $\unpack{\priminputs.\nfs{}, \resbits}{\nf{}} = \indexedset{\auxinputs.\jsins{i}.\nf{}}{i \in [\jsin]}$.
 \begin{align*}
-    &\pack{}{\FFx{\rBN}} : \BB^{\leq \bnFieldBitCap} \to \FFx{\rBN} \\
-    &\packResBits{} : {(\BB^\prfNfOutLen)}^{\jsin} \times {(\BB^\zvalueLen)}^2 \times \BB^\crhhsigOutLen \times {(\BB^\prfPkOutLen)}^{\jsin} \to (\FFx{\rBN})^\resBitsFLen \\
-    &\unpack{}{} : \FFx{\rBN}^* \times (\FFx{\rBN})^{\resBitsFLen} \to \BB^* \\
+    &\pack{}{\FFx{\rCURVE}} : \BB^{\leq \fieldBitCap} \to \FFx{\rCURVE} \\
+    &\packResBits{} : {(\BB^\prfNfOutLen)}^{\jsin} \times {(\BB^\zvalueLen)}^2 \times \BB^\crhhsigOutLen \times {(\BB^\prfPkOutLen)}^{\jsin} \to (\FFx{\rCURVE})^\resBitsFLen \\
+    &\unpack{}{} : \FFx{\rCURVE}^* \times (\FFx{\rCURVE})^{\resBitsFLen} \to \BB^* \\
 \end{align*}
 
 The $\unpack{}{}$ functions for nullifiers, public values and signature hash are represented as follows.
 \begin{align*}
-    &\unpack{}{}_{\hsig} : (\FFx{\rBN})^\hsigFLen \times (\FFx{\rBN})^{\resBitsFLen} \to \BB^\crhhsigOutLen \\
-    &\unpack{}{}_{\nf{}} : (\FFx{\rBN})^\nfFLen \times (\FFx{\rBN})^{\resBitsFLen} \to \BB^\prfNfOutLen \\
-    &\unpack{}{}_{\vin} : \FFx{\rBN}^0 \times (\FFx{\rBN})^{\resBitsFLen} \to \BB^\zvalueLen \\
-    &\unpack{}{}_{\vout} : \FFx{\rBN}^0 \times (\FFx{\rBN})^{\resBitsFLen} \to \BB^\zvalueLen
+    &\unpack{}{}_{\hsig} : (\FFx{\rCURVE})^\hsigFLen \times (\FFx{\rCURVE})^{\resBitsFLen} \to \BB^\crhhsigOutLen \\
+    &\unpack{}{}_{\nf{}} : (\FFx{\rCURVE})^\nfFLen \times (\FFx{\rCURVE})^{\resBitsFLen} \to \BB^\prfNfOutLen \\
+    &\unpack{}{}_{\vin} : \FFx{\rCURVE}^0 \times (\FFx{\rCURVE})^{\resBitsFLen} \to \BB^\zvalueLen \\
+    &\unpack{}{}_{\vout} : \FFx{\rCURVE}^0 \times (\FFx{\rCURVE})^{\resBitsFLen} \to \BB^\zvalueLen
 \end{align*}
 
 \begin{figure*}
     \begin{minipage}[t]{.4\textwidth}
         \centering
-        \procedure{\pack{x}{\FFx{\rBN}}}{%
-            out \gets 0_{\FFx{\rBN}}; \\
+        \procedure{\pack{x}{\FFx{\rCURVE}}}{%
+            out \gets 0_{\FFx{\rCURVE}}; \\
             \pcfor i \in [\len{x}] \pcdo: \\
             \t \pcif x[i] = 1 \pcdo: \\
-            \t \t out \gets out +_{\FFx{\rBN}} 2^{\len{x}-1-i} \\
+            \t \t out \gets out +_{\FFx{\rCURVE}} 2^{\len{x}-1-i} \\
             \pcreturn out;
         }
         \caption{Algorithm to pack bits into a field element.}\label{zeth-protocol:fig:packing-alg}
@@ -127,15 +127,15 @@ The $\unpack{}{}$ functions for nullifiers, public values and signature hash are
             r \gets \vin \concat r; \\
             %
             \pcfor i \in [\jsin] \pcdo:\\
-            \t r \gets \slice{\htags{i}}{\beta_{\htags{i}} \cdot \bnFieldBitCap}{} \concat r; \\
+            \t r \gets \slice{\htags{i}}{\beta_{\htags{i}} \cdot \fieldBitCap}{} \concat r; \\
             %
             \pcfor i \in [\jsin] \pcdo:\\
-            \t r \gets \slice{\nfs{i}}{\beta_{\nfs{i}} \cdot \bnFieldBitCap}{} \concat r; \\
+            \t r \gets \slice{\nfs{i}}{\beta_{\nfs{i}} \cdot \fieldBitCap}{} \concat r; \\
             %
-            r \gets \slice{\hsig}{\beta_{\hsig} \cdot \bnFieldBitCap}{} \concat r; \\
+            r \gets \slice{\hsig}{\beta_{\hsig} \cdot \fieldBitCap}{} \concat r; \\
             %
-            \pcfor i \in [ \ceil{\len{r}/ \bnFieldBitCap} ] \pcdo: \\
-            \t out[i] \gets \pack{\slice{r}{i \cdot \bnFieldBitCap}{ (i+1) \cdot \bnFieldBitCap}}{\FFx{\rBN}}; \\
+            \pcfor i \in [ \ceil{\len{r}/ \fieldBitCap} ] \pcdo: \\
+            \t out[i] \gets \pack{\slice{r}{i \cdot \fieldBitCap}{ (i+1) \cdot \fieldBitCap}}{\FFx{\rBN}}; \\
             \pcreturn out;
         }
         \caption{Algorithm to pack residual bits.}\label{zeth-protocol:fig:packing-resbits-alg}
@@ -149,10 +149,10 @@ The $\unpack{}{}$ functions for nullifiers, public values and signature hash are
 
 \subsubsection{Packing Policy Example}
 
-In the case where $\jsin=\jsout=2$, field elements hold $\bnFieldBitCap$ bits and all PRFs and $\crhhsig{}$ output bit-strings of length 256, the unpacked primary inputs are 2167-bit long.
+In the case where $\jsin=\jsout=2$, the \BNCurve~is being used (in which field elements hold $\bnFieldBitCap$ bits) and all PRFs and $\crhhsig{}$ output bit-strings of length 256, the unpacked primary inputs are 2167-bit long.
 The packing parameters are therefore:
 \begin{align*}
-    & \resBitsBLen = 143 \\
+    & \resBitsBLen = 5 \times 3 + 64 + 64 = 143 \\
     & \nfFLen = \hsigFLen = \htagFLen = \resBitsFLen = 1
 \end{align*}
 The packed primary inputs are 2277 bits long, corresponding to a small space overhead of $\approx 5\%$ unused bits. Moreover, the 143-bit residual bits can be packed into a single field element. As such, the primary inputs are encoded as 9 field elements.
@@ -167,3 +167,14 @@ Finally, the residual bits are formatted as follows,
     \concat \underbrace{\vin\vphantom{g}}_{64\ bits}
     \concat \underbrace{\vout\vphantom{g}}_{64\ bits}
 \]
+
+For the analogous case using \BLSCurve (in which field elements hold $\blsFieldBitCap$ bits), the packing parameters are:
+\begin{align*}
+    & \resBitsBLen = 5 \times 4 + 64 + 64 = 148 \\
+    & \nfFLen = \hsigFLen = \htagFLen = \resBitsFLen = 1
+\end{align*}
+The residual bits can be packed into a single field element of the form
+\[
+    \underbrace{padding}_{\text{108 bits}} \concat \underbrace{\hsig}_{4\ bits} \concat \underbrace{\nf{0}}_{4\ bits} \concat \underbrace{\nf{1}}_{4\ bits} \concat \underbrace{\htag{0}}_{4\ bits} \concat \underbrace{\htag{1}}_{4\ bits} \concat \underbrace{\vin\vphantom{g}}_{64\ bits} \concat \underbrace{\vout\vphantom{g}}_{64\ bits}
+\]
+and the primary inputs are again encoded as 9 field elements.
