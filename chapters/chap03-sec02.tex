@@ -18,17 +18,17 @@ In this section we describe the instantiation of $\mkhash$ with a compression fu
     \caption{\mimc{} Encryption function.}\label{instantiation:fig:mimc}
 \end{figure*}
 
-\mimcEnc{} can be defined on both binary and prime fields. As such, the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}. For general prime $p$, we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. The function signatures thus become,
-\begin{align*}
-    \mimcPrime{p} &: \FFx{p} \times \FFx{p} \to \FFx{p} \\
-    \mimc{}_{2^n} &: \FFx{2^n} \times \FFx{2^n} \to \FFx{2^n}
-\end{align*}
+\mimcEnc{} can be defined on both binary and prime fields, and as such the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}.
+For general prime $p$ (resp.~ positive integer $n$), we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). In this document, we only consider \mimc{} defined over prime fields (in particular, the field $\FFx{\rCURVE}$ with elements written over $\secpar$ bits, over which \zksnark~operates).
 
-From now on, we only consider \mimc{} defined over prime fields. In particular, the field $\FFx{\rCURVE}$ with elements written over $\secpar$ bits, over which \zksnark~operates.
+Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. We thereby consider an instantiation of $\mimc{}$ with signature
+\begin{align*}
+    \mimcPrime{\rCURVE} &: \FFx{\rCURVE} \times \FFx{\rCURVE} \to \FFx{\rCURVE}
+\end{align*}
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
-To ensure that the exponentiation leads to a permutation in $\FFx{\rCURVE}$, $\exponent{}$ of the form $\exponent{} = 2^t-1$ such that $\gcd(\exponent{}, \rCURVE-1) = 1$. To achieve a security of $\secpar$, we require $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil. $\footnote{We do not consider exponents of type $2^t+1$ since the polynomial representing $\mimcEnc$ would be sparse and as such, the number of rounds becomes constant (see~\cite[Section 5.3]{albrecht2016mimc}).}
+To ensure that the exponentiation leads to a permutation in $\FFx{\rCURVE}$, we consider $\exponent{}$ of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ such that $\gcd(\exponent{}, \rCURVE-1) = 1$. To achieve a security of $\secpar$, we require that $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil$.
 
 We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
 
@@ -124,7 +124,7 @@ The number of constraints of \mimcMPPrime{} for several exponents $\exponent{}$ 
 \[
     \constraints = \rounds \cdot \mults + 1
 \]
-where $\rounds = \lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \rceil$, $\mults$ is the number of multiplications required for exponentiation and the additional constraint (corresponding to $+1$ in the above formula) is a result of the final message and key addition. Note that for $\exponent = 2^t - 1$ we have $\mults = 2 \cdot t - 2$ using the \emph{square-and-multiply} algorithm~\cite{menezes1996handbook}.
+where $\rounds = \lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \rceil$, $\mults$ is the number of multiplications required for exponentiation and the additional constraint (corresponding to $+1$ in the above formula) is a result of the final message and key addition. Note that for $\exponent = 2^t - 1$ we have $\mults = 2 \cdot t - 2$, using the \emph{square-and-multiply} algorithm~\cite{menezes1996handbook}, and for $\exponent = 2^t + 1$ we have $mults = t + 1$.
 % TODO: Check if this final constraint can be removed.
 
 For several concrete values of $\exponent{}$, the number of $\rounds$ required to attain the desired security level, along with the number of constraints, are shown in~\cref{table:mimc-exp-analysis}.
@@ -138,15 +138,20 @@ For several concrete values of $\exponent{}$, the number of $\rounds$ required t
             \multirow{2}{*}{$\exponent{}$} & \multicolumn{2}{c}{\BNCurve} & \multicolumn{2}{c}{\BLSCurve} \\ [0.5ex]
             & $\rounds$ & $\constraints$ & $\rounds$ & $\constraints$ \\ [0.5ex]
             \midrule
+            5 & 110 & 331 & & \\
             7 & 91 & 365 & & \\
+            17 & 65 & 316 & 62 & 311 \\
             31 & 52 & 417 & 51 & 409 \\
             127 & 37 & 445 & 37 & 445 \\
+            257 & 32 & 289 & 32 289 & \\
             511 & 29 & 465 & & \\
             2047 & 24 & 481 & 23 & 461 \\
             8191 & 20 & 481 & 20 & 481 \\
             32676 & 17 & 477 & & \\
+            65537 & 16 & 273 & 16 & 273 \\
             131071 & 15 & 481 & 15 & 481 \\
             524287 & 14 & 505 & 14 & 505 \\
+            1048577 & 13 & 274 & 13 & 274 \\
             2097151 & 13 & 521 & & \\
             \bottomrule
         \end{tabular}
@@ -154,7 +159,7 @@ For several concrete values of $\exponent{}$, the number of $\rounds$ required t
     \caption{Arithmetic constraints required to represent \mimcMP{} as an R1CS program, for different exponents $\exponent{}$ and curves. Missing entries where $\gcd(\exponent{},\rCURVE - 1) \neq 1$}\label{table:mimc-exp-analysis}
 \end{table}
 
-In conclusion, for the case of \BNCurve~we set $\exponent{} = 7$ and $\rounds{} = 91$, targetting a $254$-bit security level. Similarly, for \BLSCurve~we set $\exponent{} = 31$ and $\rounds{} = 51$, targetting a $253$-bit security level. These values are chosen such that they satisfy the requirement that $\gcd(\exponent{},\rCURVE - 1) = 1$ and give a good balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract.
+For the case of \BNCurve~we set $\exponent{} = 7$ and $\rounds{} = 91$, targetting a $254$-bit security level. For \BLSCurve~we set $\exponent{} = 31$ and $\rounds{} = 51$, targetting a $253$-bit security level. These values are chosen such that they satisfy the requirement that $\gcd(\exponent{},\rCURVE - 1) = 1$ and give a good balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract.
 
 \subsection{Security requirements satisfaction}\label{instantiation:mkhash:security}
 
