@@ -28,9 +28,26 @@ Since block ciphers are usually defined over the product space of keys and messa
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
-To ensure that the exponentiation leads to a permutation in $\FFx{\rCURVE}$, we consider $\exponent{}$ of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ such that $\gcd(\exponent{}, \rCURVE-1) = 1$. To achieve a security of $\secpar$, we require that $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil$.
+To ensure that the exponentiation leads to a permutation in $\FFx{\rCURVE}$, we
+consider $\exponent{}$ such that $\gcd(\exponent{}, \rCURVE-1) = 1$. To achieve
+a security of $\secpar$, we require that $\rounds = \left\lceil \frac{\log_2
+    \rCURVE}{\log_2 \exponent{}} \right\rceil$. For the efficiency reasons we
+consider exponents of form $2^t \pm 1$.
 
 We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
+
+We note that Albrecht et al.~\cite[Section 5.3]{albrecht2016mimc} advised agains
+using exponents of form $2^t + 1$ for MiMC over $\FFx{2^n}$ as in that case
+polynomials $(x + y)^{2^t + 1} \in \FFx{2^n}$ are sparse (i.e.~most of their
+coefficients are zero, here, only 4 coefficients are nonzero). However in case
+of $\FFx{\rCURVE}$, where $\rCURVE > \binom{\exponent}{\lfloor \exponent / 2
+  \rfloor}$, polynomials $(x + y)^{\exponent}$ are not sparse. This comes from
+the following observation.
+
+\[
+  (x + y)^\exponent = \sum_{i = 0}^{\exponent} \binom{\exponent}{i} x^{i}y^{\exponent - i}
+\]
+and $\binom{\exponent}{i} \bmod \rCURVE = \binom{\exponent}{i}$ as $\binom{\exponent}{i} < \rCURVE$, thus all the coefficients are greater than $0$.
 
 \subsection{\mimc{}-based compression function}\label{instantiation:mkhash:mimc-compressionf}
 
