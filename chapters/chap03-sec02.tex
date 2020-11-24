@@ -28,7 +28,7 @@ Since block ciphers are usually defined over the product space of keys and messa
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
-To ensure that the exponentiation leads to a permutation in $\FFx{\rCURVE}$, we consider $\exponent{}$ of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ such that $\gcd(\exponent{}, \rCURVE-1) = 1$. To achieve a security of $\secpar$, we require that $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil$.
+As in ~\cite{albrecht2016mimc}, we consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$ (such that exponentiation by $e$ yields a permutation on $\FFx{\rCURVE}$).  To achieve a security of $\secpar$, we require that $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil$.
 
 We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
 
