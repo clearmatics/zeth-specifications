@@ -1,5 +1,7 @@
 # Zeth Protocol specifications
 
+This repository contains the source code of the Zeth protocol specification document along with the source code of the Zeth transaction relay document (see [here](relay)).
+
 ## Instructions to compile the Zeth protocol document
 
 To compile the document, copy and paste the following command in your terminal:
