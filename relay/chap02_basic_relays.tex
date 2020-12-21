@@ -155,8 +155,6 @@ Let $\relayEthAccount{}.\addr$ be the $\ethereum$ address of $\relayP$ charging 
 
 Given the current \ethereum~state $\wstate$ (or a copy holding at least $\wstate[\relayexec{}.\addr]$ and $\wstate[\mixer.\addr]$) and a relay request $\req \in\ \relayRequestDType$, the algorithm $\relaycheckrequest$ (see~\cref{relay-proof-permission:fig:relay-request-check}) succeeds if the request $\req$ is valid and will result in \relayEthAccount{} receiving $\relayfee$.
 
-%% The algorithm $\relaycheckrequest$ (see~\cref{relay-proof-permission:fig:relay-request-check}) checks an incoming request of type $\relayRequestDType$ to ensure that the relay will receive $\relayfee$ in return for relaying it to the blockchain.
-
 Note that we assume the existence of an algorithm $\relaycheckmixparams$ which checks whether a given set of \mix{} parameters $\mixparams$ result in a successful \mix{} call in the context of the current blockchain state $\wstate[\mixer{}.\addr]$. That is, given the state $\wstate[\mixer{}.\addr]$ of the \mixer{} contract, an $\ethereum$ address $\addr_{caller} \in \BB^\addressLen$ and \mix{} parameters $\mixparams \in \mixInputDType$,
 \[
   \relaycheckmixparams(\wstate[\mixer{}.\addr], \addr_{caller}, \mixparams)
@@ -215,8 +213,6 @@ In $\relayhandlerequest$ a gas price $\gasp$ and gas limit $\gasl$ are (possibly
   \caption{Algorithm to process relay requests. $\relayRecordTransaction$ represents the relay-specific handling of the transaction id.}
   \label{relay-proof-permission:fig:relay-handle-request}
 \end{figure}
-
-%% \antoines{11.11}{Strictly speaking we may be missing an RLP step when concatenating the request $\req$ to fucntion descriptor to form the tx data. Not sure. Need to be checked in the yellow paper.}
 
 \begin{remark}\label{relay-proof-permission:transaction-failure-cases}
   The checks in $\relaycheckrequest$ provide some level of assurance that $\relaytx$ will be successfully executed on chain. However, the relay cannot rule out the possibility that a conflicting transaction $\relaytx^*$ exists on the network, such that, if $\relaytx^*$ were mined first it would alter the blockchain state and affect the execution of $\relaytx$. For example, in the case of \zeth, if some transaction $\relaytx^*$ which spends the same notes as $\relaytx$ were mined first, $\relaytx$ would fail and no payment would be made to the relay.
