@@ -1,5 +1,5 @@
 latex_files := $(wildcard *.tex appendices/*.tex)
-main_latex_file := layer2.tex
+main_latex_file := zeth_relay.tex
 references := references.bib
 
 .PHONY: pdf
