@@ -19,3 +19,5 @@
 *.nls
 *.upa
 *.upb
+*.fls
+*.fdb_latexmk
