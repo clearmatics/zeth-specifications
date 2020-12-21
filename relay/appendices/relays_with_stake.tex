@@ -1,0 +1,451 @@
+% !TEX root = layer2
+
+\chapter{Relays with Stake}\label{relay-stake}
+
+%% Stake Contract
+\newcommand{\stakecontract}{\ensuremath{\contractstyle{RelayStake}}\xspace}
+%% Proof of Relay Stake
+\newcommand{\prs}{\pi_{\constantstyle{\req}}}
+
+\begin{notebox}
+  This section is concerned with a high-level description of a work-in-progress proposal. There are several issues still to be addressed before it can be considered complete.  It is given here as a first step towards the goal of addressing possible relay DoS vectors, with the hope that it can be iterated and eventually turned into a practical solution.
+\end{notebox}
+
+\section{Introduction}\label{relay-stake:introduction}
+In the above proposals (\cref{relay-proof-permission,relay-private-fees}), relays receive requests and perform ``offline'' checks to gain a high level of confidence that the transaction (which the relay must sign and therefore pay for) will ``succeed'' and the relay will receive the designated fee. Under these protocols, a relay is exposed to risk in two forms:
+\begin{enumerate}
+\item\label{relay-stake:introduction:risk-validation-cost} Users are free to make invalid relay requests with no consequences (we assume that they connect via anonymising networks). At the same time, relays are highly incentivised to filter out such invalid requests and avoid signing and broadcasting the corresponding transaction (which would result in the relay paying the invalid transaction's gas, without receiving their relay fee). In order to detect invalid relay requests, the relay must essentially simulate execution of the full transaction against the current state of the blockchain. Although must less costly than paying the corresponding gas, this may still require significant compute resources. If the relay request is judged to be invalid, the relay will necessarily receive no relay fee in exchange for these verification costs.
+\item As mentioned in \cref{relay-proof-permission:transaction-failure-cases}, there is a chance that a transaction appears valid (i.e.~it passes all checks performed by the relay), but later fails due to a conflicting transaction (unseen by the relay) being mined ahead of it. While this risk can be reduced by more thorough checks, the relay can never rule out the possibility that a conflicting transaction exists somewhere on the network.
+\end{enumerate}
+
+Both of these risks represent possible DoS attack vectors, especially~\ref{relay-stake:introduction:risk-validation-cost}, since clients can very easily craft invalid transactions with maximal cost of validation.
+
+We consider a potential approach to address these problems. Specifically, we outline a protocol involving collateral staked by users and associated with some specific relay request. This supports a very lightweight check that relays can perform \emph{before} they commit either \ether~as gas for transactions, or compute resources to fully verify the validity of the request. If this fast upfront check passes, the relay is effectively guaranteed income as a result of relaying the transaction - whether or not the transaction is valid at the time it is mined. In this way, relays can avoid DoS attacks that force them to waste resources for no return.
+
+The user's stake is pre-deposited with a contract \stakecontract{} in such a way that it is bound to a specific relay request. On receipt of a relay request, relays need only confirm that an associated stake exists before creating the relay transaction and executing it via \stakecontract{}. The relay can be sure that \stakecontract{} will release the stake to the relay, even if the associated relay transaction fails for any reason. In this way, relays can very quickly gain assurance (up to some negligible probability) that they will not lose any operating costs by proceeding with the request.
+
+Since they are exposed to reduced risk, relays should be able to charge users lower fees for their services, while still allowing users to perform \zeth~operations that are not directly connected to any of their \ethereum~addresses. However, we note that this reduction in risk for the relay comes with a trade-off for the user, who must deposit \ether~from some address in order to use the system. Although users do not reveal \emph{which} \zeth~operation they are performing, they reveal that the owner of the \ethereum~address paying for the deposit \emph{may} interact with \zeth~at some future time.
+
+While this does not provide as much anonymity as the systems described in \cref{relay-proof-permission,relay-private-fees}, this does represent an improvement in anonymity over the plain \zeth~protocol. (Note that users interacting directly with \zeth~can employ strategies to obfuscate their actions, such as broadcasting ``dummy'' transactions which mix their commitments, however this may incur a relatively high cost and always reveal to observers the exact set of commitments they have created.) The nature of the improvement achieved by the stake system will depend on the details of any final design. We discuss possible trade-offs, and potential strategies to mitigate them, in~\cref{relay-stake:remarks}.
+
+\section{Protocol overview}\label{relay-stake:protocol-overview}
+
+We describe the components involved in the protocol, and their role in the full workflow.
+
+\subsection{Stake contract}
+
+We assume the existence of some contract \stakecontract{} which performs multiple functions:
+\begin{itemize}
+\item Accept and hold stake as collateral against a specific relay request (and in turn specific relay). Users depositing stake should be able to generate a proof $\prs$ that \stakecontract{} holds some stake for a specific request $\req$. Further, verifiers of $\prs$ should not learn which transaction caused the deposit (and thereby the \ethereum~address of the user who deposited it).
+\item Act as a relay intermediary, accepting relay requests and proof-of-relay-stake objects. If a valid request and proof are received, the sender has permission to act as a relay for the given request, and the stake is still unspent, \stakecontract{} executes the relay request (calls $\mixer{}.\mix(\req.\mixparams)$, using the notation of \cref{relay-proof-permission}) and releases the stake to the relay, regardless of the outcome of the $\mix{}$ call.
+\end{itemize}
+Note that this may be implemented as multiple interacting contracts.
+
+\subsection{Relay}
+
+Relays receive pairs $(\req, \prs)$ of relays requests and associated proof-of-relay-stake objects. When a relay \relayP{} (with \ethereum~address $\relayEthAccount.\addr$) receives such a pair, the operations he performs are relatively straightforward:
+
+\begin{description}
+\item [Step 1.] Check the correctness of $\req$ and $\prs$, namely that:
+  \begin{enumerate}
+    \item $\req$ names the relay's \ethereum~address as the recipient of the relay fee
+    \item a valid stake exists in \stakecontract{}, corresponding to $\req$ and $\prs$
+  \end{enumerate}
+  The relay should not learn which transaction deposited the stake that corresponds to $\req$ and $\prs$ (which would reveal an \ethereum~account of the user).
+\item [Step 2.] Create a transaction $\relaytx$ which calls \stakecontract{} with parameters $\req$ and $\prs$.
+\item [Step 3.] Broadcast $\relaytx$ to the network and asynchronously wait to receive the relay fee.
+\end{description}
+
+As described above, after the initial check of stake corresponding to $\req$, the relay can be sure he will receive his fee even if the $\mix$ call fails. Note also that the relay's transaction cannot be front-run, since \stakecontract{} will only release the stake to the relay mentioned in $\req$. A user may be able to spend the notes in $\req.\mixparams$ via another transaction, but he will not be able to prevent the relay from claiming the stake he previously deposited.
+
+For these reasons, the relay need only perform the checks listed above. There is little to be gained by checking any further details of $\req$, including $\req.\mixparams$ or the state of the \zeth~mixer contract \mixer{}.
+
+\subsection{User}
+
+A user who wants to make use of a specific relay \relayP{} with \ethereum~address $\relayEthAccount.\addr$, using $\mix{}$ parameters $\mixparams$, performs the following actions:
+\begin{description}
+\item [Step 1.] Create the appropriate $\mixparams$ and corresponding relay request $\req$, bound to the relay's address $\relayEthAccount.\addr$.
+\item [Step 2.] Stake some \ether~with \stakecontract{} against $\req$ and generate a corresponding proof-of-relay-stake $\prs$. Note that this collateral is ``bound'' to $\req$.
+\item [Step 3.] Send $\req$, $\prs$ to the chosen relay (via an anonymous channel), and asynchronously wait for a corresponding transaction to be mined.
+\end{description}
+
+Note that the user must have a funded \ethereum~account $\userEthAccount$ in order to stake collateral, impacting their anonymity to some extent.
+
+\subsection{Reclaiming stake}\label{relay-stake:protocol-overview:reclaiming-stake}
+
+Under some circumstances, a user may wish to reclaim his stake after depositing it in \stakecontract{}. In fact, if no mechanism were available to accomplish this, the protocol would be vulnerable to withholding attacks. That is, malicious relays could accept relay requests but not relay them within a reasonable time, essentially locking up the user's stake. Eventually, the victims of withholding attacks would be forced to forfeit their stake and find another means to carry out their \zeth~operations (potentially via another relay). Once the operation has been completed via another transaction, the malicious relay (still holding a request with associated stake) can then claim the user's stake by broadcasting the relay transaction, which will now fail. The victim must pay for his transaction more than once, losing his stake (which, may be greater than the original relay fee - see~\cref{relay-stake:remarks}). This attack would also cause significant disruption to the relay network and associated market.
+
+\begin{notebox}
+  Note that the affect of such an attack may be mitigated by some kind of reputation system alongside a relay market fee, so the threat posed by this may not be considered severe. In fact, a reputation system may be a vital part of any relay market.
+\end{notebox}
+
+If the user were allowed to reclaim their stake at any time, the transaction to reclaim it could be unseen by the relay, yet mined ahead of $\relaytx$. Thus, the relay would no longer have any guarantee that he would receive the stake in exchange for broadcasting the relay transaction.
+
+It may be possible to facilitate reclaim of the stake by setting a ``period of validity'' for the stake, if this can be implemented such that:
+\begin{itemize}
+\item the user cannot reclaim the stake until the period of validity elapses,
+\item the relay can obtain some estimate regarding the period of validity (minimally, if the relay knows some lower bound on the remaining period of validity, it can gain a high degree of certainty that the relay transaction will be mined before the user is able to reclaim the stake),
+\item for a relay transaction $\relaytx$, observers (and relays) should not be able to infer significant information about the transaction that deposited the collateral for $\relaytx$,
+\item for a stake reclaim transaction, observers should not be able to infer significant information about the transaction that deposited the stake being reclaimed,
+\item the transaction to reclaim a stake cannot be front-run.
+\end{itemize}
+
+\section{Remarks}\label{relay-stake:remarks}
+
+In this section we give some remarks about the proposed stake system above. Note that details are highly dependent on the specific cryptographic primitives used. The steps above give an outline of how a staking system may work, with the caveat that they are very likely to be modified in any fully specified protocol.
+
+\paragraph{Stake deposit leaks information.} The transaction to deposit the user's stake reveals an \ethereum~address of the user, and the value of the stake.  Similarly, the transaction to reclaim an unused stake is also associated with the user's \ethereum~address. In particular, observers may learn about \ethereum~addresses of users likely to interact with the relay system. Note that this could potentially be mitigated if users are able, via some other mechanism such as \cref{relay-proof-permission}, to anonymously receive funds at new ``unused'' \ethereum~addresses. However, in isolation, the stake system always requires an initial transaction from a funded address.
+
+\paragraph{Relays with stake as part of a wider market.} Reliance on external mechanisms (such as the ability to withdraw to new \ethereum~addresses, as mentioned above), may not necessarily be a problem for a stake-based relay protocol. We note that there may be significant benefit to an ecosystem of various relay types (or relays supporting a variety of request types) including those discussed in this document. In particular, we may imagine a market in which users can choose between a range of relay request types - those supporting more privacy and not requiring \ether (with higher fees, as a consequence of the extra risk assumed by the relay), and relays with lower fees which place more requirements on users (able to mitigate much of their risk). Concretely, such a system may allow users to withdraw \ether~to an anonymous address via an expensive relay, and then use this \ether~as collateral for further relay transactions with lower relay fees. Obviously, in such a scenario, users (and their wallet software) must take a great deal of care not to reveal relationships between transactions.
+
+\paragraph{Collateral value vs Relay Fee.} The above outline suggests a very simple scenario in which the stake is unconditionally used as the relay fee (that is, the stake must have the same value as the relay fee, which cannot be negotiated after the stake has been deposited. We note that any concrete instantiation would require somewhat more flexibility, and would likely extend fee payment mechanisms in one of several ways.
+\begin{itemize}
+\item The user could be required to stake some fixed value from which fees are paid, with the ``change'' being paid either to the user, or as $\vin$ to the \zeth~mixer. The fixed stake value would then define an upper bound on relay fees. This allows a lot more scope for relays to dynamically change their fees.
+\item We may prefer to distinguish between successful and failed $\mix$ calls. On success, \stakecontract{} may refund the user with the difference between the stake and the relay fee (as described above), while users could be punished for invalid relay requests by forfeiting their entire stake to the relay.
+\item Similarly, it may be preferable for relay fees to be paid directly from the $\mix$ call in the case of successful transactions. That is, the $\mix$ call parameters $\req.\mixparams$ must include an output paying the relay (either $\vout$ as in \cref{relay-proof-permission}, or a \zeth~note as in \cref{relay-private-fees}), and the stake is refunded to the user (either to an address of their choosing, or as $\vin$ to the $\mix$ call. This allows relays to maintain privacy with respect to their fee payments, while minimizing risk through the stake system.
+\item It may be possible to allow users to deposit a single stake, bound to a specific relay, which can then be used for multiple relay requests. The relay could still claim the stake by presenting an invalid request from the user, but the user could make multiple relay requests (possibly within some time limit - see the following paragraph) without the need to redeposit. User anonymity would be improved because, while observers would still learn the \ethereum~address depositing each stake, they would not be able to determine how many relay requests were carried out on behalf of each depositor.
+\end{itemize}
+
+\paragraph{Period of validity.} The period of validity gives observers information about when the users relay transaction will be carried out. Depending on the frequency of relay transactions interacting with \stakecontract{}, users should ensure that the period of validity is sufficiently long, to avoid compromising their anonymity. Similarly, a predictable interval between a stake being deposited and the corresponding relay transaction that claims it, would also reveal information about the user originating each relay transaction. To avoid this, the period of validity should be sufficiently long to allow some ``noise'' in the interval between stake deposits and relay transactions. Note that this presents a trade-off, since the user's funds are potentially ``locked up'' for a longer period.
+
+%%
+%% ---------------------------------------- Saved Reference Text
+%%
+
+%% \newcommand{\csr}{\ensuremath{cm_{\constantstyle{S\textnormal{-}R}}}}
+%% \newcommand{\psr}{\ensuremath{\pi_{\constantstyle{S\textnormal{-}R}}}}
+%% \newcommand{\nfsr}{\ensuremath{nf_{\constantstyle{S\textnormal{-}R}}}}
+%% \newcommand{\ps}{\ensuremath{\pi_{\constantstyle{S}}}}
+
+%% %% Stake Contract and Methods
+%% \newcommand{\stakecontract}{\ensuremath{\contractstyle{Stake}}\xspace}
+%% \newcommand{\placestake}{\ensuremath{\algostyle{placeStake}}\xspace}
+%% \newcommand{\registerrequest}{\ensuremath{\algostyle{registerRequest}}\xspace}
+%% \newcommand{\claimstake}{\ensuremath{\algostyle{claimStake}}\xspace}
+%% \newcommand{\revokestake}{\ensuremath{\algostyle{revokeStake}}\xspace}
+%% \newcommand{\withdrawstake}{\ensuremath{\algostyle{revokeStake}}\xspace}
+
+
+%% We assume the existence of some contract \stakecontract{} which is able to process requests as specified in the following description. Note that this functionality may be included within \relayexec{}, but is described here as a separate contract for simplicity (note that \stakecontract{} is expected to expose any of its state that may be required by \relayexec{}).
+
+%% \paragraph{User Stakes Collateral.}
+
+%% Before using the relay system, the user \userP{}, using some \ethereum{} address $\addr_U$ calls the \placestake{} method on \stakecontract{}, sending some agreed upon amount $\stakevalue$. \stakecontract{} records this event in its state, and holds the collateral.
+
+%% \paragraph{User Submits Relay Request Against Stake.}
+
+%% \userP{} creates the relay request $\req \in \relayRequestDType$, as specified above and creates a commitment $\csr$ to this request, which also binds it to \userP{}'s stake, without revealing any details of the request itself. \userP{} passes $\csr$ to the \registerrequest{} method of \stakecontract{}.
+
+%% Upon receiving $\csr$, $\stakecontract$ ensures that no other commitment is associated with the stake, and records the commitment in its state. This ensures that a single stake cannot be used as collateral against more than one relay request.
+
+%% Once $\csr$ is successfully registered with \stakecontract{}, \userP{} generates a spending token (or nullifier) $\nfsr$, and proof of commitment $\psr$ showing that:
+%% \begin{itemize}
+%% \item $\req$ is associated with a registered commitment held by $\stakecontract$, and
+%% \item $\nfsr$ corresponding to the same commitment.
+%% \end{itemize}
+%% without revealing which commitment the request is associated with.
+
+%% The user passes $(\req, \nfsr, \psr)$ to \relayP{}.
+
+%% \paragraph{Relay Receives Request}
+
+%% Upon receiving $(\req, \nfsr, \psr)$, the relay checks these against a recent snapshot of the \stakecontract{} state.  Namely, based on a recent snapshot of \stakecontract{}, the relay confirms that $\psr$ proves that the $\req$ is an opening of some commitment held by \stakecontract{}, whose nullifier is $\nfsr$.
+
+%% If this check succeeds, the relay can have a high level of confidence that he will receive the cost of any further resources spent on $\req$. This is because:
+%% \begin{itemize}
+%% \item no other request (potentially tied to some other relay) is associated with the commitment nullified by $\nfsr$,
+%% \item the user cannot revoke the commitment within some time window,
+%% \item if $\req$ turns out to be \emph{invalid}, the relay can present $(\req, \nfsr, \psr)$ to \stakecontract{}, nullifying the users stake, and receive $\stakevalue$. (Note $\stakevalue$ is assumed to be set such that it covers the gas costs of this transactions along with the costs of any computation.  It should also be large enough to be a deterrent to malicious users.)
+%% \item if $\req$ turns out to be \emph{valid}, the relay will receive the agreed upon fee.
+%% \end{itemize}
+
+%% \paragraph{Relay Submits Relay Transactions}
+
+%% After verifying the $(\req, \nfsr, \psr)$ are valid (and that the checks on $\req$ specified in \cref{relay-proof-permission:protocol} all pass), relay creates and signs a transaction $\relaytx$ which passes $\req$ to \relayexec{}.
+
+%% \paragraph{Relay Claims Stake for Invalid Relay Requests}
+
+%% If $\req$ is an invalid request which does not result in \relayP{} receiving the promised fee, the relay submits $(\req, \nfsr, \psr)$ where $\psr$ is a valid proof for $\req$ and $\nfsr$ against the latest \stakecontract{} state. \stakecontract{} checks that $\psr$ is a valid proof showing that $\req$ is associated with a currently held commitment whose nullifier is $\nfsr$ (where $\nfsr$ is not held by \stakecontract{}). If this check passes, \stakecontract{} also checks the validity of $\req$.  If $\req$ is found to be invalid, \stakecontract{} records $\nfsr$ (invalidating the stake) and sends the stake value $\stakevalue$ to the \relayP{}.
+
+%% \paragraph{User Withdraws Stake}
+
+%% After \userP{} has used his stake, and some suitable time period has passed (in order to attempt to disguise the time at which the stake was used), he may wish to withdraw it from \stakecontract{}. \userP{} calls the \withdrawstake{} method on \stakecontract{}, passing $\csr$, $\nfsr$ and a proof $\hat{\ps}$ that $\nfsr$ is the nullifier for $\csr$. \stakecontract{} checks that the nullifier has not been used (i.e. no invalid request has been guaranteed using this nullifier).
+
+%% \begin{todobox}
+%%   \begin{itemize}
+%%   \item If $\nfsr$ here is the same as that used to guarantee relay requests, a relay can compare the nullifiers in these withdraw requests to its records and identify the commitment and thereby the \ethereum address of the user who originated the request.
+%%   \item Need to add some timing restrictions to stop users from posting commits and then front-running relay transactions with withdrawal requests.
+%%   \end{itemize}
+%% \end{todobox}
+
+%% Note that \relayexec{} could include logic to automatically claim the users' stake in the case that any of the relay request check fail. Additionally, \relayexec{} and \stakecontract{} could be the same contract. Here we intentionally separate these two processes for clarity. This also solves the problem of front-runners on the stake claim transaction (i.e.~there is no need to bind $\csr$ to the $\relayEthAccount{}$.
+
+%% \section{Protocol Specification}\label{relay-stake:protocol}
+
+%% \subsection{Constants}
+
+%% \begin{description}
+%%   \item[\stakevalue{}] The fixed value (in $\wei$) that users must stake in order to use the relay system.
+%%   \item[\stakewindow{}] A time window (specified in blocks). Stakes are posted with some (initially hidden) \emph{start time} from which they can be used. Users must make their requests (and relays must broadcast them) within $\stakewindow$ blocks of the hidden start time. After $\stakewindow$ blocks have elapsed from the start time, the client is permitted to claim a refund for his stake if it has not been used.
+%% \end{description}
+
+%% \subsection{Zero-Knowledge Proof of Relay Stake}
+
+%% The proof-of-relay-stake is created by the user and passed to the relay. Using this, the relay and the \relayexec{} contract can check that the user has posted a stake which is bound to the request being handled, that the stake has not been used for any previous request and that the stake is currently active (the current block height is within the active time window of the stake).
+
+%% \begin{definition}[Proof of Relay Stake]\label{relay-stake:proof-of-relay-stake}
+%%   For public inputs:
+%%   \begin{itemize}
+%%   \item $\hreq$ --- hash of the request to be processed
+%%   \item $\stakenullifier$ --- nullifier for the stake
+%%   \item $\stakeheight$ --- height at which stake becomes valid
+%%   \item $\mkroot$ --- Merkle root
+%%   \end{itemize}
+%%   and auxiliary inputs:
+%%   \begin{itemize}
+%%   \item $\rho$ --- secret used in stake commitment
+%%   \item $\mkpath$ --- Merkle path of commitment to $\mkroot$
+%%   \end{itemize}
+%%   $\STAKEREL$ defines the following relations:
+%%   \begin{enumerate}
+%%   \item
+%%     For $\cmstake = \stakecommit( \rho\ \concat\ \hreq\ \concat\ \stakeheight )$, $\mkpath$ is a valid path from $\cmstake$ to $\mkroot$.
+%%   \item
+%%     $\stakenullifier = \stakecommit( \rho )$
+%%   \item
+%%     $\stakeheight < h \leq \stakeheight + \stakewindow$
+%%   \end{enumerate}
+%% \end{definition}
+
+%% \subsection{Zero-Knowledge Proof of Stake for Refund}
+
+%% When $\stakewindow$ blocks have passed since the stakes activation height $\stakeheight$, the user is permitted to reclaim his stake if it has not been used. The following proof is used to demonstrate to \relayexec{} that the user is the owner of the stake.
+
+%% \begin{definition}[Proof of Stake for Refund]\label{relay-stake:proof-of-stake-for-refund}
+%%   For public inputs:
+%%   \begin{itemize}
+%%   \item $\hreq$ --- hash of the request to be processed
+%%   \item $\stakenullifier$ --- nullifier for the stake
+%%   \item $\stakeheight$ --- height at which stake became valid
+%%   \item $\mkroot$ --- Merkle root
+%%   \end{itemize}
+%%   and auxiliary inputs:
+%%   \begin{itemize}
+%%   \item $\rho$ --- secret used in stake commitment
+%%   \item $\mkpath$ --- Merkle path of commitment to $\mkroot$
+%%   \end{itemize}
+%%   $\STAKEREFUNDREL$ defines the following relations:
+%%   \begin{enumerate}
+%%   \item
+%%     For $\cmstake = \stakecommit( \rho\ \concat\ \hreq\ \concat\ \stakeheight )$, $\mkpath$ is a valid path from $\cmstake$ to $\mkroot$.
+%%   \item
+%%     $\stakenullifier = \stakecommit( \rho )$
+%%   \item
+%%     $ \stakeheight + \stakewindow < h$
+%%   \end{enumerate}
+%% \end{definition}
+
+%% \begin{todobox}
+%%   zk-proof of $\stakeheight + \stakewindow < h$ may not be feasible in the way described here, since $h$ (the current block height) is not known upfront.
+%%   Investigate ways to solve this.
+%% \end{todobox}
+
+%% \begin{todobox}
+%%   The zk-proof here may not be required.  Investigate whether any important information is leaked if the user simply submits $\rho$, $\hreq$, $\stakeheight$, $\cmstake$ and $\stakenullifier$ to \relayexec{}. (On condition that the user does not attempt to reuse the same $\req$ or $\outaddr$ in future stakes or relay requests.)
+%% \end{todobox}
+
+%% \subsection{\relayexec{} Contract}
+
+%% We augment the contract \relayexec{} in \cref{relay-proof-permission:protocol:relayexec} to have the following state.
+%% \begin{description}
+%%   \item[$\stakemtree$] Merkle tree of commitments.
+%%   \item[$\stakenullifierlist$] List of nullifiers.
+%%   \item[$\rootset$] The history set of Merkle roots of the Merkle tree $\stakemtree$.
+%% \end{description}
+
+%% Additionally, we denote by:
+%% \begin{description}
+%%   \item[$\insertleaf(T, l)$] the algorithm that inserts $l$ as a leaf in the Merkle tree $T$ and returns the index $i$ to which the leaf was added.
+%%   \item[$\getpathtoleaf(T, i)$] the algorithm that returns the Merkle path (of length $\mkTreeDepth$) to leaf at index $i$.
+%%   \item[$\getRoot(T)$] the algorithm that returns the Merkle root of tree $T$
+%% \end{description}
+
+%% Further, we distinguish between the entry points: $\registerstakemethod$, $\relaymethod$ and $\refundstakemethod$.
+
+%% \begin{figure}[H]
+%%   \centering
+%%   \procedure[linenumbering, syntaxhighlight=auto, addkeywords={abort}]{$\registerstakemethod(\cmstake)$}{%
+%%     \pcif (\ethvalue < \stakevalue) \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pccomment{Record $\cmstake$ in $\stakemtree$} \\
+%%     i \gets \insertleaf(\stakemtree, \cmstake) \\
+%%     \pccomment{Record new Merkle root} \\
+%%     \rootset \gets \rootset\ \cup\ \getRoot(\stakemtree) \\
+%%     \pcreturn i
+%%   }
+%% \end{figure}
+
+%% \begin{figure}[H]
+%%   \centering
+%%   \procedure[linenumbering, syntaxhighlight=auto, addkeywords={abort}]{$\relaymethod(\req, \stakenullifier, \stakeheight, \mkroot, \stakeproof)$}{%
+%%     \pcif (\stakenullifier \in \stakenullifierlist) \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pcif (\ethheight < \stakeheight) \lor (\ethheight \geq \stakeheight + \stakewindow) \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pccomment{TODO: How can the fee be compared with a relation?? To clean.} \\
+%%     \pcif (\req.\fee < \STAKEREL) \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pccomment{Make sure that the merkle root corresponds to a valid merkle tree state} \\
+%%     \pcif \mkroot \not\in \rootset \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \hreq \gets \crh(\req) \\
+%%     \pccomment{TODO: Introduce proof system etc to call the verification algo here} \\
+%%     \text{$\validstake \gets$ result of verifying $\stakeproof$ as proof of $\STAKEREL$ with public inputs $(\hreq, \stakenullifier, \stakeheight, \mkroot )$} \\
+%%     \pcif \neg \validstake \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \stakenullifierlist.\algostyle{append}(\stakenullifier) \\
+%%     \pccomment{Perform checks on $\req$. If an error is found, send stake to relay and return.} \\
+%%     \pcif \req.\mixparams.\vout < \req.\fee \pcthen \\
+%%     \pcind \sendE( \req.\relayaddr, \stakevalue ) \\
+%%     \pcind \pcreturn \false \\
+%%     \pcendif \\
+%%     % Check signature
+%%     \relaydata \gets \encode{\req.\relayaddr}{}\ \concat\ \encode{\req.\fee}{}\ \concat\ \encode{\req.\outaddr}{} \\
+%%     \pcif \neg \left[\sigscheme_{\otsig}.\verify(\req.\mixparams.\otsvk, \crhots{\relaydata}, \req.\permission)\right] \pcthen \\
+%%     \pcind \sendE( \req.\relayaddr, \stakevalue ) \\
+%%     \pcind \pcreturn \false \\
+%%     \pcendif \\
+%%     % Mix call
+%%     \mixsuccess \gets \algostyle{call}( \mix, \req.\mixparams ) \\
+%%     \pcif \neg\mixsuccess \pcthen \\
+%%     \pcind \sendE( \req.\relayaddr, \stakevalue ) \\
+%%     \pcind \pcreturn \false \\
+%%     \pcendif \\
+%%     \pccomment{Pay the relay fee and send any remaining stake and vout to \req.\outaddr.} \\
+%%     \sendE( \req.\relayaddr, \req.\fee ) \\
+%%     \sendE( \req.\outaddr, \req.\mixparams.\vout + \stakevalue - \req.\fee ) \\
+%%     \pcreturn \true
+%%   }
+%% \end{figure}
+
+%% \begin{figure}[H]
+%%   \centering
+%%   \procedure[linenumbering, syntaxhighlight=auto, addkeywords={abort}]{$\refundstakemethod(\hreq, \stakenullifier, \stakeheight, \mkroot, \stakerefundproof)$}{%
+%%     \pcif (\stakenullifier \in \stakenullifierlist) \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pccomment{Make sure that the merkle root corresponds to a valid merkle tree state} \\
+%%     \pcif \mkroot \not\in \rootset \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pcif (\ethheight < \stakeheight + \stakewindow) \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pccomment{TODO: Call the proof system verifiation routine} \\
+%%     \text{$\validstake \gets$ result of verifying $\stakerefundproof$ as proof of $\STAKEREFUNDREL$ with public inputs $(\hreq, \stakenullifier, \stakeheight, \mkroot)$} \\
+%%     \pcif \NOT\ \validstake \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \stakenullifierlist.\algostyle{append}(\stakenullifier) \\
+%%     \sendE( \ethsender, \stakevalue ) \\
+%%     \pcreturn \true
+%%   }
+%% \end{figure}
+
+%% The intention of \refundstakemethod{} is to allow the user to reclaim his stake if it was not used.  Note that if a malicious relay receives a valid request associated with some stake, he knows the nullifier for that stake. If the user then requests a refund, he reveals this nullifier and associates it with one of his \ethereum{} addresses. However, assuming that the user does not reuse the same $\outaddr$ and $\vout$ values in future relay requests, the relay learns only that the user wanted to make use of the relay system (which is already known to all observers), and the quantity of Ether that the user wanted to withdraw.
+
+%% We conclude that the user can safely attempt to use another relay anonymously after receiving a refund for his stake.
+
+%% \subsection{User Actions}
+
+%% Assume that user \userP{} has decided to use a relay \relayP{} to broadcast some \zeth{} call described by $\mixparams$, in exchange for a fee $\relayfee$. Below, we assume that \userP{} holds sufficient $\ether$ to pay for $\stakevalue$ and gas.
+
+%% Given $\mixparams$, where $\mixparams.\otssig$ binds $\mixparams$ to the \ethereum{} address of \relayexec{} (see \cite[Section 2.3]{zeth-protocol}), we assume that the user has retained the one-time signing key $\sk_\otsig$ used to create $\mixparams.\otssig$. Let $\stakeheight$ be the block-height from which the user intends to submit the relay request (which should include some randomness).
+
+%% The user $\userP{}$ executes the following steps to prepare the request and place the stake.
+
+%% \begin{figure}[H]
+%%   \centering
+%%   \procedure[linenumbering]{$\USER_1(\mixparams, \sk_\otsig, \stakeheight)$}{%
+%%     \relaydata \gets \relayEthAccount.\addr\ \concat\ \relayfee\ \concat\ \outaddr \\
+%%     \permission \gets \sigscheme_{\otsig}.\sig( \sk_\otsig, \crhots{\relaydata} ) \\
+%%     \req \gets \{  \\
+%%     \pcind \pcind \mixparams: \mixparams, \\
+%%     \pcind \pcind \outaddr: \outaddr, \\
+%%     \pcind \pcind \relayaddr: \relayEthAccount.\addr, \\
+%%     \pcind \pcind \fee: \relayfee, \\
+%%     \pcind \pcind \permission: \permission \\
+%%     \} \\
+%%     \hreq \gets \crh( \encode{\req}{} ) \\
+%%     \rho \sample \BB^\rholen \\
+%%     \cmstake \gets \stakecommit( \rho\ \concat\ \hreq\ \concat\ \stakeheight ) \\
+%%     \sendE( \stakevalue, \relayexec.\registerstakemethod, \cmstake ) \\
+%%     \pcreturn (\req, \hreq, \rho, \cmstake)
+%%   }
+%% \end{figure}
+
+%% \begin{todobox}a
+%% Introduce a function to create a request object and use it in the algo. That'll be cleaner.
+%% \end{todobox}
+
+%% Here the $\sendE$ is assumed to create a transaction which sends $\ether$ to a contract, invoking a specific method on that contract with some arguments.
+
+%% When height $\stakeheight$ is reached. \userP{} executes the following steps in order to send the relay request.
+
+%% \begin{figure}[H]
+%%   \centering
+%%   \procedure[linenumbering]{$\USER_2(\req, \hreq, \rho, \cmstake)$}{%
+%%     \stakenullifier \gets \stakecommit( \rho ) \\
+%%     (\mkroot, \mkpath) \gets \text{Merkle root and path for $\cmstake$ in $\stakemtree$} \\
+%%     \algostyle{in}_\algostyle{pub} \gets (\hreq, \stakenullifier, \stakeheight, \mkroot) \\
+%%     \algostyle{in}_\algostyle{aux} \gets (\rho, \mkpath) \\
+%%     \stakeproof \gets \text{Proof of $\STAKEREL$ with inputs $(\algostyle{in}_\algostyle{pub}, \algostyle{in}_\algostyle{aux})$} \\
+%%     \text{Send $(\req, \stakenullifier, \stakeproof, \stakeheight, \mkroot)$ to \relayEthAccount{}.\addr}
+%%   }
+%% \end{figure}
+
+%% \begin{todobox}
+%% \item Rename these algos
+%% \item Use macros instead of algostyle directly
+%% \end{todobox}
+
+%% \subsection{Relay Actions}
+
+%% \begin{figure}[H]
+%%   \centering
+%%   \procedure[linenumbering, syntaxhighlight=auto, addkeywords={abort}]{$\RELAY(\req, \stakenullifier, \stakeproof, \stakeheight, \mkroot)$}{%
+%%     \pcif (\req.\fee \ne \relayfee)\ \lor\ (\req.\relayaddr \ne \relayEthAccount.\addr) \pcthen \\
+%%     \pcind \pcreturn \false \\
+%%     \pcendif \\
+%%     \pcif (\ethheight < \stakeheight)\ \lor\ (\ethheight \geq \stakeheight + \stakewindow) \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pcif \text{ $\mkroot$ not seen by \relayexec{} } \pcthen \\
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \hreq \gets \crh( \req ) \\
+%%     \pccomment{TODO: Add verifier algo}\\
+%%     \varstyle{valid} \gets \text{ Check $\stakeproof$ with public inputs $(\hreq, \stakenullifier, \stakeheight, \mkroot)$ } \\
+%%     \pcif \varstyle{valid} = \false \pcthen
+%%     \pcind abort \\
+%%     \pcendif \\
+%%     \pccomment{At this stage, the relay can be sure he will receive the fee.} \\
+%%     %
+%%     \relaytx \gets \text{Transaction calling $\relaymethod(\req, \stakenullifier, \stakeproof, \stakeheight, \mkroot)$ on \relayexec{}.} \\
+%%     \sendE(\relaytx)
+%%   }
+%% \end{figure}
+
+%% \begin{todobox}
+%%   Add labels and captions to figures in this chapter and add references to images labels to avoid forcing inclusion of floats (via [H])
+%% \end{todobox}
+
+%%
+%% ---------------------------------------- SAVED TEXT END
+%%
