@@ -1,0 +1,101 @@
+% Contracts
+\newcommand{\relayexec}{\ensuremath{\contractstyle{RelayExec}}\xspace}
+%% Contract methods
+\newcommand{\relaymethod}{\ensuremath{\algostyle{relay}}\xspace}
+\newcommand{\registerstakemethod}{\ensuremath{\algostyle{registerStake}}\xspace}
+\newcommand{\refundstakemethod}{\ensuremath{\algostyle{refundStake}}\xspace}
+%% Contract state
+\newcommand{\stakemtree}{\ensuremath{\constantstyle{StakeMTree}}}
+\newcommand{\stakenullifierlist}{\ensuremath{\constantstyle{NullifierList}}}
+
+% Parties
+\newcommand{\relayP}{\ensuremath{\partystyle{R}}}
+\newcommand{\userP}{\ensuremath{\partystyle{U}}}
+\newcommand{\relayEthAccount}{\eparty{R}}
+\newcommand{\relayZethAccount}{\zparty{R}}
+\newcommand{\userEthAccount}{\eparty{U}}
+\newcommand{\userZethAccount}{\zparty{U}}
+
+% Variables
+\newcommand{\relaydata}{\ensuremath{\varstyle{data_{\partystyle{R}}}}\xspace}
+\newcommand{\relayfee}{\ensuremath{\varstyle{fee_{\partystyle{R}}}}}
+\newcommand{\relaytx}{\ensuremath{\tx_{\partystyle{R}}}}
+
+\newcommand{\requestPool}{\ensuremath{\varstyle{requestPool}}} % Pool of the relay keeping track of the relay requests
+
+\newcommand{\validstake}{\ensuremath{\varstyle{validstake}}}
+\newcommand{\mixsuccess}{\ensuremath{\varstyle{mixSuccess}}}
+
+\newcommand{\prfrelayperm}{\ensuremath{\pi^{(\mixparams)}_{\partystyle{R}}}}
+\newcommand{\txid}{\ensuremath{\varstyle{txid}}}
+
+%% % RelayPermission
+%% \newcommand{\relayPermission}{\ensuremath{\datatypestyle{RelayPermission}}}
+%% \newcommand{\mixparamshash}{\ensuremath{\varstyle{mixParamsHash}}}
+%% %% \newcommand{\relayaddr}{\ensuremath{\varstyle{relayAddr}}}
+%% %% \newcommand{\fee}{\ensuremath{\varstyle{fee}}}
+%% %% \newcommand{\outaddr}{\ensuremath{\varstyle{outAddr}}}
+
+% RelayRequest
+\newcommand{\relayRequestDType}{\ensuremath{\datatypestyle{RelayRequest}}}
+\newcommand{\mixparams}{\ensuremath{\varstyle{mixParams}}}
+\newcommand{\outaddr}{\ensuremath{\varstyle{outAddr}}}
+\newcommand{\relayaddr}{\ensuremath{\varstyle{relayAddr}}}
+\newcommand{\fee}{\ensuremath{\varstyle{fee}}}
+\newcommand{\permission}{\ensuremath{\varstyle{permission}}}
+
+% Instance of RelayRequest
+\newcommand{\relayrequest}[1]{\ensuremath{\varstyle{#1}}}
+\newcommand{\req}{\relayrequest{req}}
+
+\newcommand{\REQ}{\relayrequest{REQ}} % Meta request
+
+% Relay Algorithms
+\newcommand{\relaycheckmixparams}{\ensuremath{\algostyle{RelayCheckMixParams}}}
+\newcommand{\relaycheckrequest}{\ensuremath{\algostyle{RelayCheckRequest}}}
+\newcommand{\relayhandlerequest}{\ensuremath{\algostyle{RelayHandleRequest}}}
+\newcommand{\relayRecordTransaction}{\ensuremath{\algostyle{recordTransaction}}}
+
+% Ethereum-related functionalities
+\newcommand{\genCallTx}{\ensuremath{\algostyle{genCallTx}}}
+\newcommand{\broadcastTx}{\ensuremath{\algostyle{broadcastTx}}}
+\newcommand{\sendE}{\ensuremath{\algostyle{send}}}
+\newcommand{\insertleaf}{\ensuremath{\algostyle{insertLeaf}}}
+\newcommand{\getpathtoleaf}{\ensuremath{\algostyle{getPathToLeaf}}}
+\newcommand{\getRoot}{\ensuremath{\algostyle{getRoot}}}
+
+% RelayExec Contract Algorithms
+\newcommand{\relayexecprocessrequest}{\ensuremath{\algostyle{ProcessRequest}}}
+
+% User Algorithms
+\newcommand{\usercreaterequest}{\ensuremath{\algostyle{UserCreateRequest}}}
+
+% Constants
+%% Stake constants
+\newcommand{\stakevalue}{\ensuremath{\constantstyle{STAKEVAL}}\xspace}
+\newcommand{\stakewindow}{\ensuremath{\constantstyle{STAKEWINDOW}}\xspace}
+\newcommand{\cmstakelen}{\ensuremath{\constantstyle{CMSLEN}}\xspace}
+\newcommand{\rholen}{\ensuremath{\constantstyle{RHOLEN}}\xspace}
+
+% Circuit
+\newcommand{\STAKEREL}{\REL^{\projectstyle{S}}}
+\newcommand{\STAKEREFUNDREL}{\REL^{\projectstyle{S}}}
+
+% Functions
+\newcommand{\stakecommit}{\algostyle{COMM}}
+\newcommand{\USER}{\algostyle{USER}}
+\newcommand{\RELAY}{\algostyle{RELAY}}
+
+% Variables and Parameters
+\newcommand{\cmstake}{\ensuremath{cm_{\constantstyle{S}}}}
+\newcommand{\stakenullifier}{\ensuremath{nf_{\constantstyle{S}}}}
+\newcommand{\stakeproof}{\ensuremath\pi_{\constantstyle{S}}}
+\newcommand{\stakerefundproof}{\ensuremath\pi_{\constantstyle{W}}}
+\newcommand{\stakeheight}{\ensuremath{height_\constantstyle{S}}}
+
+% Ethereum values
+\newcommand{\ethsender}{\ensuremath{\constantstyle{msg.sender}}}
+\newcommand{\ethvalue}{\ensuremath{\constantstyle{msg.value}}}
+\newcommand{\ethheight}{\ensuremath{\constantstyle{eth.height}}}
+
+\newcommand{\hreq}{\ensuremath{h_{req}}}

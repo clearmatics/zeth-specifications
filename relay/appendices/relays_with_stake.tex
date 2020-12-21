@@ -1,0 +1,110 @@
+% !TEX root = zeth_relay
+
+\chapter{Relays with Stake}\label{relay-stake}
+
+%% Stake Contract
+\newcommand{\stakecontract}{\ensuremath{\contractstyle{RelayStake}}\xspace}
+%% Proof of Relay Stake
+\newcommand{\prs}{\pi_{\constantstyle{\req}}}
+
+\begin{notebox}
+  This section is concerned with a high-level description of a work-in-progress proposal. There are several issues still to be addressed before it can be considered complete.  It is given here as a first step towards the goal of addressing possible relay DoS vectors, with the hope that it can be iterated and eventually turned into a practical solution.
+\end{notebox}
+
+\section{Introduction}\label{relay-stake:introduction}
+In the above proposals (\cref{relay-proof-permission,relay-private-fees}), relays receive requests and perform ``offline'' checks to gain a high level of confidence that the transaction (which the relay must sign and therefore pay for) will ``succeed'' and the relay will receive the designated fee. Under these protocols, a relay is exposed to risk in two forms:
+\begin{enumerate}
+\item\label{relay-stake:introduction:risk-validation-cost} Users are free to make invalid relay requests with no consequences (we assume that they connect via anonymising networks). At the same time, relays are highly incentivised to filter out such invalid requests and avoid signing and broadcasting the corresponding transaction (which would result in the relay paying the invalid transaction's gas, without receiving their relay fee). In order to detect invalid relay requests, the relay must essentially simulate execution of the full transaction against the current state of the blockchain. Although must less costly than paying the corresponding gas, this may still require significant compute resources. If the relay request is judged to be invalid, the relay will necessarily receive no relay fee in exchange for these verification costs.
+\item As mentioned in \cref{relay-proof-permission:transaction-failure-cases}, there is a chance that a transaction appears valid (i.e.~it passes all checks performed by the relay), but later fails due to a conflicting transaction (unseen by the relay) being mined ahead of it. While this risk can be reduced by more thorough checks, the relay can never rule out the possibility that a conflicting transaction exists somewhere on the network.
+\end{enumerate}
+
+Both of these risks represent possible DoS attack vectors, especially~\ref{relay-stake:introduction:risk-validation-cost}, since clients can very easily craft invalid transactions with maximal cost of validation.
+
+We consider a potential approach to address these problems. Specifically, we outline a protocol involving collateral staked by users and associated with some specific relay request. This supports a very lightweight check that relays can perform \emph{before} they commit either \ether~as gas for transactions, or compute resources to fully verify the validity of the request. If this fast upfront check passes, the relay is effectively guaranteed income as a result of relaying the transaction - whether or not the transaction is valid at the time it is mined. In this way, relays can avoid DoS attacks that force them to waste resources for no return.
+
+The user's stake is pre-deposited with a contract \stakecontract{} in such a way that it is bound to a specific relay request. On receipt of a relay request, relays need only confirm that an associated stake exists before creating the relay transaction and executing it via \stakecontract{}. The relay can be sure that \stakecontract{} will release the stake to the relay, even if the associated relay transaction fails for any reason. In this way, relays can very quickly gain assurance (up to some negligible probability) that they will not lose any operating costs by proceeding with the request.
+
+Since they are exposed to reduced risk, relays should be able to charge users lower fees for their services, while still allowing users to perform \zeth~operations that are not directly connected to any of their \ethereum~addresses. However, we note that this reduction in risk for the relay comes with a trade-off for the user, who must deposit \ether~from some address in order to use the system. Although users do not reveal \emph{which} \zeth~operation they are performing, they reveal that the owner of the \ethereum~address paying for the deposit \emph{may} interact with \zeth~at some future time.
+
+While this does not provide as much anonymity as the systems described in \cref{relay-proof-permission,relay-private-fees}, this does represent an improvement in anonymity over the plain \zeth~protocol. (Note that users interacting directly with \zeth~can employ strategies to obfuscate their actions, such as broadcasting ``dummy'' transactions which mix their commitments, however this may incur a relatively high cost and always reveal to observers the exact set of commitments they have created.) The nature of the improvement achieved by the stake system will depend on the details of any final design. We discuss possible trade-offs, and potential strategies to mitigate them, in~\cref{relay-stake:remarks}.
+
+\section{Protocol overview}\label{relay-stake:protocol-overview}
+
+We describe the components involved in the protocol, and their role in the full workflow.
+
+\subsection{Stake contract}
+
+We assume the existence of some contract \stakecontract{} which performs multiple functions:
+\begin{itemize}
+\item Accept and hold stake as collateral against a specific relay request (and in turn specific relay). Users depositing stake should be able to generate a proof $\prs$ that \stakecontract{} holds some stake for a specific request $\req$. Further, verifiers of $\prs$ should not learn which transaction caused the deposit (and thereby the \ethereum~address of the user who deposited it).
+\item Act as a relay intermediary, accepting relay requests and proof-of-relay-stake objects. If a valid request and proof are received, the sender has permission to act as a relay for the given request, and the stake is still unspent, \stakecontract{} executes the relay request (calls $\mixer{}.\mix(\req.\mixparams)$, using the notation of \cref{relay-proof-permission}) and releases the stake to the relay, regardless of the outcome of the $\mix{}$ call.
+\end{itemize}
+Note that this may be implemented as multiple interacting contracts.
+
+\subsection{Relay}
+
+Relays receive pairs $(\req, \prs)$ of relays requests and associated proof-of-relay-stake objects. When a relay \relayP{} (with \ethereum~address $\relayEthAccount.\addr$) receives such a pair, the operations he performs are relatively straightforward:
+
+\begin{description}
+\item [Step 1.] Check the correctness of $\req$ and $\prs$, namely that:
+  \begin{enumerate}
+    \item $\req$ names the relay's \ethereum~address as the recipient of the relay fee
+    \item a valid stake exists in \stakecontract{}, corresponding to $\req$ and $\prs$
+  \end{enumerate}
+  The relay should not learn which transaction deposited the stake that corresponds to $\req$ and $\prs$ (which would reveal an \ethereum~account of the user).
+\item [Step 2.] Create a transaction $\relaytx$ which calls \stakecontract{} with parameters $\req$ and $\prs$.
+\item [Step 3.] Broadcast $\relaytx$ to the network and asynchronously wait to receive the relay fee.
+\end{description}
+
+As described above, after the initial check of stake corresponding to $\req$, the relay can be sure he will receive his fee even if the $\mix$ call fails. Note also that the relay's transaction cannot be front-run, since \stakecontract{} will only release the stake to the relay mentioned in $\req$. A user may be able to spend the notes in $\req.\mixparams$ via another transaction, but he will not be able to prevent the relay from claiming the stake he previously deposited.
+
+For these reasons, the relay need only perform the checks listed above. There is little to be gained by checking any further details of $\req$, including $\req.\mixparams$ or the state of the \zeth~mixer contract \mixer{}.
+
+\subsection{User}
+
+A user who wants to make use of a specific relay \relayP{} with \ethereum~address $\relayEthAccount.\addr$, using $\mix{}$ parameters $\mixparams$, performs the following actions:
+\begin{description}
+\item [Step 1.] Create the appropriate $\mixparams$ and corresponding relay request $\req$, bound to the relay's address $\relayEthAccount.\addr$.
+\item [Step 2.] Stake some \ether~with \stakecontract{} against $\req$ and generate a corresponding proof-of-relay-stake $\prs$. Note that this collateral is ``bound'' to $\req$.
+\item [Step 3.] Send $\req$, $\prs$ to the chosen relay (via an anonymous channel), and asynchronously wait for a corresponding transaction to be mined.
+\end{description}
+
+Note that the user must have a funded \ethereum~account $\userEthAccount$ in order to stake collateral, impacting their anonymity to some extent.
+
+\subsection{Reclaiming stake}\label{relay-stake:protocol-overview:reclaiming-stake}
+
+Under some circumstances, a user may wish to reclaim his stake after depositing it in \stakecontract{}. In fact, if no mechanism were available to accomplish this, the protocol would be vulnerable to withholding attacks. That is, malicious relays could accept relay requests but not relay them within a reasonable time, essentially locking up the user's stake. Eventually, the victims of withholding attacks would be forced to forfeit their stake and find another means to carry out their \zeth~operations (potentially via another relay). Once the operation has been completed via another transaction, the malicious relay (still holding a request with associated stake) can then claim the user's stake by broadcasting the relay transaction, which will now fail. The victim must pay for his transaction more than once, losing his stake (which, may be greater than the original relay fee - see~\cref{relay-stake:remarks}). This attack would also cause significant disruption to the relay network and associated market.
+
+\begin{notebox}
+  Note that the affect of such an attack may be mitigated by some kind of reputation system alongside a relay market fee, so the threat posed by this may not be considered severe. In fact, a reputation system may be a vital part of any relay market.
+\end{notebox}
+
+If the user were allowed to reclaim their stake at any time, the transaction to reclaim it could be unseen by the relay, yet mined ahead of $\relaytx$. Thus, the relay would no longer have any guarantee that he would receive the stake in exchange for broadcasting the relay transaction.
+
+It may be possible to facilitate reclaim of the stake by setting a ``period of validity'' for the stake, if this can be implemented such that:
+\begin{itemize}
+\item the user cannot reclaim the stake until the period of validity elapses,
+\item the relay can obtain some estimate regarding the period of validity (minimally, if the relay knows some lower bound on the remaining period of validity, it can gain a high degree of certainty that the relay transaction will be mined before the user is able to reclaim the stake),
+\item for a relay transaction $\relaytx$, observers (and relays) should not be able to infer significant information about the transaction that deposited the collateral for $\relaytx$,
+\item for a stake reclaim transaction, observers should not be able to infer significant information about the transaction that deposited the stake being reclaimed,
+\item the transaction to reclaim a stake cannot be front-run.
+\end{itemize}
+
+\section{Remarks}\label{relay-stake:remarks}
+
+In this section we give some remarks about the proposed stake system above. Note that details are highly dependent on the specific cryptographic primitives used. The steps above give an outline of how a staking system may work, with the caveat that they are very likely to be modified in any fully specified protocol.
+
+\paragraph{Stake deposit leaks information.} The transaction to deposit the user's stake reveals an \ethereum~address of the user, and the value of the stake.  Similarly, the transaction to reclaim an unused stake is also associated with the user's \ethereum~address. In particular, observers may learn about \ethereum~addresses of users likely to interact with the relay system. Note that this could potentially be mitigated if users are able, via some other mechanism such as \cref{relay-proof-permission}, to anonymously receive funds at new ``unused'' \ethereum~addresses. However, in isolation, the stake system always requires an initial transaction from a funded address.
+
+\paragraph{Relays with stake as part of a wider market.} Reliance on external mechanisms (such as the ability to withdraw to new \ethereum~addresses, as mentioned above), may not necessarily be a problem for a stake-based relay protocol. We note that there may be significant benefit to an ecosystem of various relay types (or relays supporting a variety of request types) including those discussed in this document. In particular, we may imagine a market in which users can choose between a range of relay request types - those supporting more privacy and not requiring \ether (with higher fees, as a consequence of the extra risk assumed by the relay), and relays with lower fees which place more requirements on users (able to mitigate much of their risk). Concretely, such a system may allow users to withdraw \ether~to an anonymous address via an expensive relay, and then use this \ether~as collateral for further relay transactions with lower relay fees. Obviously, in such a scenario, users (and their wallet software) must take a great deal of care not to reveal relationships between transactions.
+
+\paragraph{Collateral value vs Relay Fee.} The above outline suggests a very simple scenario in which the stake is unconditionally used as the relay fee (that is, the stake must have the same value as the relay fee, which cannot be negotiated after the stake has been deposited. We note that any concrete instantiation would require somewhat more flexibility, and would likely extend fee payment mechanisms in one of several ways.
+\begin{itemize}
+\item The user could be required to stake some fixed value from which fees are paid, with the ``change'' being paid either to the user, or as $\vin$ to the \zeth~mixer. The fixed stake value would then define an upper bound on relay fees. This allows a lot more scope for relays to dynamically change their fees.
+\item We may prefer to distinguish between successful and failed $\mix$ calls. On success, \stakecontract{} may refund the user with the difference between the stake and the relay fee (as described above), while users could be punished for invalid relay requests by forfeiting their entire stake to the relay.
+\item Similarly, it may be preferable for relay fees to be paid directly from the $\mix$ call in the case of successful transactions. That is, the $\mix$ call parameters $\req.\mixparams$ must include an output paying the relay (either $\vout$ as in \cref{relay-proof-permission}, or a \zeth~note as in \cref{relay-private-fees}), and the stake is refunded to the user (either to an address of their choosing, or as $\vin$ to the $\mix$ call. This allows relays to maintain privacy with respect to their fee payments, while minimizing risk through the stake system.
+\item It may be possible to allow users to deposit a single stake, bound to a specific relay, which can then be used for multiple relay requests. The relay could still claim the stake by presenting an invalid request from the user, but the user could make multiple relay requests (possibly within some time limit - see the following paragraph) without the need to redeposit. User anonymity would be improved because, while observers would still learn the \ethereum~address depositing each stake, they would not be able to determine how many relay requests were carried out on behalf of each depositor.
+\end{itemize}
+
+\paragraph{Period of validity.} The period of validity gives observers information about when the users relay transaction will be carried out. Depending on the frequency of relay transactions interacting with \stakecontract{}, users should ensure that the period of validity is sufficiently long, to avoid compromising their anonymity. Similarly, a predictable interval between a stake being deposited and the corresponding relay transaction that claims it, would also reveal information about the user originating each relay transaction. To avoid this, the period of validity should be sufficiently long to allow some ``noise'' in the interval between stake deposits and relay transactions. Note that this presents a trade-off, since the user's funds are potentially ``locked up'' for a longer period.
+

@@ -1,0 +1,68 @@
+% !TEX root = zeth_relay
+
+\chapter{Relays with Private Fees}\label{relay-private-fees}
+
+\section{Introduction}
+
+\cref{relay-proof-permission} describes a protocol that allows users to to carry out $\zeth$ transactions while remaining anonymous (i.e.~make \mix{} calls without controlling an \ethereum{} account in $\wstate$). Under this scheme, relays receive their fee as part of the public output $\vout$ withdrawn from the \zeth~mixer contract. It is clear that, under the assumptions described in \cref{preliminaries:assumptions}, fees paid publicly \emph{in real time} in this way can be detected by observers of the \ethereum~network. Such observers may then learn about the profits made by each relay service, which may not be desirable.
+
+In this chapter we introduce a protocol in which relays can receive fees of hidden denominations. This setting is of particular interest in the context of a ``relaying market'' in which a set of competing relay services operate with the aim of capturing as much bandwidth\footnote{i.e.~``market share''} (on the ``relay network'') as possible, in order to maximize their revenue.
+
+\section{Protocol overview}\label{relay-private-fees:protocol-overview}
+
+As in \cref{relay-proof-permission}, we propose a protocol built on top of \zeth{} which allows holders of \zeth{} notes to securely spend their notes without needing to hold $\ether$. We assume that relays are willing to sign and broadcast \mix{} calls, and therefore pay for the gas, in exchange for fee payment in the form of \zeth{} notes. To do so, relays must publish their public \zeth{} address $\relayZethAccount.\pubaddr$ and their fee $\relayfee$, as well as additional network information such as endpoints which accept relay requests.
+
+Users create parameters $\mixparams$ to the \mix{} call, such that one of the newly created notes corresponds to payment of $\relayfee$ to $\relayZethAccount.\pubaddr$. These parameters are then sent to the relay via an established communication channel. Users must create the signature $\mixparams.\otssig$ using the relay's $\ethereum$ address $\relayEthAccount.\addr$, to allow \relayEthAccount~to use \mixparams{}.
+(In some simple scenarios, $\relayEthAccount.\addr$ may be made public alongside other relay information. Here, however, we assume that $\relayEthAccount.\addr$ is passed securely from the relay to the user client as part of the protocol, as this gives the relay more flexibility -- see \cref{relay-private-fees:extensions:ether-output} for discussion of how this may enable further relay privacy.)
+
+When the relay receives \mixparams{} from the user, it checks to ensure that \mixparams{} is valid and indeed contains an output note that pays their fee. Relays can then sign and broadcast a transaction directly calling $\mix(\mixparams)$ on the \mixer{} contract. Note that $\mixparams.\otssig$ ensures that the transaction cannot be front-run.
+
+\subsection{Relay-originated mix transactions}
+
+One potential advantage of relays receiving their fees in the form of \zeth~notes is that they maintain a level of privacy with respect to their fees. Observers that know the relay's \ethereum~address can tell that a given transaction is likely to be on behalf of some user, and therefore that one of the output notes is likely to be addressed to the relay (although they will be unable to see any amounts). However, relays can generate their own \mix{} transactions (which increase privacy by mixing their notes). These \mix{} transactions are indistinguishable from regular relay transactions created on behalf of other users.
+
+\section{Limitations and extensions to the protocol}\label{relay-private-fees:extensions}
+
+\subsection{Limitation of output notes}\label{relay-private-fees:extensions:jsout-limitation}
+
+The \mixer{} contract is deployed with a hard-coded number of inputs and outputs (denoted $\jsin$ and $\jsout$ respectively). In any \mix{} call that is anonymized using the relay system described above, one of the outputs must be used to pay the relay. For the case where $\jsout = 2$ (a reasonable default value when relays are not considered), the utility of the system is greatly reduced since users may only set the one remaining output freely. In this case, users are able to combine multiple of their notes into another, but are unable to ``split'' input notes into multiple output notes. In particular, they are unable to pay a specific amount to another $\zeth$ user and receive change.
+
+\subsection{Increasing $\jsout$}\label{relay-private-fees:extensions:increasing-jsout}
+
+To address the issues of limited output notes, \zeth~could be instantiated with different parameters (in particular $\jsout \gets 3$), in order to support ``note-splitting'' and relay fee payment in a single transaction. However, such a change to the configuration may have several consequences for the protocol.
+
+To support more output notes, each transaction requires more data to be transferred and processed. This increases the storage and processing requirements of the \mixer~contract (increasing transaction gas costs), and in turn decreases the lifetime of a \zeth~deployment for a given Merkle tree size (note that the Merkle tree size is defined when \mixer~is deployed). Furthermore, the $\zeth$ statement must be made more complex (in order to handle more commitments, and possibly to accommodate a deeper Merkle tree), increasing the cost of generating zero-knowledge proofs.
+
+Note also that if $\jsout$ is increased, there may be a tendency for each user's funds to become distributed over more notes. If $\jsin$ is not also increased, and the ability of users to recombine \zeth~notes is not balanced with this, users may more frequently be required to issue multiple transactions when spending their funds (to ``recombine'' their funds spread across many notes).
+
+Hence, adjusting $\jsout$ may have important consequences which should be considered very carefully, especially if the extra output notes are unlikely to be used outside of the relay system.
+
+\subsection{Support for \ether~output}\label{relay-private-fees:extensions:ether-output}
+
+By default, the \mixer~contract will return any \ether~value $\vout$ to the calling address which, in the protocol described here, would be $\relayEthAccount.\addr$, belonging to the relay. Thus, the protocol as presented does not allow users to withdraw value as \ether~while using a relay, unless he is willing to trust the relay to forward the \ether~in a later transaction. Our aim is to remove any need for trust within the protocol, and a trustless way to withdraw \ether~could be valuable in several scenarios.
+
+As in \cref{relay-proof-permission}, users could withdraw \ether~to previously unseen \ethereum~addresses. Such anonymous addresses could then be used to pay for \zeth~transactions, apparently disconnected from any other transactions in the blockchain history. Note that this provides a means for users to anonymously perform \zeth~transactions that utilize all $\jsout$ output notes, without changing the \zeth~configuration. Clearly, a user performing two transactions (one to withdraw and one to execute the original \zeth~transaction) must pay the relay fee \emph{and} the transaction fee for his subsequent transaction. This may have an impact on the economic model for relay fees.
+
+It is clear that relays will be required to regularly withdraw \zeth~notes as \ether, in order to continue to pay transaction fees. They can, of course, simply issue \zeth~transactions to withdraw to $\relayEthAccount.\addr$. However, if the relay protocol supports output to \ether, relays could also use this mechanism to withdraw to new \ethereum~addresses. To an observer, such transactions would appear to be standard relay transactions on behalf of some user, but would provide the relay with anonymous \ether, further increasing their privacy.
+
+We next identify two approaches to supporting withdrawals to \ether~using the protocol given here.
+
+\subsubsection{Arbitrary $\vout$ address in \zeth~protocol}\label{relay-private-fees:extensions:ether-output:out-addr}
+
+The \zeth~protocol could be slightly modified so that $\mixparams$ contains an explicit output address  $\mixparams.\outaddr$ to which $\vout$ should be sent by \mixer{}. This new field $\mixer.\outaddr$ must be included in the data signed by $\mixparams.\otssig$, ensuring that it cannot be altered by front-runners or malicious relays. This approach adds a small overhead to the generation of $\mixparams$, and to the cost of \mix{} calls, since this output address must be passed as an extra parameter and used in signature validation. However, supporting this would add versatility to the \zeth~protocol and may allow other applications to be built on top of it.
+
+Note that this new address $\outaddr$ is distinct from the \emph{sender's address} already included in $\mixparams.\otssig$. $\mixparams$ must ensure that the encapsulating \ethereum~transaction originates from $\relayEthAccount.\addr$, and that $\vout$ \ether~are paid to $\mixparams.\outaddr$.
+
+\subsubsection{Relay via intermediary contract}\label{relay-private-fees:extensions:ether-output:intermediary}
+
+An alternative approach to support secure withdrawal of \ether~via relays is to use an intermediary contract, as described in \cref{relay-proof-permission}. This change to the relay protocol has the benefit that $\vout$ can be distributed to one or more parties in a trustless way. However, it does have a potential down-side in terms of privacy -- namely that it is trivial for observers to distinguish between transactions issued by relays, and regular transactions issued by users, even if the observer does not know any \ethereum~addresses owned by relays.
+
+\subsection{Fees as \ether~or \zeth~notes}
+
+In order to address the problem of limited output notes in \zeth~(see~\cref{relay-private-fees:extensions:jsout-limitation}), the protocol could allow the user to choose between 2 fee payment methods: as a \zeth~note (as described here) or as \ether~via $\mixparams.\vout$. In this case, users can use \emph{all} $\jsout$ outputs from the $\mix$ call for their own purposes, potentially avoiding the need to adjust $\jsout$ in the \zeth~configuration, and all the associated problems (as described in~\cref{relay-private-fees:extensions:increasing-jsout}).
+
+A simple way to pay fees as \ether~is for users to set $\vout = \relayfee$ when creating $\mixparams$. Upon receiving $\mixparams$, relays then check for \emph{either} a \zeth~note \emph{or} $\mixparams.\vout$ that pays their fees. The \zeth~protocol extension described in \cref{relay-private-fees:extensions:ether-output:out-addr} to add $\mixparams.\outaddr$ would then be desirable, to prevent front-runners from claiming the relay fee.
+
+An alternative approach would be to use an intermediary contract as described in \cref{relay-proof-permission} (already partially mentioned in \cref{relay-private-fees:extensions:ether-output:intermediary} to support \ether~withdrawals). The protocol would then require the extra complexity of a request structure and \emph{proof-of-relay-permission}, but would provide maximal flexibility for users. A single $\mix$ call could withdraw \ether~to a new user address, use all output \zeth~notes \emph{and} pay the relay fee (in \ether).
+
+We expect that, given the choice, users would favour fee payment in \ether~more often than payment in \zeth~notes, since fee payment in \ether~allows them to control all $\jsout$ output notes from the \zeth~transaction. Further, it seems reasonable to assume that there will always be some relay operators willing to accept relay fees in \ether, and thereby users will have some element of choice in how fees are paid. Hence, we should expect some divergence between the relays fees paid in \ether~and those paid in \zeth~notes -- namely that fees paid in \zeth~notes will tend to be lower, in order to incentivise users to adopt this protocol.

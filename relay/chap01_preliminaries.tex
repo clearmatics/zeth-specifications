@@ -1,0 +1,69 @@
+% !TEX root = zeth_relay
+
+\chapter{Preliminaries}\label{chap:preliminaries}
+
+\section{Prerequisites}\label{preliminaries:prerequisites}
+
+This document assumes familiarity with $\ethereum$ and $\zeth$.
+It does not, in any way, aim to replace the Ethereum yellow paper~\cite{ethyellowpaper} or the Zeth specifications~\cite{zeth-protocol}. The reader is strongly advised to read about \ethereum~and \zeth{} before delving into this document.
+
+\section{Notation}\label{preliminaries:notations}
+
+Unless stated otherwise, this document follows the notation of the $\zeth$ protocol specifications~\cite{zeth-protocol}.
+We note in particular the following notations (some of which originate from~\cite{zeth-protocol}), used throughout the document.
+\begin{description}
+    \item[\mixer{}] A deployed instance of the Zeth contract.
+    \item[$\partystyle{U}$] A user, with identity \eparty{U}~on the \ethereum~network, and/or \zeth~identity \zparty{U}.
+    \item[$\partystyle{R}$] An entity operating a relay, with identity \eparty{R}~on the \ethereum~network, and/or \zeth~identity \zparty{R}.
+    \item[\relayexec{}] A contract deployed on the blockchain acting as a proxy to $\mixer{}$ (removing the need for trust between users and relays).
+    \item[\relayfee{}] The fee of the relay service $\relayP$.
+    \item[\genCallTx{}] Algorithm which creates, signs and broadcasts a transaction to call a contract entry point with specific parameters. That is, given a contract method call of the form $\contractstyle{Contract}.\algostyle{method}(\algostyle{param_1}, \ldots)$, a secret key $\sk$ for some \ethereum~address, a gas price $\gasp$ and gas limit $\gasl$, the algorithm $\genCallTx(\allowbreak \contractstyle{Contract}.\algostyle{method}(\allowbreak \algostyle{param_1},\allowbreak \ldots),\allowbreak \sk,\allowbreak \gasp,\allowbreak \gasl)$ creates a signed transaction that performs the given contract call.
+    \item[\broadcastTx{}] Algorithm that accepts a signed \ethereum~transaction and broadcasts it to the network, returning the transaction ID. The caller (in this document, the relay) can use the transaction ID to monitor the asynchronous completion of the transaction. The exact details will depend on the relay implementation, but once the transaction is complete, the relay can retrieve its result and update any internal state.
+\end{description}
+
+\section{Terminology}\label{preliminaries:terminology}
+
+The key words \MUST, \MUSTNOT, \SHOULD, \SHOULDNOT, \MAY, and \RECOMMENDED~in this document are to be interpreted as described in~\cite{rfc2119} when they appear in \ALLCAPS{}. These words may also appear in this document in lower case as plain English words, absent their normative meanings.
+
+\section{Introduction}\label{preliminaries:introduction}
+
+The $\zeth$ protocol allows users to carry out privacy-preserving state transactions on ``smart-contract enabled blockchains'' such as $\ethereum$ or $\projectstyle{Autonity}$\footnote{\url{https://github.com/clearmatics/autonity}}. Like all $\ethereum$ transactions, $\zeth$ transactions require a fee to be paid. This is inherited from the base protocol, which uses transaction fees as a security mechanism against Denial of Service (DoS) attacks.
+
+As pointed out in the $\zeth$ paper~\cite{zethpaper}, the need to pay transaction fees represents a challenge for designers of privacy preserving protocols, since transaction originators must carry out $\zeth$ contract calls from a funded $\ethereum$ address (which in turn must have been funded by other user(s) on the system\footnote{Unless the user is a miner.}, and for which the ``controlling user identity'' must be known by at least one network member). As such, while $\zeth$ provides strong privacy guarantees (recipient anonymity, private payment amount etc.), sender anonymity remains hard to achieve.
+
+This document proposes some designs for ``cryptographic relays'' and investigates the space of tradeoffs for both users and relay operators. The protocols enable $\ethereum$ peer-to-peer (P2P) nodes to act as \emph{relays}, receiving requests (off-chain), and signing and broadcasting transactions (which incorporate these requests) on behalf of $\zeth$ users. In exchange for this service, relays receive some fee from the original users.
+
+As described below, relay fees are of paramount importance in establishing a sound incentive structure, which in turn is necessary for the overall robustness of the system. The primary goal of this study on ``cryptographic relays'' is to achieve $\zeth$ sender anonymity on blockchain systems, and the proposals in this document suggest multiple ways in which relay fees can be paid while maintaining this anonymity. Furthermore, under additional network assumptions (e.g.~namely that $\zeth$ users and relay nodes communicate via an Anonymous Communication (AC) network, e.g.~\cite{DBLP:conf/uss/PiotrowskaHEMD17}), $\zeth$ users can make use of relay nodes without revealing any identifying information to the relay. See \cref{unicast-vs-broadcast:network-anonymity} for further discussion.
+
+\subsection{Turning ``front-runners'' into relays}\label{preliminaries:introduction:front-runners}
+
+As noted in~\cite{daian2019flash} and~\cite{surrogeth-blogpost} (among others), on blockchains such as $\ethereum$, so-called ``front-runners'' actively seek out transactions that are profitable for the sender and attempt to replace them with modified versions, in order to steal the profit from the original sender. Front-running strategies leverage the mempool ordering policy adopted by miners. Namely, they set higher gas prices in order to overtake the targeted transactions.
+
+With the proliferation of ``bots''\footnote{see, for instance, \url{https://github.com/Uniswap/uniswap-interface/issues/248}} inspecting the mempool and front-running profitable transactions (see e.g.~\cite{danrobinson-dark-forest}), it becomes key for ``layer 2''-protocol designers to design state transitions that are secure against such replay attacks.
+As presented in~\cite[Section 2.3]{zeth-protocol}, the $\zeth$ protocol prevents ``front-running''/``replay'' attacks by design (see derivation of $\hsig$ and $\datatobesigned$).
+
+While ``front-runners'' present a threat to users of Decentralized Applications (DApps), they can potentially be leveraged to act as transaction relays~\cite{surrogeth-blogpost}. Since front-runners examine the mempool, looking for profitable transactions to overtake (by extracting the transaction payload, creating a new transaction, signing it and broadcasting it on the network with a higher gas price), a user may exploit this behavior by voluntarily broadcasting a transaction with low gas price on the network, in the hope that a front-runner will replay/overtake it. By doing so, the user may thus trigger a state transition on the blockchain without paying the associated transaction fees. Nevertheless, ``front-runners'' should be modelled as rational agents, meaning that such transactions must be profitable to them. As such, for users to leverage ``front-runners'' as ``relays'' in practice, transactions must be crafted such that ``front runners'' receive a fee in exchange for replacing them.
+
+Finally, in order for a user's transactions to be added to a miner's transaction pool, it is necessary for the transaction to pass the ``initial tests of intrinsic validity''~\cite[Section 6]{ethyellowpaper} (see also transaction pool implementation in Geth\footnote{\url{https://github.com/ethereum/go-ethereum/blob/master/core/tx_pool.go\#L578-L583}}). This means that users who wish to have their transactions ``front-run''/``relayed'' must hold a funded \ethereum{} account. This may not be desirable in all scenarios (especially in settings where sender anonymity is a primary motivation).
+
+\subsection{Relay incentives and risks}\label{preliminaries:introduction:incentives-risks}
+
+Besides the potential profitability of ``front-running'', mentioned above, relaying transactions that haven't been added to a miner's mempool is inherently risky, and sound incentive structures must reward such risk appropriately.
+
+Firstly, it must be noted that relay nodes may be vulnerable to DoS attacks. In such attacks, malicious clients ``flood'' targeted relays with an overwhelming stream of transactions. While such attacks may be mitigated by relay operators using existing network monitoring techniques (e.g.~packet filtering, rate limiting etc.), it is also important for relay operators to assess the profitability of the transactions that they relay to the blockchain. In fact, running a relay may quickly become a ``money drain'' if the cost of operating the relay service (i.e.~infrastucture costs, transaction fees etc.) outweighs the relay fees received. As such, it is necessary for relays to have an efficient way to gauge the on-chain cost and profitability of a transaction. (Carrying out this operation may also exacerbate the DoS vector on relays, since a flood of maliciously crafted transactions -- such as transactions that take a long time to execute, but fail to release any funds -- may cause a relay node to spend all of its resources on transaction verification in return for no income\footnote{Additional security measures may alleviate such issues. For example, using properly crafted verification thresholds, discarding transactions that take too long to be verified. Note however that such mechanisms ``specialize'' a relay into relaying only certain classes of transactions. Again, proper tradeoffs need to be adopted depending on the use-cases and threat model.}.)
+Additionally, it is worth remembering that ``front runners'' and ``relayers'' may in turn be front-run by other competitors. As a consequence, allocating non-negligible computation resources to ``assessing the profitability'' of transactions represents a risk -- other ``front runners'' may overtake the relay's (verified) transaction to avoid carrying out this verification work locally.
+
+\subsection{Assumptions}\label{preliminaries:assumptions}
+
+Based on the remarks given in the previous sections, we make the following assumptions in the rest of the document.
+\begin{description}
+    \item[Transactions to be relayed are immune to front-running.] We assume that all relayed transactions are inputs to the $\zeth$ contract $\mix$ function. As such, the inputs prevent front-running by construction.
+    \item[Transactions to be relayed target specific relays.] As mentioned above, $\zeth$ is designed to avoid ``front-running''/``malleability'' attacks. To achieve this, several parameters (e.g.~$\datatobesigned$) are derived using the address of the $\ethereum$ user that must send the transaction. As such, we assume that users \emph{choose} a relay service to process their request. Note that, as discussed in \cref{unicast-vs-broadcast:requests:emulate-free-requests}, users are free to target multiple relay services by creating multiple requests, but the underlying assumption is there exists a market of competing ``relays'', from which users can select the service that best suits their needs. For example, different relays may offer different trade-offs between settlement latency and fees, while others may offer ``aggregation services'' (see, e.g.~\cite{DBLP:journals/corr/abs-2008-05958})
+    \item[Relays are ``discoverable''.] Discovery of relay nodes by users may be achieved through several possible mechanisms. For example, relay nodes may publish their IP address, current fees and $\ethereum$ address (some of which may potentially be published on-chain), allowing users to discover their services. Overall, we assume that relay operators take the necessary steps to be ``discoverable'' by users.
+\end{description}
+
+In the remainder of this document, we propose a set of protocols to relay $\zeth$ transactions, each with their own trade-offs and specific goals.
+
+\begin{notebox}
+    Importantly, it is worth keeping in mind that in most scenarios, sound ``relay economics'' will imply that for a given state transition, relay fees are greater than the on-chain fees normally paid by blockchain users. Hence, we stress that using relays should not be seen as a ``cheap way'' to transact on a blockchain, but rather as a way to achieve otherwise impossible objectives on the system (e.g.~to achieve sender anonymity).
+\end{notebox}

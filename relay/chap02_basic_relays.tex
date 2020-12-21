@@ -1,0 +1,269 @@
+% !TEX root = zeth_relay
+
+\chapter{Relays with Proof of Permission}\label{relay-proof-permission}
+
+In this section, we propose a protocol with the aim of preserving the anonymity of $\zeth$ transaction senders. This allows a user \userZethAccount{} to interact (anonymously) with a \zeth~deployment to either ``pour'' the value of some of his $\zethnotes$ into new ones (i.e.~carry out a private payment), or withdraw some value $\vout$ from $\mixer{}$ to a newly created \ethereum~address $\addr_{new}$.
+
+We assume that \userZethAccount{} is willing to pay a fee to achieve this anonymity, and that at least one party \relayEthAccount{} is willing to act as a ``relay'' in return for this fee.
+
+\emph{By providing a mechanism to carry out private withdrawals of \zeth{} funds to a newly generated \ethereum{} address, we allow \ethereum{} users to manipulate $\ether$ ``privately'' in future transactions - either ``plain EOA-to-EOA transactions'' or smart-contract calls.}
+
+\medskip
+
+We list below the set of characteristics that are desired in this setting.
+
+\paragraph{From the user's perspective}
+
+\begin{itemize}
+  \item The user must be able to leverage relays to anonymously carry out a \zeth{} state transition on-chain. This includes, anonymous private transfer (i.e.~``pouring'' the value of existing $\zethnotes$ to new ones), and anonymous withdrawals to a newly created $\ethereum$ account.
+  \item Not only must the user be anonymous with regard to the blockchain network, but he must also remain anonymous to the relay\footnote{Further assumptions need to be made about the underlying network. The user must be able to communicate with the relay without revealing any network-layer identifying information.} for the mechanism to be robust against malicious/compromised relays. The user must not be required to reveal any identifying information, including any pre-funded $\ethereum$ addresses.
+  \item The user must be guaranteed (up to some negligible probability) that the relay will only call the \mix{} function, on-chain, with the \emph{correct} inputs (i.e.~the relay may not execute any state transition on behalf of the user that the user did not request).
+\end{itemize}
+
+\paragraph{From the relay's perspective}
+
+\begin{itemize}
+  \item The relay must be guaranteed (up to some negligible probability) that he will receive the agreed upon fee in exchange for carrying out his role in the protocol (and therefore he will not incur costs such as transaction fees for no reward)\footnote{This would question the profitability of operating a relay node and would jeopardize the ``relay network'' as well as the viability of the ``relaying activity''.}.
+\end{itemize}
+
+\section{Protocol Overview}\label{relay-proof-permission:protocol-overvew}
+
+%We define the following concepts in the system:
+%\begin{description}
+%  \item[\mixer{}.] A pre-deployed instance of the Zeth \mixer{} contract.
+%  \item[\userZethAccount{}.] A $\zeth$ user holding Zeth address and note data required %to spend one or more $\zethnotes$. We assume that \userZethAccount{} wishes to either %``pour'' the value of $\zethnotes$ into new ones (i.e.~carry out a privae %payment), or withdraw some value $\vout$ from $\mixer{}$ to a newly created %$\ethereum$ account (which associated address is denoted $\addr_{new}$), and %is willing to pay a fee in order to achieve this anonymously.
+%  \item[\relayEthAccount{}.] A relayer willing to sign and broadcast transactions on %behalf of users, in exchange for some fee.
+%  \item [Proof of Relay Permission.] A description of the request for \relayEthAccount{} %to relay a specific transaction on behalf of \userZethAccount{}, accompanied by a %signature proving that \userZethAccount{} permits \relayEthAccount{} to perform the operation %and receive a specific fee.
+%  \item[\relayexec{}.] A contract deployed to the blockchain which removes the %need for trust between users and relays. This contract checks the %proof-of-relay-permission, performs the \mix{} call, and correctly distributes %the fees and withdrawn value ($\vout$).
+%\end{description}
+
+We start by assuming that a \zeth~user \userZethAccount{} has chosen a relay service $\relayP$ (with \ethereum~account \relayEthAccount{}) which relays transactions for a fee $\relayfee$. We further assume that \userZethAccount{} knows the address of the \relayexec{} contract.
+
+The protocol consists of the following steps:
+
+\begin{description}
+  \item[Step 1 (User creates the \mix{} parameters).] \userZethAccount{} creates the \mix{} parameters $\mixparams$ that spend her note(s), including the public output value $\vout$. $\mixparams$ are generated such that only \relayexec{} can successfully use them. (This is achieved by leveraging the property of \mix{} parameters, described in~\cite[Sections 2.4, 2.5]{zeth-protocol}, which restricts the $\ethereum$ address of the caller, possibly a contract\footnote{This is currently the mechanism used to prevent front-runners from claiming $\vout$.}.)
+
+  \item[Step 2 (User generates a \emph{proof-of-relay-permission}).] With $\mixparams$ properly created, \userZethAccount{} generates a \emph{proof-of-relay permission} $\prfrelayperm$ (described in further detail below) for $\mixparams$. This proves that the owner of the $\zeth$ notes to be spent by $\mixparams$ agrees that \relayEthAccount{} may relay the \mix{} parameters via \relayexec{} for a fee $\relayfee$. \userZethAccount{} also specifies the address $\outaddr$ to which the remaining balance $\vout - \relayfee$ (if any) should be sent. (In general, $\outaddr$ is expected to be a newly generated address $\addr_{new}$).
+
+  \item[Step 3 (User sends parameters to the relay).] \userZethAccount{} sends a ``relay request'' $\relayrequest{req}$ to the chosen relay $\relayP{}$, containing $\mixparams$, $\prfrelayperm$ and other data such as $\outaddr$. Note that, as long as $\outaddr$ is a newly generated address (with no history on the blockchain), this request contains no information that identifies \userZethAccount{} as the originator. \userZethAccount{} is also expected to leverage anonymising mechanisms to avoid revealing any identifying information at the transport level.
+
+  \item[Step 4 (Relayer verifies and broadcasts the received request).] Upon receipt of $\relayrequest{req}$, the relay performs a set of checks to gain confidence that $\mixparams$ and $\prfrelayperm$ are valid, and indeed grant the relay fee to \relayEthAccount{}. (Note that the relay has some scope to choose the extent of such checks, trading off the cost of checking against the risk of losing money by broadcasting an invalid transaction.) If the relay is satisfied that $\relayrequest{req}$ is valid, he signs (using the \relayEthAccount{} identity) and broadcasts a transaction that calls \relayexec{}.
+
+  \item[Step 5 (The intermediary contract checks all parameters and executes the \zeth~mixer).] The \relayexec{} contract acts as an intermediary, trusted by both users and relays. It first checks $\prfrelayperm$ to ensure that the caller (\relayEthAccount{}) has indeed been granted permission to use the \mixparams~in exchange for $\relayfee$. \relayexec{} then calls \mixer{} with parameters $\mixparams$ and checks that the call succeeds. The transaction is aborted if any of these checks fail.
+
+  \item[Step6 (The intermediary contract distributes the value $\vout$).] If the \mix{} call is successful, \relayexec{} now holds the $\vout$ from \mixer{}. From this, it pays $\relayfee$ to \relayEthAccount{}.\addr and the remainder $\vout - \relayfee$ to $\outaddr$.
+\end{description}
+
+\begin{remark}
+  Using \relayexec{} to distribute the fee and fund the user-specified $\outaddr$ address, gives \userZethAccount{} confidence that $\outaddr$ will receive the correct output for the agreed fee. Further, \relayEthAccount{} can be sure that no other relay can use the same set of \mix{} parameters and forge a request from \userZethAccount{} to receive the relay fee.
+\end{remark}
+
+\section{Protocol}\label{relay-proof-permission:protocol}
+
+Below we give further details of the protocol outlined above, enabling anonymous $\zeth$ transfers via relayed transactions. The protocol leverages specific characteristics of the $\zeth$ protocol design (some of which were described above). In particular, it builds on the fact that $\mix$ parameters can be generated without owning an $\ethereum$ account (see derivation of $\hsig$ and related discussion~\cite[Remark A.2.2]{zeth-protocol}), and that $\mix$ parameters are ``bound'' to the address of the $\ethereum$ account that must call the $\mixer$ contract (see derivation of $\datatobesigned$~\cite[Section 2.3]{zeth-protocol}).
+
+\subsection{Relay Request and Permission Data}
+
+We use $\mixInputDType$ and related datatypes from~\cite[Section 2.1]{zeth-protocol}, and define the following new data type to represent a relay request with proof of relay permission.
+
+\begin{definition}\label{protocol:datatypes:relayrequest}
+  The datatype $\relayRequestDType$ is defined as:
+  \begin{table}[H]
+    \centering
+    \begin{tabular}{p{0.15\linewidth} | p{0.6\linewidth} | p{0.2\linewidth}}
+      Field & Description & Value\\ \toprule
+
+      $\mixparams$ &
+      Parameters to the \mix{} call &
+      $\mixInputDType$ \\ \midrule
+
+      $\outaddr$ &
+      $\ethereum$ address credited with the funds withdrawn from $\mixer$ &
+      $\BB^{\addressLen}$ \\ \midrule
+
+      $\relayaddr$ &
+      $\ethereum$ address allowed to relay \mixparams{} (and perceive $\fee$) &
+      $\BB^\addressLen$ \\ \midrule
+
+      $\fee$ &
+      Fee to pay (out of $\vout$) to the authorized relay &
+      $\NN_{\ethWordLen}$ \\ \midrule
+
+      $\permission$ &
+      Signature proving the authenticity of the request &
+      $\sigOtsDType$ \\ \bottomrule
+    \end{tabular}
+    \caption{\relayRequestDType~type}
+  \end{table}
+\end{definition}
+
+The $\permission$ attribute is used to indicate that the user has given permission for the relay to forward the specific \mix{} call. We reuse the signature key $\mixparams.\otsvk$ for the scheme $\sigscheme_{\otsig}$, used to create $\mixparams.\otssig$ (see~\cite[Section 2.3]{zeth-protocol}), since only the author of the \mix{} call parameters can generate valid signatures.
+
+\begin{todobox}
+    Tighten the security requirements of the signature scheme used.
+    For now, this proposal uses $\sigscheme_{\otsig}$ to create a second signature with the same private key.  However, $\sigscheme_{\otsig}$ is ``one-time''.
+    Additionally, the security claim on the nested signature is only that it is UF-CMA (see specs), relying on the fact that the wrapping signature scheme (signing the transaction object) is SUF-CMA. Here however, since the relay request does not contain a signed blockchain transaction object, an adversary may be able to maul the signature and pass the UF-CMA game. More consideration of the threat model and the security requirements is required here.
+\end{todobox}
+
+As described below, the user must sign the attributes $\relayaddr$, $\fee$ and $\outaddr$ for the signature to be considered valid.
+
+\subsection{User Operations}
+
+We assume that user \userZethAccount{} has decided to use \relayP{} (controlling $\ethereum$ account \relayEthAccount{}) to relay her $\zeth$ transaction in order to either withdraw some value $\vout$ to $\ethereum$ address $\outaddr$ and/or carry out a private transfer. We further assume that \userZethAccount{} agrees to pay a fee $\relayfee$ to \relayEthAccount{} in order to achieve this. Here $\relayfee$ is the fee that $\relayP$ is willing to accept in exchange for relaying a single \mix{} call.\footnote{This fee should be strictly greater than the gas cost of \mix{} in order for the relay to be profitable (more refined profitability forecasts would internalize the infrastructure operational costs to adjust the fee). Additionally, the relay may adjust and republish $\relayfee$ in light of gas price fluctuations on the blockchain, other changes to cost and risk, or to compete with other relays.}.
+
+\userZethAccount{} executes the following steps:
+
+\begin{enumerate}
+  \item Create a valid $\mixparams \in \mixInputDType$, where:
+    \begin{itemize}
+      \item $\mixparams$ spends previously unspent $\zethnotes$ owned by \userZethAccount{}, with a public output of $\vout$.
+      \item $\mixparams.\otssig$ is created using the address of \relayexec{}, as described in \cite[Section 2.3]{zeth-protocol}
+      \item The one-time signing key $\sk_\otsig$, used to create $\mixparams.\otssig$, can be (securely) extracted for use in the following step.
+    \end{itemize}
+  \item Use the signing key $\sk_\otsig$ to create a proof of relay permission:
+    \begin{align*}
+      & \relaydata \gets \encode{\relayEthAccount.\addr}{}\ \concat\ \encode{\relayfee}{}\ \concat\ \encode{\outaddr}{} & & \\
+      & \prfrelayperm \gets \sigscheme_{\otsig}.\sig(\sk_\otsig, \crhots{\relaydata}) & &
+    \end{align*}
+  \item Create a relay request $\req \in \relayRequestDType$:
+    \begin{align*}
+      \req & \gets \{ & \\
+      & \mixparams: \mixparams, & \\
+      & \outaddr: \outaddr, & \\
+      & \relayaddr: relayEthAccount.\addr, & \\
+      & \fee: \relayfee, & \\
+      & \permission: \prfrelayperm & \\
+      \} &  &
+    \end{align*}
+\end{enumerate}
+
+\begin{remark}
+    If the user simply wants to leverage a relay to carry out a private $\zeth$ transfer (without withdrawing funds to a newly created address $\outaddr$), $\userZethAccount{}$ can set $\outaddr \gets \constantstyle{0x0}$ (see~\cref{relay-proof-permission:fig:relayexec-processrequest} for more details).
+\end{remark}
+
+The user then sends this request to the relay \relayP{}, via a secure (anonymous) communication channel.
+
+\subsection{Relay Operations}
+
+Let $\relayEthAccount.\sk$ be the secret key corresponding to the address $\relayEthAccount.\addr$ of $\ethereum$ account $\relayEthAccount$.
+In what follows, we assume that $\relayEthAccount.\addr$ is funded with enough $\ether$ to pay the gas required to call \relayexec{} on-chain.
+
+% Algo to check request on Relay
+
+Let $\relayEthAccount{}.\addr$ be the $\ethereum$ address of $\relayP$ charging relay fee $\relayfee$. Further, assume that $\relayexec$ and $\mixer$ are deployed with addresses $\relayexec{}.\addr$ and $\mixer.\addr$ respectively.
+
+Given the current \ethereum~state $\wstate$ (or a copy holding at least $\wstate[\relayexec{}.\addr]$ and $\wstate[\mixer.\addr]$) and a relay request $\req \in\ \relayRequestDType$, the algorithm $\relaycheckrequest$ (see~\cref{relay-proof-permission:fig:relay-request-check}) succeeds if the request $\req$ is valid and will result in \relayEthAccount{} receiving $\relayfee$.
+
+Note that we assume the existence of an algorithm $\relaycheckmixparams$ which checks whether a given set of \mix{} parameters $\mixparams$ result in a successful \mix{} call in the context of the current blockchain state $\wstate[\mixer{}.\addr]$. That is, given the state $\wstate[\mixer{}.\addr]$ of the \mixer{} contract, an $\ethereum$ address $\addr_{caller} \in \BB^\addressLen$ and \mix{} parameters $\mixparams \in \mixInputDType$,
+\[
+  \relaycheckmixparams(\wstate[\mixer{}.\addr], \addr_{caller}, \mixparams)
+\]
+returns the result of $\zethVerifyTx(\tx)$ (see \cite[Section 2.5]{zeth-protocol}) where $\tx$ is a transaction that calls $\mix(\mixparams)$ from address $\addr_{caller}$, and $\zethVerifyTx$ executes in the context of \mixer{} with state $\wstate[\mixer{}.\addr]$.
+
+\newcommand{\mixeraddr}{\ensuremath{\varstyle{mixerAddr}}\xspace}
+\newcommand{\relayproxyaddr}{\ensuremath{\varstyle{relayProxyAddr}}\xspace}
+
+\begin{figure}[!h]
+  \centering
+  \procedure[linenumbering]{$\relaycheckrequest(\wstate, \req)$}{%
+    \pccomment{Check the fee and relay address in the request} \\
+    \pcif (\req.\fee \ne \relayfee)\ \lor\ (\req.\relayaddr \ne \relayEthAccount{}.\addr) \pcthen \\
+    \pcind \pcreturn \false \\
+    \pcendif \\
+    \pccomment{Check that $\vout$ can pay the fee and reject deposits} \\
+    \pcif (\req.\mixparams.\vout < \relayfee)\ \lor\ (\req.\mixparams.\vin \ne 0) \pcthen \\
+    \pcind \pcreturn \false \\
+    \pcendif \\
+    \pccomment{Check the proof-of-relay-permission} \\
+    \relaydata \gets \encode{\relayEthAccount{}.\addr}\ \concat\ \encode{\relayfee}{}\ \concat\ \encode{\req.\outaddr}{} \\
+    \pcif \neg \sigscheme_{\otsig}.\verify(\req.\mixparams.\otsvk, \crhots{\relaydata}, \req.\permission) \pcthen \\
+    \pcind \pcreturn \false \\
+    \pcendif \\
+    \pcreturn\ \relaycheckmixparams(\wstate[\mixer{}.\addr], \relayEthAccount{}.\addr, \req.\mixparams)
+  }
+  \caption{\relaycheckrequest{} algorithm. The relay address $\relayEthAccount.\addr$, desired relay fee $\relayfee$ and contract addresses $\relayexec{}.\addr$ and $\mixer.\addr$ are implicitly available as variables.}
+  \label{relay-proof-permission:fig:relay-request-check}
+\end{figure}
+
+\begin{remark}
+  For this check to be meaningful, we assume here that \relayEthAccount{} has access to $\wstate[\mixer.\addr]$ for some recent block height\footnote{Implementations are not necessarily expected to track $\wstate[\mixer.\addr]$ by themselves, but rather to leverage an existing $\ethereum$ full node implementation. $\relaycheckmixparams$ can then be implemented as queries to the node (e.g.~via RPC).}.
+\end{remark}
+
+\medskip
+
+Further, we introduce the relay logic in~\cref{relay-proof-permission:fig:relay-handle-request} which illustrates the $\relayhandlerequest$ algorithm that processes a received $\relayRequestDType$ request object $\req$ and relays it on the blockchain network. Here again, we assume that the tuple $(\relayEthAccount{}.\addr,\allowbreak \relayfee,\allowbreak \relayexec{}.\addr,\allowbreak \mixer{}.\addr)$ is implicitly available to the algorithm.
+In $\relayhandlerequest$ a gas price $\gasp$ and gas limit $\gasl$ are (possibly dynamically) set at the relay's discretion (based on its ``relaying service and strategy'', defining the trade-off between relay fees, settlement latency, etc.) and passed as explicit parameters to $\relayhandlerequest$.
+
+%% Relay algorithm
+\begin{figure}[!h]
+  \centering
+  \procedure[linenumbering, syntaxhighlight=auto, addkeywords={abort}]{$\relayhandlerequest(\wstate, \req)$}{%
+    \pccomment{Check the request}\\
+    \pcif \neg \relaycheckrequest(\wstate, \req) \pcthen \\
+    \pcind abort \\
+    \pcendif \\
+    \pccomment{Create and broadcast the relay Ethereum transaction} \\
+    \relaytx \gets \genCallTx(\relayexec{}.\relayexecprocessrequest(\req), \relayEthAccount{}.\sk, \gasp, \gasl) \\
+    \txid \gets \broadcastTx(\relaytx) \\
+    \pccomment{Record the transaction id} \\
+    \relayRecordTransaction(\txid) \\
+    \pcreturn
+  }
+  \caption{Algorithm to process relay requests. $\relayRecordTransaction$ represents the relay-specific handling of the transaction id.}
+  \label{relay-proof-permission:fig:relay-handle-request}
+\end{figure}
+
+\begin{remark}\label{relay-proof-permission:transaction-failure-cases}
+  The checks in $\relaycheckrequest$ provide some level of assurance that $\relaytx$ will be successfully executed on chain. However, the relay cannot rule out the possibility that a conflicting transaction $\relaytx^*$ exists on the network, such that, if $\relaytx^*$ were mined first it would alter the blockchain state and affect the execution of $\relaytx$. For example, in the case of \zeth, if some transaction $\relaytx^*$ which spends the same notes as $\relaytx$ were mined first, $\relaytx$ would fail and no payment would be made to the relay.
+
+Relays may perform further checks to increase their level of confidence that $\relaytx$ will execute as expected (such as examining their own mempool for conflicting transactions) but all such checks add to the cost of running a relay, which may be reflected in the relay fees. It is expected that relays will compete with each other on the basis of their fees. Consequently, relays are expected to adopt some strategy that trades off risk, validation costs and competitiveness, and thereby determine an appropriate price range for relaying.
+\end{remark}
+
+\medskip
+
+\begin{notebox}
+Most relay implementations are likely to be able to receive and process multiple requests simultaneously, and at times may receive requests at a faster rate than they can be processed.  In this case, the relay has scope to prioritise certain requests over others.  In the simplest case, requests may be handled in the order in which they are received (for example via a FIFO queue). More sophisticated relays may employ a strategy allowing them to accept ``relay bribes'', in which case $\relayfee$ is composed of a ``base fee'' covering the cost of relaying the request, complemented by a relaying premium/bribe to be processed ahead of other requests.
+    Additionally, we note that, the strategy adopted by the relays for ordering and processing relay requests is likely to be impacted by the economics of the underlying platform (see e.g.~\cite{eip-1559,eip-1559-analysis}), and so, can be adjusted at the relay's discretion.
+\end{notebox}
+
+\subsection{\relayexec Contract}\label{relay-proof-permission:protocol:relayexec}
+
+\relayexec{} is a smart contract, deployed to the blockchain, with knowledge of the address of the \mixer{} contract to which transactions are to be forwarded. Any participant (relay or potential user) can verify its byte code, and be sure that it cannot be modified by any other party. It executes the $\mix$ call on behalf of the relay, distributing fees as described in the user's request, thereby allowing user and relay to interact in a trustless way. That is, neither the user or the relay are required to trust the the other party to behave in a certain way -- \relayexec~constrains how a relay request will be handled once both parties have ``agreed'' to it.
+
+Relays create transactions that call the $\relayexecprocessrequest$ method on \relayexec{}. This method carries out processing of relay requests, and distribution of $\vout$, as defined in~\cref{relay-proof-permission:fig:relayexec-processrequest}
+
+\begin{figure}[H]
+  \centering
+  \procedure[linenumbering, syntaxhighlight=auto, addkeywords={abort}]{$\relayexec.\relayexecprocessrequest(\req)$}{%
+    \pccomment{Check that the fee is redeemable} \\
+    \pcif \req.\mixparams.\vout < \req.\fee \pcthen \\
+    \pcind abort \\
+    \pcendif \\
+    \pccomment{Check the relay permission} \\
+    \relaydata \gets \encode{\req.\relayaddr}{}\ \concat\ \encode{\req.\fee}{}\ \concat\ \encode{\req.\outaddr}{} \\
+    \pcif \neg \sigscheme_{\otsig}.\verify(\req.\mixparams.\otsvk, \crhots{\relaydata}, \req.\permission) \pcthen \\
+    \pcind abort \\
+    \pcendif \\
+    \pccomment{Cross-contract call to the zeth mixer} \\
+    \mixsuccess \gets \mixer.\mix(\req.\mixparams) \\
+    \pcif \neg \mixsuccess \pcthen \\
+    \pcind abort \\
+    \pcendif \\
+    \pccomment{Distribute the fee and the withdrawn funds} \\
+    \sendE(\req.\relayaddr, \req.\fee) \\
+    \varstyle{funds} \gets \algostyle{safeSub}(\req.\mixparams.\vout, \req.\fee) \\
+    \pcif \req.\outaddr \neq \constantstyle{0x0} \land \varstyle{funds} \neq 0 \pcthen \\
+    \pcind \sendE(\req.\outaddr, \varstyle{funds}) \\
+    \pcendif \\
+    \pcreturn
+  }
+  \caption{\relayexecprocessrequest{} function, where $\sendE(addr, amt)$ refers to the $\ethereum$ operation that sends funds $amt$ to some address $addr$, and where $\algostyle{safeSub} \colon \NN_{\ethWordLen} \times \NN_{\ethWordLen} \to \NN_{\ethWordLen}$, such that $\algostyle{safeSub}(x, y) = x - y$ if $x > y$, $0$ otherwise.}
+  \label{relay-proof-permission:fig:relayexec-processrequest}
+\end{figure}
+
+Note that the definition of $\relayexecprocessrequest$ does not check that the transaction has originated from $\req.\relayaddr$. Hence, it is technically possible for a third party to ``front-run'' this transaction. However any value returned from the transaction is always explicitly distributed to $\req.\relayaddr$ and $\req.\outaddr$, and so any other party signing this would essentially be paying the transaction fee on behalf of \relayEthAccount{}, while still allowing \relayEthAccount{} to keep the relay fee.
+
+The system would still function if $\relayexecprocessrequest$ did perform such a check (i.e.~that $\req.\relayaddr$ signed the transaction). However, omitting such a check allows the relay some flexibility when sending the transaction. For example, the relay may wish to pay the transaction fee from another account, or may wish to call \relayexec{} from another contract of some kind.
+
+Finally, we note that users create relay requests such that only \relayexec{} may successfully pass $\mixparams$ to \mixer{}, however there is no mechanism to ensure that $\mixparams$ may only be used by a specific \emph{method} of \relayexec{}. Thus, before entering into the protocol, the user should convince himself that \relayexec{} cannot be called in such a way as to violate the protocol (consider the case of a malicious deployer colluding with a relay to provide a second method on \relayexec{} which returns all value to $\relayaddr$). For simplicity, we stipulate that \relayexec{} \MUSTNOT~have methods other than $\relayexecprocessrequest$.

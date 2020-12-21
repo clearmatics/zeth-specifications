@@ -1,0 +1,59 @@
+% !TeX spellcheck = en_GB
+\documentclass[11pt,a4paper,oneside]{report}
+
+%% Define hyphen required by macros.tex
+\mathchardef\mhyphen="2D
+
+% Import the specifications configuration
+\input{../config/packages}
+\input{../config/macros}
+
+% configuration related to this document
+\input{./relay_macros}
+
+% Add watermark to the document
+\usepackage[printwatermark]{xwatermark}
+\newwatermark[allpages,color=gray!25,angle=45,scale=3.5,xpos=0,ypos=0]{DRAFT}
+% Comment command
+\definecolor{bananamania}{rgb}{0.98,0.91,0.71}
+\definecolor{darkred}{rgb}{0.7,0,0}
+\DeclareRobustCommand{\antoines}[2]{{\color{darkred}\sethlcolor{bananamania}\hl{\textbf{Antoine #1:} #2}}}
+
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\providecommand{\keywords}[1]{\textbf{\textit{Keywords---}} #1}
+
+\usepackage{authblk} % Package to track authors' affiliations
+
+\title{On the design of Zeth transaction relays}
+\author[*]{Antoine Rondelet}
+\author[*]{Duncan Tebbs}
+\affil[*]{Clearmatics, UK}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Privacy preserving protocols suffer from the need to pay transaction fees on blockchain systems. While such fees constitute a sound economic barrier to a wide class of Denial of Service attacks, they also represent impediments to the design of state transitions with anonymous initiators. In this paper, we navigate the design space for ``\zeth{} cryptographic relays''. These enable \zeth{} users to carry out \zeth{} payments anonymously by relying on an extra party -- a relay -- to settle and execute state transitions on the blockchain.
+
+\keywords{Privacy, Ethereum, Zeth, Relays, Sender Anonymity, Digital Cash}
+\end{abstract}
+
+\tableofcontents
+
+%%
+\include{chap01_preliminaries}
+\include{chap02_basic_relays}
+\include{chap03_relays_with_private_fees}
+
+\appendix
+
+\include{appendices/relays_with_stake}
+\include{appendices/unicast_vs_broadcast}
+
+\bibliographystyle{alpha}
+\bibliography{references}
+
+\end{document}
