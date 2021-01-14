@@ -385,11 +385,13 @@
 \newcommand{\txDefaultGas}{\ensuremath{\constantstyle{DGAS}}\xspace} % Intrinsic gas cost of an Ethereum transaction
 %% The general group and field
 \newcommand{\Curve}{\ensuremath{\curvestyle{Curve}}\xspace} % Chosen curve
-\newcommand{\rCURVE}{\ensuremath{\constantstyle{r}}\xspace} % Prime that defines the scalar field \FFx{\rCURVE} of \Curve
+\newcommand{\gsetCURVE}{\ensuremath{\gset_{\constantstyle{CUR}}}\xspace} % Notation for the safe cryptographic elliptic curve group of \Curve
+\newcommand{\rCURVE}{\ensuremath{\constantstyle{r_{CUR}}}\xspace} % Prime that defines the scalar field \FFx{\rCURVE} of \Curve
 \newcommand{\fieldBitLen}{\ensuremath{\constantstyle{FIELDLEN}}\xspace} % Bit-length of elements in \FFx{\rCURVE}
 \newcommand{\fieldBitCap}{\ensuremath{\constantstyle{FIELDCAP}}\xspace} % Bit-capacity of elements in \FFx{\rCURVE}
 %% Remarkable groups and fields
 \newcommand{\BNCurve}{\ensuremath{\curvestyle{BN\mhyphen{}254}}\xspace}
+\newcommand{\gsetBN}{\ensuremath{\gset_{\constantstyle{BN}}}\xspace} % Notation for the safe cryptographic elliptic curve group of BN254 (the whole curve here, since cofactor = 1)
 \newcommand{\pBN}{\ensuremath{\constantstyle{p_{BN}}}\xspace} % Characteristic of the prime (base) field over which BN254 is defined
 \newcommand{\rBN}{\ensuremath{\constantstyle{r_{BN}}}\xspace} % Prime order of the group defined by BN254 (characteristic of the scalar field)
 \newcommand{\bnFieldBitLen}{\ensuremath{\constantstyle{FIELDLEN_{BN}}}\xspace} % Instance of \fieldBitLen for the BN254 scalar field
