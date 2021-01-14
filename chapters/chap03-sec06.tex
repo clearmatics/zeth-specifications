@@ -2,7 +2,7 @@
 
 \section{$\zksnark$ instantiation}\label{instantiation:zksnark}
 
-Groth's proof system $\groth$ \cite{groth2016size} is the most efficient known zk-SNARK (in terms of the proof size and proof and verification cost) for QAPs, and thus one of the most efficient $\nizk$ for proving statements on arithmetic circuits. Below we present $\groth$'s key generation, prover, verifier, and simulator algorithms, adjusted as described in \cite{bowe2017mpc} to further reduce the size of $\srs$ and proofs, and to make the $\kgen$ algorithm more amenable to implementation as a multi-party computation.
+Groth's proof system $\groth$ \cite{groth2016size} is the most efficient known zk-SNARK (in terms of the proof size and proof and verification cost) for QAPs, and thus one of the most efficient $\nizk$ for proving statements on arithmetic circuits (consisting of addition and multiplication gates over a finite field $\FF$). Below we present $\groth$'s key generation, prover, verifier, and simulator algorithms, adjusted as described in \cite{bowe2017mpc} to further reduce the size of $\srs$ and proofs, and to make the $\kgen$ algorithm more amenable to implementation as a multi-party computation.
 
 In what follows, let the number $\constno$ of constraints in the relation $\REL$ be fixed. Without loss of generality we consider $\constno$ to be an \emph{upper bound} on the number of constraints in the $\REL$ parameter, and assume that there exists some $\constno$-th root of unity $\omega \in \FFx{\rCURVE}$. Define $\ell_i(\xchi)$ to be the $i$-th Lagrange polynomial of degree $(\constno - 1)$ over the set $\smallset{\omega^i}_{i \in [\constno]}$, and let $\ell(\xchi)$ be the unique non-zero polynomial of degree $\constno$ that satisfies $\ell(\omega^i) = 0$ for all $i \in [\constno]$.
 
@@ -14,13 +14,19 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
 %%
 %% The use of the $\constno$-th root of unity supports FFT transforms for fast polynomial manipulation. The requirement that $\constno$ is a power-of-2 dividing $\rBN$ allows FFT transforms to be used for fast evaluation of Langrange polynomials at $\tau$, in terms of a series of encoded powers $\smallset{ \groupenci{\tau}{1} }_{i = 0}^{\constno - 1}$ (as described in Section 3 of "A multi-party protocol for constructing the public parameters of the Pinocchio zk-SNARK" - https://eprint.iacr.org/2017/602.pdf)
 
+Furthermore, we denote by $\inputs \in \FF^{\inpno+1}$ the tuple of variables (ciruit wires) in the algebraic representation of the relation $\REL$, such that:
+\begin{itemize}
+    \item $\inputs_0 = 1_{\FF}$ (the multiplicative identity in $\FF$),
+    \item $(\inputs_1, \ldots, \inputs_{\inpnoprim})$ represent variables in the statement,
+    \item $(\inputs_{\inpnoprim+1}, \ldots, \inputs_{\inpno})$ represent variables in the witness.
+\end{itemize}
 \begin{description}
 
 %% KeyGen
 \item[$\kgen(\REL, \secparam)$:]\hfill
   \begin{compactenum}[i.]
   \item Pick trapdoor $\td = (\tau, \alpha, \beta, \delta) \sample (\ZZ^*_p \setminus \smallset{\omega^{i - 1}}_{i = 1}^\constno) \times (\ZZ^*_p)^3$;
-  \item For $j \in \range{1}{\inpno}$, let
+  \item For $j \in \range{0}{\inpno}$, let
     \begin{align*}
       u_j (\tau) & = \sum_{i = 1}^\constno U_{i j} \ell_i (\tau), \\
       v_j (\tau) & = \sum_{i = 1}^\constno V_{i j} \ell_i (\tau), \\
@@ -34,7 +40,7 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
         & \groupenci{\alpha}{1}
         , \groupenc{\beta}
         , \groupenc{\delta}
-        , \smallset{ \groupenci{ u_j(\tau) }{1} }_{j = 1}^{\inpno}
+        , \smallset{ \groupenci{ u_j(\tau) }{1} }_{j = 0}^{\inpno}
         , \smallset{ \groupenc{ v_j(\tau) } }_{j = 0}^{\inpno}
         , \\
         & \smallset{
@@ -68,9 +74,9 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
   \item
     Define
     \begin{align*}
-      a^\dagger (\xchi) = \sum_{j = 1}^\inpno \inputs_j u_j (\xchi),\ \
-      b^\dagger (\xchi) = \sum_{j = 1}^\inpno \inputs_j v_j (\xchi),\ \
-      c^\dagger (\xchi) = \sum_{j = 1}^\inpno \inputs_j w_j (\xchi);
+      a^\dagger (\xchi) = \sum_{j = 0}^\inpno \inputs_j u_j (\xchi),\ \
+      b^\dagger (\xchi) = \sum_{j = 0}^\inpno \inputs_j v_j (\xchi),\ \
+      c^\dagger (\xchi) = \sum_{j = 0}^\inpno \inputs_j w_j (\xchi);
     \end{align*}
   \item
     Define the polynomial $\HHH (\xchi) = (a^\dagger (\xchi) b^\dagger (\xchi) - c^\dagger (\xchi)) / \ell (\xchi)$ and compute the coefficients $\smallset{ \HHH_i }_{i = 0}^{\constno - 2}$ of $\HHH$, such that $\HHH(X) = \sum_{i = 0}^{\constno - 2} \HHH_i \xchi^i$.
@@ -80,8 +86,8 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
     $r_b \sample \ZZ_p$;
   \item Compute proof elements:
     \begin{align*}
-      \AAA \gets & \sum_{j = 1}^\inpno \inputs_j \groupenci{u_j (\tau)}{1} + \groupenci{\alpha}{1} + r_a \groupenci{\delta}{1} \\
-      \BBB \gets & \sum_{j = 1}^\inpno \inputs_j \groupenci{v_j (\tau)}{2} + \groupenci{\beta}{2} + r_b \groupenci{\delta}{2} \\
+      \AAA \gets & \sum_{j = 0}^\inpno \inputs_j \groupenci{u_j (\tau)}{1} + \groupenci{\alpha}{1} + r_a \groupenci{\delta}{1} \\
+      \BBB \gets & \sum_{j = 0}^\inpno \inputs_j \groupenci{v_j (\tau)}{2} + \groupenci{\beta}{2} + r_b \groupenci{\delta}{2} \\
       \CCC \gets & \sum_{j = \inpnoprim + 1}^\inpno \inputs_j \groupenci{\frac{u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{\delta}}{1} + \sum_{i =0}^{\constno - 2} \HHH_i \groupenci{\tau^i \ell (\tau) / \delta}{1} + \\
       &  r_b \AAA + r_a \brak{\sum_{j = 1}^\inpno \inputs_j \groupenci{v_j (\tau)}{1} + \groupenci{\beta}{1}} - r_a r_b \groupenci{\delta}{1}
     \end{align*}
@@ -94,7 +100,7 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
   \item Check that:
     \begin{align*}
       \AAA \pair \BBB = & \CCC \pair \groupenci{\delta}{2} \\
-      & + \brak{\sum_{j = 1}^{\inpnoprim} \inputs_j  \groupenci{u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{1}} \pair \groupenci{1}{2} \\
+      & + \brak{\sum_{j = 0}^{\inpnoprim} \inputs_j  \groupenci{u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{1}} \pair \groupenci{1}{2} \\
       & + \groupenci{\alpha}{1} \pair \groupenci{\beta}{2}
     \end{align*}
   \end{compactenum}
@@ -111,7 +117,7 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
       & \CCC \gets \frac{1}{\delta} \cdot
       \begin{aligned}[t]
         & \bigg[ \AAA^* \BBB^* \groupenci{1}{1} + \AAA^* \groupenci{\beta}{1} + \BBB^* \groupenci{\alpha}{1} \\
-        & \ \ - \sum_{j = 1}^{\inpnoprim} \inputs_j \groupenci{ u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{1} \bigg]
+        & \ \ - \sum_{j = 0}^{\inpnoprim} \inputs_j \groupenci{ u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{1} \bigg]
       \end{aligned}
     \end{align*}
   \end{compactenum}
