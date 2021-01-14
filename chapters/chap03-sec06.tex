@@ -82,9 +82,8 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
     \begin{align*}
       \AAA \gets & \sum_{j = 1}^\inpno \inputs_j \groupenci{u_j (\tau)}{1} + \groupenci{\alpha}{1} + r_a \groupenci{\delta}{1} \\
       \BBB \gets & \sum_{j = 1}^\inpno \inputs_j \groupenci{v_j (\tau)}{2} + \groupenci{\beta}{2} + r_b \groupenci{\delta}{2} \\
-      \CCC \gets & r_b \AAA + r_a \brak{\sum_{j = 1}^\inpno \inputs_j \groupenci{v_j (\tau)}{1} + \groupenci{\beta}{1}} + \\
-      & \sum_{j = \inpnoprim + 1}^\inpno \inputs_j \groupenci{\frac{u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{\delta}}{1} + \\
-      & \sum_{i =0}^{\constno - 2} \HHH_i \groupenci{\tau^i \ell (\tau) / \delta}{1}
+      \CCC \gets & \sum_{j = \inpnoprim + 1}^\inpno \inputs_j \groupenci{\frac{u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{\delta}}{1} + \sum_{i =0}^{\constno - 2} \HHH_i \groupenci{\tau^i \ell (\tau) / \delta}{1} + \\
+      &  r_b \AAA + r_a \brak{\sum_{j = 1}^\inpno \inputs_j \groupenci{v_j (\tau)}{1} + \groupenci{\beta}{1}} - r_a r_b \groupenci{\delta}{1}
     \end{align*}
   \end{compactenum}
   \pcreturn $\pi \gets (\AAA, \BBB, \CCC)$;
