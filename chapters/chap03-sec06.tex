@@ -14,7 +14,7 @@ We note that the requirement that there exists a $\constno$-th root of unity $\o
 %%
 %% The use of the $\constno$-th root of unity supports FFT transforms for fast polynomial manipulation. The requirement that $\constno$ is a power-of-2 dividing $\rBN$ allows FFT transforms to be used for fast evaluation of Langrange polynomials at $\tau$, in terms of a series of encoded powers $\smallset{ \groupenci{\tau}{1} }_{i = 0}^{\constno - 1}$ (as described in Section 3 of "A multi-party protocol for constructing the public parameters of the Pinocchio zk-SNARK" - https://eprint.iacr.org/2017/602.pdf)
 
-Furthermore, we denote by $\inputs \in \FF^{\inpno+1}$ the tuple of variables (ciruit wires) in the algebraic representation of the relation $\REL$, such that:
+Furthermore, we denote by $\inputs \in \FF^{\inpno+1}$ the tuple of variables (i.e.~``circuit wires'') in the algebraic representation of the relation $\REL$, such that:
 \begin{itemize}
     \item $\inputs_0 = 1_{\FF}$ (the multiplicative identity in $\FF$),
     \item $(\inputs_1, \ldots, \inputs_{\inpnoprim})$ represent variables in the statement,
