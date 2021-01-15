@@ -9,12 +9,17 @@ This repository contains:
 To compile the document, copy and paste the following command in your terminal:
 
 ```bash
-. ./script/compile.sh
+make specs
 ```
 
 To remove all intermediate/compilation files, run:
 ```bash
-. ./script/clean.sh
+make clean
+```
+
+To remove all intermediate/compilation files **and** the compiled `.pdf` files, run:
+```bash
+make clean-all
 ```
 
 ## Organization and conventions
