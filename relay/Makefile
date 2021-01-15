@@ -6,3 +6,9 @@ references := references.bib
 
 pdf: $(main_latex_file) $(latex_files) $(references)
 	latexmk -pdf -halt-on-error $<
+
+clean:
+	latexmk -c
+
+clean-all:
+	latexmk -C
