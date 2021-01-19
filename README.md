@@ -4,6 +4,35 @@ This repository contains:
 - the source code of the Zeth protocol specifications
 - the source code of the Zeth transaction relay document (see [here](relay)).
 
+## Dependencies
+
+On Debian-type systems, run:
+```console
+apt-get install -y -q \
+    texlive \
+    texlive-science \
+    texlive-fonts-extra \
+    texlive-plain-generic \
+    texlive-bibtex-extra \
+    biber \
+    latexmk \
+    perl \
+    make
+```
+
+On macOS, run:
+```console
+brew install --cask mactex
+# If latexmk is not available, install it by running: tlmgr install latexmk
+```
+
+To compile and edit the document from a configured docker container, run:
+```console
+docker build -t zeth-specs-dev -f Dockerfile .
+docker run -ti zeth-specs-dev
+# To move the .pdf on the host after compilation, you can use `docker cp`
+```
+
 ## Instructions to compile the Zeth protocol document
 
 To compile the document, copy and paste the following command in your terminal:

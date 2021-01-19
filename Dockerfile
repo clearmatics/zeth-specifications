@@ -19,7 +19,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
 # your desired text editor after launching the container, else
 # add a line here and rebuild the image.
 # e.g.
-# RUN apt-get install -y vi
+# RUN apt-get install vim -y
 
 WORKDIR /zeth-specs
 COPY . .
