@@ -1,0 +1,24 @@
+name: zeth-specs-ci-pull-request
+
+on: [pull_request]
+
+jobs:
+
+  build-macos:
+    runs-on: macos-10.15
+    steps:
+    - uses: actions/checkout@v1
+    - name: Install Dependencies
+      run: |
+          brew update || echo
+          brew install make
+          brew install --cask mactex
+          eval "$(/usr/libexec/path_helper)"
+          sudo tlmgr update --self
+          sudo tlmgr install latexmk
+          sudo tlmgr path add
+    - name: Compile
+      run: make
+
+# TODO: Add linux build from docker image
+

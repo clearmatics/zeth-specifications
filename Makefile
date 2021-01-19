@@ -1,7 +1,7 @@
 .PHONY: specs clean clean-all
 
 specs:
-	latexmk -pdf
+	latexmk -pdf -halt-on-error
 
 clean:
 	latexmk -c
