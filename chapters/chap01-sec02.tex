@@ -70,8 +70,8 @@ A raw transaction needs to be finalized to be accepted. In the context of this d
         Field           & Description & Data type \\ \toprule
         $\rawTx$      & Raw transaction object & $\txRawDType$ \\ \midrule
         $\sigv$         & Field $\sigv$ of $\ecdsa$ signature used for public key recovery & $\BB^{\byteLen}$\\ \midrule
-        $\sigr$         & Field $\sigr$ of $\ecdsa$ signature~\cite{rfc6979} & $\FFx{\pSecp}$\\ \midrule
-        $\sigs$         & Field $\sigs$ of $\ecdsa$ signature~\cite{rfc6979} & $\FFx{\pSecp}$\\ \bottomrule
+        $\sigr$         & Field $\sigr$ of $\ecdsa$ signature~\cite{rfc6979} & $\FFx{\rSecp}$\\ \midrule
+        $\sigs$         & Field $\sigs$ of $\ecdsa$ signature~\cite{rfc6979} & $\FFx{\rSecp}$\\ \bottomrule
     \end{tabular}
     \caption{Structure of a (finalized) \emph{transaction data type} $\txDType$}\label{preliminaries:tab:eth-signed}
 \end{table}

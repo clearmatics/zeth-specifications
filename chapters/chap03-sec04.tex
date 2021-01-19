@@ -11,6 +11,13 @@ In the two-tier signature scheme, the hash function $\crh$ only needs to be coll
 
 To turn this two-tier signature scheme into a one-time signature scheme, one simply has to define the one-time signature key generation \kgen~as the combination of both primary and secondary key generations of the two-tier (see~\cite[Section 6]{bellare2007two}). The one-time signing key (respectively verification key) of the one time signature scheme is defined as both the primary and secondary signing key (respectively verification key) of the two-tier scheme,~\cref{instantiation:fig:ots-from-two-tier-sig}
 
+% Local macros to align with Bellare and Shoup notations in
+% https://eprint.iacr.org/2007/273.pdf
+\newcommand{\ppk}{\ensuremath{\varstyle{ppk}}\xspace}
+\newcommand{\psk}{\ensuremath{\varstyle{psk}}\xspace}
+\newcommand{\spk}{\ensuremath{\varstyle{spk}}\xspace}
+\newcommand{\ssk}{\ensuremath{\varstyle{ssk}}\xspace}
+
 \begin{figure*}[ht]
     \begin{minipage}[t]{0.33\textwidth}
         \begin{align*}
@@ -18,20 +25,20 @@ To turn this two-tier signature scheme into a one-time signature scheme, one sim
             & \hk \sample \BB^{\kl} \\
             & \ggen \sample \gset^* \\
             & x \sample \FFx{p} \\
-            & \pk{}1 = (\hk, \ggen, \groupenc{x}) \\
-            & \sk{}1 = (\hk, \ggen, x) \\
+            & \ppk = (\hk, \ggen, \groupenc{x}) \\
+            & \psk = (\hk, \ggen, x) \\
             & y \sample \FFx{p} \\
-            & \pk{}2 =  \groupenc{y} \\
-            & \sk{}2 = (y, \groupenc{y}) \\
-            & \pk = (\pk{}1, \pk{}2) \\
-            & \sk = (\sk{}1, \sk{}2) \\
+            & \spk =  \groupenc{y} \\
+            & \ssk = (y, \groupenc{y}) \\
+            & \pk = (\ppk, \spk) \\
+            & \sk = (\psk, \ssk) \\
         \end{align*}
     \end{minipage}%
     \begin{minipage}[t]{0.33\textwidth}
         \begin{align*}
             & \underline{\sig(\sk, \msg):}\\
-            & \hk, \ggen, x = \sk.\sk{}1 \\
-            & y, \groupenc{y} = \sk.\sk{}2 \\
+            & \hk, \ggen, x = \sk.\psk \\
+            & y, \groupenc{y} = \sk.\ssk \\
             & c = \crh(\hk, \groupenc{y} \concat \msg) \\
             & \sigma = y \bmod p \\
             & \sigma\ \text{+=}\ c \cdot x \bmod p \\
@@ -41,8 +48,8 @@ To turn this two-tier signature scheme into a one-time signature scheme, one sim
     \begin{minipage}[t]{0.33\textwidth}
         \begin{align*}
         & \underline{\verify(\pk, \msg, \sigma):}\\
-        &  \hk, \ggen, \groupenc{x} = \pk.\pk{}1 \\
-        &  \groupenc{y} = \pk.\pk{}2 \\
+        &  \hk, \ggen, \groupenc{x} = \pk.\ppk \\
+        &  \groupenc{y} = \pk.\spk \\
         &  c = \crh(\hk, \groupenc{y} \concat \msg)\\
         &  \pcif \sigma = \groupenc{y} \otimes c \cdot \groupenc{x} \pcthen \\
         &  \pcind \pcreturn 1\\
@@ -77,8 +84,8 @@ We now describe the data types and operations associated with this signature sch
         \centering
         \begin{tabular}{cp{20em}c}
             Field & Description & Data type\\ \toprule
-            $pk1$ & Encoding of the scalar $x$ in the group & ${(\FFx{\rBN})}^{2}$ \\ \midrule
-            $pk2$ & Encoding of the scalar $y$ in the group & ${(\FFx{\rBN})}^{2}$ \\ \bottomrule
+            $\ppk$ & Encoding of the scalar $x$ in the group & $\gsetBN$ \\ \midrule
+            $\spk$ & Encoding of the scalar $y$ in the group & $\gsetBN$ \\ \bottomrule
         \end{tabular}
         \caption{\vkOtsDType~data type}\label{instantiation:tab:vk-ots-dtype}
         \end{table}
@@ -87,11 +94,10 @@ We now describe the data types and operations associated with this signature sch
         \centering
         \begin{tabular}{cp{20em}c}
             Field & Description & Data type\\ \toprule
-            $sk1$ & Scalar element $x$ & $\FFx{\rBN}$ \\ \midrule
-            $sk21$ & Scalar element $y$ & $\FFx{\rBN}$ \\ \midrule
-            $sk22$ & Encoding of the scalar $y$ in the group & ${(\FFx{\rBN})}^{2}$ \\ \bottomrule
+            $\psk$ & Scalar element $x$ & $\FFx{\rBN}$ \\ \midrule
+            $\ssk$ & Scalar element $y$ and its encoding in the group & $\FFx{\rBN} \times \gsetBN$ \\ \midrule
         \end{tabular}
         \caption{\skOtsDType~data type}\label{instantiation:tab:sk-ots-dtype}
         \end{table}
-    \item[\sigOtsDType] Denotes the signature data type associated with the one-time signature scheme. $\sigOtsDType$ is an alias for ${(\FFx{\rBN})}^{2}$.
+    \item[\sigOtsDType] Denotes the signature data type associated with the one-time signature scheme. $\sigOtsDType$ is an alias for $\FFx{\rBN}$.
 \end{description}
