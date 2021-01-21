@@ -48,7 +48,7 @@ The proof generation process can also be very memory intensive (in part due to t
 
 See \cref{appendix:sca-attacks:proof-generation} for a discussion of related security concerns.
 
-\subsection{Contract performance}\label{implementation:efficiency:contract-performance}
+\subsection{Merkle tree updates (on-chain)}\label{implementation:efficiency:merkle-tree-on-chain}
 
 For most components of the contract, the set of operations to be performed is strictly defined and the set of possible algorithmic optimizations that can be made is limited. In these cases, it is important to ensure that code is benchmarked and optimized to a reasonable degree, to minimize gas costs. We note that apart from the number and type of compute instructions executed, store and lookup operations have a significant impact on the gas used. In particular, storing new values is more expensive than overwriting existing values, and a gas rebate is made when contracts release stored values. See~\cite[Appendix H.1]{ethyellowpaper} for further details.
 
