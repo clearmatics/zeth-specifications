@@ -38,7 +38,7 @@ docker run -ti zeth-specs-dev
 To compile the document, copy and paste the following command in your terminal:
 
 ```bash
-make specs
+make
 ```
 
 To remove all intermediate/compilation files, run:
