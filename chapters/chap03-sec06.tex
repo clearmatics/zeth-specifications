@@ -109,14 +109,14 @@ Furthermore, we denote by $\inputs \in \FF^{\inpno+1}$ the tuple of variables (i
 %% Simulator
 \item[$\simulator(\REL, \srs, \td, \priminputs)$:]\hfill
   \begin{compactenum}[i.]
-  \item Sample $\AAA^* \sample \ZZ_p$; $\BBB^* \sample \ZZ_p$;
+  \item Sample $a \sample \ZZ_p$; $b \sample \ZZ_p$;
   \item Compute proof elements:
     \begin{align*}
-      & \AAA \gets \groupenci{\AAA^*}{1} + \groupenci{\alpha}{1} \\
-      & \BBB \gets \groupenci{\BBB^*}{2} + \groupenci{\beta}{2} \\
+      & \AAA \gets \groupenci{a}{1} + \groupenci{\alpha}{1} \\
+      & \BBB \gets \groupenci{b}{2} + \groupenci{\beta}{2} \\
       & \CCC \gets \frac{1}{\delta} \cdot
       \begin{aligned}[t]
-        & \bigg[ \AAA^* \BBB^* \groupenci{1}{1} + \AAA^* \groupenci{\beta}{1} + \BBB^* \groupenci{\alpha}{1} \\
+        & \bigg[ a b \groupenci{1}{1} + a \groupenci{\beta}{1} + b \groupenci{\alpha}{1} \\
         & \ \ - \sum_{j = 0}^{\inpnoprim} \inputs_j \groupenci{ u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{1} \bigg]
       \end{aligned}
     \end{align*}
