@@ -112,13 +112,13 @@ Furthermore, we denote by $\inputs \in \FF^{\inpno+1}$ the tuple of variables (i
   \item Sample $a \sample \ZZ_p$; $b \sample \ZZ_p$;
   \item Compute proof elements:
     \begin{align*}
-      & \AAA \gets \groupenci{a}{1} + \groupenci{\alpha}{1} \\
-      & \BBB \gets \groupenci{b}{2} + \groupenci{\beta}{2} \\
+      & \AAA \gets \groupenci{a}{1}\\
+      & \BBB \gets \groupenci{b}{2}\\
       & \CCC \gets \frac{1}{\delta} \cdot
-      \begin{aligned}[t]
-        & \bigg[ a b \groupenci{1}{1} + a \groupenci{\beta}{1} + b \groupenci{\alpha}{1} \\
-        & \ \ - \sum_{j = 0}^{\inpnoprim} \inputs_j \groupenci{ u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{1} \bigg]
-      \end{aligned}
+    %    \left( a b \groupenci{1}{1} - \beta \groupenci{\alpha}{1} 
+    %     - \sum_{j = 0}^{\inpnoprim} \inputs_j \groupenci{ u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)}{1} \right)
+        \left( a b - \alpha \beta  
+        - \sum_{j = 0}^{\inpnoprim} \inputs_j  (u_j (\tau) \beta + v_j (\tau) \alpha + w_j (\tau)) \right) \groupenci{1}{1}
     \end{align*}
   \end{compactenum}
   \pcreturn $\pi \gets (\AAA, \BBB, \CCC)$;
