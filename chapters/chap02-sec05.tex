@@ -31,7 +31,7 @@ Thus, $\mix$ proceeds as follows:
                 \[
                     \hsig = \crhhsig{\inp{\mix}.\primInp.\nfs{}, \inp{\mix}.\otsvk}
                 \]
-            \item Check that $\zkp$ is a valid zk-SNARK proof for $\inp{\mix}.\primInp$, i.e.~check that:
+            \item\label{zeth-protocol:process-tx:verify-zkp} Check that $\zkp$ is a valid zk-SNARK proof for $\inp{\mix}.\primInp$, i.e.~check that:
                 \[
                     \zksnark.\verifier(\pparams_{\zksnark}, \zkp, \inp{\mix}.\primInp) = \true
                 \]
@@ -40,10 +40,11 @@ Thus, $\mix$ proceeds as follows:
                     \nf{i} \not\in \nullifierset, \forall i \in [\jsin]
                 \]
                 where $\nullifierset$ is the set of all nullifiers that are ``declared'' on $\mixer$.
-            \item Check that $\inp{\mix}.\otssig$ is a valid signature of the $\ethereum{}$ sender's address $\addr$ (see~\cref{zeth-protocol:create-tx}) and the attributes of $\inp{\mix}$, to prevent transaction malleability (see~\cref{appendix:trnm}), i.e.~check that:
+            \item\label{zeth-protocol:process-tx:check-otsig} Check that $\inp{\mix}.\otssig$ is a valid signature of the $\ethereum{}$ sender's address $\addr$ (see~\cref{zeth-protocol:create-tx}) and the attributes of $\inp{\mix}$, to prevent transaction malleability (see~\cref{appendix:trnm}), i.e.~check that:
                 \begin{align*}
                     & \otsigscheme.\verify(\inp{\mix}.\otsvk, \msg, \inp{\mix}.\otssig) = \true \\
-                    & \text{where} \ \msg = \crhots{\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\zkp \concat \inp{\mix}.\ciphers}
+                    & \text{where} \ \datatobesigned = \addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\zkp \concat \inp{\mix}.\ciphers, \\
+                    & \text{and} \ \msg = \crhots{\datatobesigned}
                 \end{align*}
             \item Check that $\inp{\mix}.\primInp.\mkroot$ corresponds to a valid state of the Merkle tree held on $\mixer$, i.e.~check that:
                 \[
@@ -70,3 +71,22 @@ Thus, $\mix$ proceeds as follows:
             \item Emit an event (\cref{sssec:ethereum-events}) $\evMixOut$ of type \mixEventDType, containing the new root $\mkroot'$ of the Merkle tree of commitments, the nullifiers $\indexedset{\nf{i}}{i \in [\jsin]}$, commitments to the newly created \zethnotes $\inp{\mix}.\primInp.\cms{}$, and the corresponding ciphertexts $\inp{\mix}.\primInp.\ciphers$.
         \end{enumerate}
 \end{enumerate}
+
+\begin{remark}\label{zeth-protocol:process-tx:dispatch-call}
+  In some deployments, verification of the zk-SNARK proof may be delegated to some trusted external mechanism, and the proof $\zkp$ may not be available to the mixer contract.  (As an example, consider the case where multiple \zeth~transactions are aggreagted by a system such as that described in \cite{rondelet2020zecale}. The multiple zk-SNARK proofs become auxiliary inputs to a ``wrapping'' zk-SNARK which checks their validity via a single proof verification. A modified version of the \mix~function receives \mix~parameters from a trusted contract without $\inp{\mix}.\zkp$.)
+
+  In this case, the value of $\datatobesigned$ in \cref{zeth-protocol:process-tx:check-otsig} may be replaced by:
+  \[
+  \datatobesigned = \addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\ciphers, \\
+  \]
+  and the equivalent change must be made when generating the \mix~parameters, as described in \cref{zeth-protocol:mix-inp:otsig-for-dispatch-call}. The scheme used to verify the zk-SNARK proof must specify exactly how the contract should be modified, including any further checks that must be carried out. In the proof-of-concept \zeth~implementation, a modified entry point is included (alongside the regular \mix~entry point), which:
+  \begin{itemize}
+  \item Checks that the \mixer~contract has been deployed with the (immutable) address of a trusted contract, permitted to call this entry point. Otherwise the contract aborts.
+  \item Check that the caller $msg.sender$ matches the permitted caller, set at deployment time, and aborts otherwise.
+  \item Performs all checks related to the \mix~parameters, except \cref{zeth-protocol:process-tx:verify-zkp}, and the modification to \cref{zeth-protocol:process-tx:check-otsig} described in this remark.
+  \end{itemize}
+
+  Further, the \zeth~client implementation includes a flag to enable the corresponding change described in \cref{zeth-protocol:mix-inp:otsig-for-dispatch-call} (to generate a signature on the modified $\datatobesigned$). Naturally, the \emph{dispatch} entry point can only be used with parameters generated using this flag (otherwise the signature check will fail).
+
+  Although this modification is not part of the core protocol, we mention it here for completeness and to justify the associated code in the proof-of-concept implementation. Such a modification \MUSTNOT{} be implemented except as described by the secure external scheme for delegating proof verification.
+\end{remark}
