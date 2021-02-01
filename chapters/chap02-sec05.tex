@@ -26,7 +26,7 @@ Thus, $\mix$ proceeds as follows:
             \hsig &= \unpack{\inp{\mix}.\primInp.\hsig, \inp{\mix}.\primInp.\resbits}{\hsig}
         \end{align*}
     \item Check the validity of the $\zethTx$ object ($\zethVerifyTx$):
-        \begin{itemize}
+        \begin{enumerate}
             \item Check that $\inp{\mix}.\primInp.\hsig$ is correctly computed, i.e.~check that the following equation holds (to prevent transaction malleability, see~\cref{appendix:trnm}):
                 \[
                     \hsig = \crhhsig{\inp{\mix}.\primInp.\nfs{}, \inp{\mix}.\otsvk}
@@ -54,9 +54,9 @@ Thus, $\mix$ proceeds as follows:
                 \[
                     \vin = \zethTx.\val
                 \]
-        \end{itemize}
+        \end{enumerate}
     \item If all checks above pass, i.e.~if $\zethVerifyTx(\zethTx)$ returns $\true$, then the following additional modifications are made in $\wstate$:
-        \begin{itemize}
+        \begin{enumerate}
             \item Add the commitments $\inp{\mix}.\primInp.\cms{}$ to the Merkle tree held on $\mixer$.
             \item $\rootset' \gets \rootset' \cup \smallset{\mkroot'}$, where $\mkroot'$ is the Merkle root of the Merkle tree after insertion of the commitments $\inp{\mix}.\primInp.\cms{}$ in the Merkle tree.
             \item $\nullifierset \gets \nullifierset \cup \indexedset{\nf{i}}{i \in [\jsin]}$, i.e.~the nullifiers $\nfs{}$ become ``declared''.
@@ -68,5 +68,5 @@ Thus, $\mix$ proceeds as follows:
                     \item $\mixer.\balance = \mixer.\balance - \vout$
                 \end{itemize}
             \item Emit an event (\cref{sssec:ethereum-events}) $\evMixOut$ of type \mixEventDType, containing the new root $\mkroot'$ of the Merkle tree of commitments, the nullifiers $\indexedset{\nf{i}}{i \in [\jsin]}$, commitments to the newly created \zethnotes $\inp{\mix}.\primInp.\cms{}$, and the corresponding ciphertexts $\inp{\mix}.\primInp.\ciphers$.
-        \end{itemize}
+        \end{enumerate}
 \end{enumerate}
