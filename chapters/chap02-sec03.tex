@@ -51,9 +51,9 @@ In order for $\zparty{U}$ to transact via \zeth, $\zparty{U}$ needs to create an
 \end{enumerate}
 
 \begin{remark}\label{zeth-protocol:mix-inp:otsig-for-dispatch-call}
-  In some specific cases (where the proof $\inp{\mix}.\zkp$ will be verified by some trusted external mechanism), as described in \cref{zeth-protocol:process-tx:dispatch-call}a, it may be necessary to replace $\datatobesigned$ in \cref{zeth-protocol:mix-inp:create-otsig} with:
+  \cref{zeth-protocol:process-tx:dispatch-call} describes a situation in which the proof data $\inp{\mix}.\zkp$ is not available (having been verified by some external mechanism). In such cases, $\datatobesigned$ in \cref{zeth-protocol:mix-inp:create-otsig} \MAY{} be replaced with:
   \[
   \datatobesigned = \eparty{S}.\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\ciphers
   \]
-  This change, mentioned here for completeness only, \MUSTNOT{} be used except as described in \cref{zeth-protocol:process-tx:dispatch-call}.  In general the original form above \MUST{} be used.
+  This modification, mentioned here for completeness, \MUSTNOT{} be used except as described in \cref{zeth-protocol:process-tx:dispatch-call}.
 \end{remark}

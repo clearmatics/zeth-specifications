@@ -73,20 +73,23 @@ Thus, $\mix$ proceeds as follows:
 \end{enumerate}
 
 \begin{remark}\label{zeth-protocol:process-tx:dispatch-call}
-  In some deployments, verification of the zk-SNARK proof may be delegated to some trusted external mechanism, and the proof $\zkp$ may not be available to the mixer contract.  (As an example, consider the case where multiple \zeth~transactions are aggreagted by a system such as that described in \cite{rondelet2020zecale}. The multiple zk-SNARK proofs become auxiliary inputs to a ``wrapping'' zk-SNARK which checks their validity via a single proof verification. A modified version of the \mix~function receives \mix~parameters from a trusted contract without $\inp{\mix}.\zkp$.)
+  In some deployments, verification of the zk-SNARK proof $\zkp$ may be delegated to an external mechanism (in such a way that integrity of the system can still be guaranteed), and $\zkp$ may not appear as public data on-chain. For example, where multiple \zeth~transactions are aggregated by a system such as that described in \cite{rondelet2020zecale}, the original zk-SNARK proofs become auxiliary inputs to a ``wrapping'' SNARK, which checks their validity via a single proof verification. A modified version of the \mix~function receives \mix~parameters from a specific contract (known to behave correctly with respect to the delegation protocol) without $\inp{\mix}.\zkp$.
 
   In this case, the value of $\datatobesigned$ in \cref{zeth-protocol:process-tx:check-otsig} may be replaced by:
   \[
   \datatobesigned = \addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\ciphers, \\
   \]
-  and the equivalent change must be made when generating the \mix~parameters, as described in \cref{zeth-protocol:mix-inp:otsig-for-dispatch-call}. The scheme used to verify the zk-SNARK proof must specify exactly how the contract should be modified, including any further checks that must be carried out. In the proof-of-concept \zeth~implementation, a modified entry point is included (alongside the regular \mix~entry point), which:
+  and the equivalent change must be made when generating the \mix~parameters, as described in \cref{zeth-protocol:mix-inp:otsig-for-dispatch-call}. The transaction, as presented to an aggregator, is malleable since the $\groth$ proofs can be modified in a way that preserves the validity. However, once aggregated, the transaction proof data for the transaction does not appear on chain (it is an auxiliary input to some externally generated ``wrapping'' poof). Hence, the transaction can only be identified by the remaining public data, which is protected by the one-time signature $\otsSigma$, and hence non-malleable.
+
+  The external scheme used to verify the zk-SNARK proof must specify the exact requirements of the contact and how it should be modified, including any further checks that must be carried out. Thus, this modification is not part of the core \zeth~protocol described in this document, but an augmentation forming part of an external protocol. However, for completeness, we briefly describe a \emph{dispatch} entry point in the proof-of-concept \mixer~implementation which supports delegation of proof verification, as described above. The \emph{dispatch} entry point performs the following checks:
   \begin{itemize}
-  \item Checks that the \mixer~contract has been deployed with the (immutable) address of a trusted contract, permitted to call this entry point. Otherwise the contract aborts.
-  \item Check that the caller $msg.sender$ matches the permitted caller, set at deployment time, and aborts otherwise.
-  \item Performs all checks related to the \mix~parameters, except \cref{zeth-protocol:process-tx:verify-zkp}, and the modification to \cref{zeth-protocol:process-tx:check-otsig} described in this remark.
+  \item Check that the \mixer~has been deployed with the (immutable) address of a trusted contract, permitted to call this entry point. Otherwise, abort.
+  \item Check that the caller $msg.sender$ matches the permitted caller set at deployment time, otherwise abort.
+  \item Perform all checks related to the \mix~parameters, except \cref{zeth-protocol:process-tx:verify-zkp}, with the modification to \cref{zeth-protocol:process-tx:check-otsig} described in this remark.
   \end{itemize}
+  After these checks, the state-transition continues as normal.
 
-  Further, the \zeth~client implementation includes a flag to enable the corresponding change described in \cref{zeth-protocol:mix-inp:otsig-for-dispatch-call} (to generate a signature on the modified $\datatobesigned$). Naturally, the \emph{dispatch} entry point can only be used with parameters generated using this flag (otherwise the signature check will fail).
+  The \zeth~client implementation is also augmented to include a flag to enable the corresponding change described in \cref{zeth-protocol:mix-inp:otsig-for-dispatch-call} (to generate a signature on the modified $\datatobesigned$). Naturally, the \emph{dispatch} entry point can only be used with parameters generated using this flag (otherwise the signature check will fail).
 
-  Although this modification is not part of the core protocol, we mention it here for completeness and to justify the associated code in the proof-of-concept implementation. Such a modification \MUSTNOT{} be implemented except as described by the secure external scheme for delegating proof verification.
+  Such modifications \MUSTNOT{} be implemented except as described by the secure external scheme for delegating proof verification.
 \end{remark}
