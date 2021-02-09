@@ -50,9 +50,23 @@ See \cref{appendix:sca-attacks:proof-generation} for a discussion of related sec
 
 \subsection{Zero-knowledge proof verification (on-chain)}
 
-Verification of the joinsplit statement via a zero-knowledge proof represents a significant computation, which must be carried out on-chain (by the \mixer~contract) for each valid \zeth~transaction. As described in \cref{instantiation:zksnark}, this verification cost increases linearly with the number of primary inputs to the statement - a scalar multiplication of a group element and a group addition operation must be performed for each primary input. A technique presented in \cite[Section 4.5.1]{GGPR13} can be applied to reduce this linear cost.
+Verification of the joinsplit statement via a zero-knowledge proof represents a significant computation, which must be carried out on-chain (by the \mixer~contract) for each valid \zeth~transaction. As described in \cref{instantiation:zksnark}, this verification cost increases linearly with the number of primary inputs to the statement -- a scalar multiplication of a group element and a group addition operation must be performed for each primary input. A technique presented in \cite[Section 4.5.1]{GGPR13} can be applied to reduce this linear cost.
 
-Given a relation $\REL$ with language $\LANG$, and a collision resistant hash function $H : \LANG \to \FFx{\rCURVE}$, let $\REL^\prime = \LANG^\prime \times \REL$ be a new relation, with corresponding language $\LANG^\prime \subset \FFx{\rCURVE}$, such that $(\priminputs^\prime, \auxinputs^\prime) \in \REL^\prime$ iff $\priminputs^\prime = H(\priminputs)$, where $\auxinputs^\prime = (\priminputs, \auxinputs) \in \REL$. To verify that $\priminputs \in \LANG$, a verifier can compute $H(\priminputs)$ and check that $H(\priminputs) \in \LANG^\prime$. (By construction, if $H(\priminputs) \in \LANG^\prime$, there exists $(\priminputs_0, \auxinputs) \in \REL$, i.e. $\priminputs_0 \in LANG$ with $H(\priminputs_0) == H(\priminputs)$. By the collision-resistance of $H$ we have $\priminputs_0 == \priminputs$ with overwhelming probability.
+Given a relation $\REL$, the corresponding language $\LANG$, and a collision
+resistant hash function $H : \LANG \to \FFx{\rCURVE}$, let
+\[\REL^\prime =
+\left\{ (\priminputs^\prime, \auxinputs^\prime) \mid \priminputs' = H(\priminputs),
+  \auxinputs' = (\priminputs, \auxinputs), \allowbreak \text{ for } \allowbreak (\priminputs,
+  \auxinputs) \in \REL
+\right\}
+\]
+%$\LANG^\prime \times \REL$
+be a new relation, with corresponding language $\LANG^\prime \subset
+\FFx{\rCURVE}$
+%, such that $(\priminputs^\prime, \auxinputs^\prime) \in \REL^\prime$ iff
+%$\priminputs^\prime = H(\priminputs)$, where $\auxinputs^\prime = (\priminputs,
+%\auxinputs) \in \REL$.
+To (probabilistically) verify that $\priminputs \in \LANG$, a verifier can compute $H(\priminputs)$ and check that $H(\priminputs) \in \LANG^\prime$. (By construction, if $H(\priminputs) \in \LANG^\prime$, there exists $(\priminputs_0, \auxinputs) \in \REL$, i.e. $\priminputs_0 \in \LANG$ with $H(\priminputs_0) = H(\priminputs)$. By the collision-resistance of $H$ we have $\priminputs_0 = \priminputs$ with overwhelming probability.
 
 Informally, the original circuit is transformed as follows:
 \begin{itemize}
