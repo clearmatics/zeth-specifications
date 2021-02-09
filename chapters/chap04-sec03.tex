@@ -89,7 +89,7 @@ The primary component in which algorithmic optimizations can be made is the Merk
 
 As in \cref{implementation:efficiency:client-performance}, the simplest possible implementation which stores only the data items at the leaves of the tree, requires the full root to be recomputed, involving $2^\mkTreeDepth - 1$ hash invocations. This quickly becomes impractical for non-trivial values of $\mkTreeDepth$.
 
-The first-pass optimization (also described in \cref{implementation:efficiency:client-performance}) can be used to ensure that the cost of updating the Merkle tree (number of hash computations, stores and loads) is bounded by a constant that is linear in the Merkle tree depth. This is the strategy used in the proof-of-concept implementation of $\mixer$.
+The first-pass optimization (also described in \cref{implementation:efficiency:client-performance}) can be used to ensure that the cost of updating the Merkle tree (number of hash computations, stores and loads) is bounded by a function linear in the Merkle tree depth. This is the strategy used in the proof-of-concept implementation of $\mixer$.
 
 It may be possible to gain further improvements in gas costs by discarding nodes from the Merkle tree that are not required. Unlike clients, $\mixer$ is only required to compute the new Merkle root, and does not need to create or validate Merkle proofs (as these are checked as part of the zero-knowledge proof). Consequently, \emph{all} nodes in a sub-tree can be discarded when the sub-tree is full, and the optimization is much simpler to implement than on the client.
 
