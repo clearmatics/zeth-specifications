@@ -48,7 +48,34 @@ The proof generation process can also be very memory intensive (in part due to t
 
 See \cref{appendix:sca-attacks:proof-generation} for a discussion of related security concerns.
 
-\subsection{Contract performance}\label{implementation:efficiency:contract-performance}
+\subsection{Zero-knowledge proof verification (on-chain)}
+
+Verification of the joinsplit statement via a zero-knowledge proof represents a significant computation, which must be carried out on-chain (by the \mixer~contract) for each valid \zeth~transaction. As described in \cref{instantiation:zksnark}, this verification cost increases linearly with the number of primary inputs to the statement -- a scalar multiplication of a group element and a group addition operation must be performed for each primary input. A technique presented in \cite[Section 4.5.1]{GGPR13} can be applied to reduce this linear cost.
+
+Given a relation $\REL$, the corresponding language $\LANG$, and a collision resistant hash function $H : \LANG \to \FFx{\rCURVE}$, let
+\[
+  \REL^\prime =
+  \left\{ (\priminputs^\prime, \auxinputs^\prime) \mid \priminputs' = H(\priminputs),
+    \auxinputs' = (\priminputs, \auxinputs), \allowbreak \text{ for } \allowbreak (\priminputs,
+    \auxinputs) \in \REL
+  \right\}
+\]
+be a new relation, with corresponding language $\LANG^\prime \subset \FFx{\rCURVE}$. To (probabilistically) verify that $\priminputs \in \LANG$, a verifier can compute $H(\priminputs)$ and check that $H(\priminputs) \in \LANG^\prime$.  (By construction, if $H(\priminputs) \in \LANG^\prime$, there exists $(\priminputs_0, \auxinputs) \in \REL$, i.e. $\priminputs_0 \in \LANG$ with $H(\priminputs_0) = H(\priminputs)$. By the collision-resistance of $H$ we have $\priminputs_0 = \priminputs$ with overwhelming probability.)
+
+Informally, the original circuit is transformed as follows:
+\begin{itemize}
+  \item all \emph{primary} inputs $\priminputs$ become \emph{auxiliary} inputs,
+  \item a single primary input $h$ is added, and
+  \item the statement is extended such that $h$ is the digest of the original primary inputs.
+\end{itemize}
+
+This slightly increases the complexity of the statement to be proven, adding to the cost of generating proofs $\pi^\prime$ for the augmented statement, but minimizes the linear component of the verification cost (since the verifier must now only process a single primary input). Note that this technique does not require any change to the initial statement itself (in this case the joinsplit statement described in \cref{zeth-protocol:statement}), or the data upon which it operates. The \mixer~contract must perform this hash step before the zk-SNARK verification, although we note that the parameters are also unchanged.
+
+In the proof-of-concept implementation of Zeth, this technique is employed using a snark-friendly hash function constructed as follows.
+
+The Merkle-Damgård construction (see~\cite[Chapter 9]{menezes1996handbook}) can be applied to a collision-resistant compression function to yield a collision-resistant hash function, accepting an arbitrary length input. We apply this to the compression function described in \cref{instantiation:mkhash}, which is chosen to be collision resistant over domain $\FFx{\rCURVE}$, and efficiently implementable as arithmetic constraints. Thereby, the resulting hash function, in common with the underlying compression function, can also be efficiently implemented to hash lists of elements in $\FFx{\rCURVE}$ (and this is exactly the form of the original primary inputs).
+
+\subsection{Merkle tree updates (on-chain)}\label{implementation:efficiency:merkle-tree-on-chain}
 
 For most components of the contract, the set of operations to be performed is strictly defined and the set of possible algorithmic optimizations that can be made is limited. In these cases, it is important to ensure that code is benchmarked and optimized to a reasonable degree, to minimize gas costs. We note that apart from the number and type of compute instructions executed, store and lookup operations have a significant impact on the gas used. In particular, storing new values is more expensive than overwriting existing values, and a gas rebate is made when contracts release stored values. See~\cite[Appendix H.1]{ethyellowpaper} for further details.
 
