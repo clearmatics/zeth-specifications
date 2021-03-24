@@ -28,7 +28,51 @@ Since block ciphers are usually defined over the product space of keys and messa
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
-As in ~\cite{albrecht2016mimc}, we consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$ (such that exponentiation by $e$ yields a permutation on $\FFx{\rCURVE}$).  To achieve a security of $\secpar$, we require that $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil$.
+In the original design proposed in the $\mimc{}$ paper~\cite{albrecht2016mimc}, the round function is represented as a ``shifted'' permutation via a cubic map (i.e.~the round input message is added to the key and round constant - the ``shift'' -, and a map $x^{\exponent{}}$ permutes the element in the underlying field $\FF_{p^n}$, $p$ prime, $n \geq 1$, where $\gcd(\exponent{}, p - 1) = 1$). This permutation function (hence invertible), acts as a substitution box (S-box) and brings non-linearity to the scheme, as usually required for security.
+
+In other sections of the paper, however, the $\mimc{}$ authors proposed generalizations to the initial design. These allow to use $\mimc{}$:
+\begin{itemize}
+    \item over prime fields of odd characteristic ($p > 2$),
+    \item with different permutation polynomials (i.e.~using different exponents in the round function)
+\end{itemize}
+
+Understanding the relationships between these various settings is required if one desires to use $\mimc{}$ to operate over prime fields of odd characteristic with a non-cubic permutation monomial.
+
+\paragraph{Statistical attacks.}
+
+In the ``Security Analysis'' section~\cite[Section 4.2]{albrecht2016mimc}, the authors explain that since the cubic function is an APN, linear attacks pose no threat to $\mimc{}$.
+
+We observe that such claim aligns with~\cite[Theorem 2]{DBLP:journals/tit/HellesethRS99}. In fact if $\mimc{}$ is operated over $\FF_{2^n}$, it is easy to see that the degree of the cubic map can be expressed as $3 = 2^t + 1$, where $t = 1$, and where $n$ and $1$ are trivially coprime. This case is covered by~\cite[Theorem 2]{DBLP:journals/tit/HellesethRS99} which confirms that the cubic mapping $S(x) = x^3$ over $\FF_{2^n}$ is an APN/2-uniform mapping, as desired for differential and linear cryptanalysis resistance.
+
+Likewise, in~\cite[Section 5.1]{albrecht2016mimc} the authors claim that, provided that the cubic map is a permutation over the prime field of interest, then $\mimc{}$ can be used to operate over prime fields of odd characteristic.
+
+In this case too, $S(x) = x^3$ is APN, provided $p \neq 3$ (as reported by~\cite[Theorem 3, item 3]{DBLP:journals/tit/HellesethRS99}).
+
+\medskip
+
+Furthermore, while~\cite[Section 5.3]{albrecht2016mimc} proposes to relax the choice of the map degree to be of the general form $2^t \pm 1$, so long as the map remains a permutation, the authors showed that, out of these ``exponent shapes'', the case $\exponent{} = 2^t + 1$ is, unfortunately, not as good as it initially seems, in $\FF_{2^n}$, due to term cancellation in fields of characteristic 2 that renders the resulting polynomial ``sparse''\footnote{Since the round function is a polynomial, the whole scheme can be seen as a polynomial which overall degree and ``sparsity'' are a function of the underlying field characteristic, degree of the round function and number of rounds.} (the degree of the polynomial will be bounded by $3^r$, $r$ being the number of rounds, which does not constitute an improvement on the status quo (i.e. $\exponent{} = 3$)). For this very reason, exponents of the form $2^t + 1, t > 1$, may not be of interest (sparse polynomial and more expensive arithmetic in the round function).
+
+Likewise, if the map degree $\exponent{}$ is chosen to be of the form $2^t + 1$, with $\gcd(\exponent{}, 2^n - 1) = 1$ in the context of $\mimc{}$ over $\FF_{2^n}$, it is necessary to bear in mind that, without the extra requirement that $t$ needs to be coprime with $n$, then this case is not covered by~\cite[Theorem 2]{DBLP:journals/tit/HellesethRS99}, and $S(x) = x^\exponent{}$ does not have differential 2-uniformity anymore - violating the claim made in~\cite[Section 4.2]{albrecht2016mimc} paragraph "Linear Attacks" about optimal resistance against linear and differential cryptanalysis. (In fact, depending on the value of $g = gcd(n, k)$, the map $S(x) = x^{2^t + 1}$ would be differentially $2^g$-uniform~\cite{DBLP:conf/eurocrypt/Nyberg93} - contrasting with the setting considered in paragraph "Linear attacks" where $\exponent{} = 3$).
+The case $\exponent{} = 2^t - 1$ does not yield an APN over $\FF_{2^n}$ either (except in the case $t = 2$ which reduces to the case $2^{t'} + 1$ for $t' = 1$). Similar observations show that picking map degrees of the form $2^t \pm 1$ in the context where $\mimc{}$ is defined over prime fields $\FF_p$, $p$ odd prime, do not yield APNs.
+
+\paragraph{Algebraic attacks.}
+
+While choosing permutation monomials of degree $\exponent{} = 2^t \pm 1$ may not constitute APNs in the various $\mimc{}$ settings, it is important to note (as highlighted by Lorenzo Grassi in~\cite{mimc-security-communications}) that when working over finite fields $\FF_p$ of \emph{large} prime characteristic $p$ or extension fields $\FF_{2^n}$ of large extension degrees $n$, the algebraic attacks (exploiting the low-degree of the cipher) are much more efficient than the statistical attacks (i.e.~they can break a much higher number of rounds).
+As such, it is expected/conjectured that the number of rounds required for preventing algebraic attacks are higher than the number of rounds required for preventing statistical attacks. In other words, if the scheme is secure against algebraic adversaries, it is expected to remain secure against statistical adversaries.
+
+Importantly, resistance against algebraic cryptanalysis requires that the polynomial that defines the cipher is of maximum degree and full (or at least, very dense).
+
+\paragraph{Additional notes on the degree of the permutation}
+
+Finally, and in addition to the points above-listed, it is worth noting that small exponents (small with regard to the cardinality of the underlying field) should be favoured as much as possible to follow the security analysis proposed in~\cite{albrecht2016mimc}.
+
+In fact, considering the case where $\mimc{}$ is used over a large prime field $\FF_p$, $p$ prime, and in the context of differential attacks, each input difference is mapped into an output difference (after 1 round) with probability $(\exponent{}-1)/p$ (this is obtained by considering the number of solutions to the polynomial equality $S(x + d) - S(x) = D$, where $d$ (resp.~$D$) is the input (resp.~output) difference). As such, if the exponent is much smaller than the size of the field, few rounds are sufficient to prevent the differential attacks.
+
+\begin{remark}
+    Having a ``big'' exponent is not sufficient to prevent all type of attacks. If we consider the case $S(x) = 1/x = x^{p-2}$ in $\FF_p$ (i.e.~the power map with maximum degree, see Fermat's little theorem), for instance, then, independently of the number of rounds, the resulting function representing $\mimc{}$ instantiated with such round function will yield a fraction where the numerator and the denominator are both degree-1 polynomials, making the scheme subject to interpolation attacks~\cite{DBLP:conf/fse/JakobsenK97}.
+\end{remark}
+
+In the sections below, and as in ~\cite{albrecht2016mimc}, we will consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$ (such that exponentiation by $e$ yields a permutation on $\FFx{\rCURVE}$). We note that the term cancellation happening with exponents of the form $\exponent{} = 2^t+1$ does not immediatelly translate to the context where $\mimc{}$ is carried out over prime fields of large odd characteristic. To achieve a security of $\secpar$, we require that $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil$.
 
 We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
 
@@ -129,6 +173,7 @@ where $\rounds = \lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \rceil$, $\mul
 
 For several concrete values of $\exponent{}$, the number of $\rounds$ required to attain the desired security level, along with the number of constraints, are shown in~\cref{table:mimc-exp-analysis}.
 
+\definecolor{Gray}{gray}{0.9}
 \begin{table}
   \centering
     \begin{minipage}[t]{0.50\textwidth}
@@ -138,25 +183,30 @@ For several concrete values of $\exponent{}$, the number of $\rounds$ required t
             \multirow{2}{*}{$\exponent{}$} & \multicolumn{2}{c}{\BNCurve} & \multicolumn{2}{c}{\BLSCurve} \\ [0.5ex]
             & $\rounds$ & $\constraints$ & $\rounds$ & $\constraints$ \\ [0.5ex]
             \midrule
+            \rowcolor{Gray}
             5 & 110 & 331 & & \\
             7 & 91 & 365 & & \\
+            \rowcolor{Gray}
             17 & 65 & 316 & 62 & 311 \\
             31 & 52 & 417 & 51 & 409 \\
             127 & 37 & 445 & 37 & 445 \\
+            \rowcolor{Gray}
             257 & 32 & 289 & 32 & 289 \\
             511 & 29 & 465 & & \\
             2047 & 24 & 481 & 23 & 461 \\
             8191 & 20 & 481 & 20 & 481 \\
             32676 & 17 & 477 & & \\
+            \rowcolor{Gray}
             65537 & 16 & 273 & 16 & 273 \\
             131071 & 15 & 481 & 15 & 481 \\
             524287 & 14 & 505 & 14 & 505 \\
+            \rowcolor{Gray}
             1048577 & 13 & 274 & 13 & 274 \\
             2097151 & 13 & 521 & & \\
             \bottomrule
         \end{tabular}
     \end{minipage}%
-    \caption{Arithmetic constraints required to represent \mimcMP{} as an R1CS program, for different exponents $\exponent{}$ and curves. Missing entries where $\gcd(\exponent{},\rCURVE - 1) \neq 1$}\label{table:mimc-exp-analysis}
+    \caption{Arithmetic constraints required to represent \mimcMP{} as an R1CS program, for different exponents $\exponent{}$ and curves. Gray lines are representing exponents of shape $2^t + 1$. Missing entries where $\gcd(\exponent{},\rCURVE - 1) \neq 1$}\label{table:mimc-exp-analysis}
 \end{table}
 
 For the case of \BNCurve~we set $\exponent{} = 7$ and $\rounds{} = 91$, targetting a $254$-bit security level. For \BLSCurve~we set $\exponent{} = 31$ and $\rounds{} = 51$, targetting a $253$-bit security level. These values are chosen such that they satisfy the requirement that $\gcd(\exponent{},\rCURVE - 1) = 1$ and give a good balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract.
