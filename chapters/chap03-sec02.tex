@@ -100,8 +100,14 @@ It is important to note that the security analysis related to algebraic attacks 
 
 \medskip
 
-In the sections below, and as in ~\cite{albrecht2016mimc}, we will consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$ (such that exponentiation by $\exponent{}$ yields a permutation on $\FFx{\rCURVE}$). We note that the term cancellation happening with exponents of the form $\exponent{} = 2^t+1$ does not immediatelly translate to the context where $\mimc{}$ is carried out over prime fields of large odd characteristic. To achieve a security of $\secpar$, we require that $\rounds \geq \secpar \log_{\exponent}(2)$.
+In the sections below, and as in ~\cite{albrecht2016mimc}, we will consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$ (such that exponentiation by $\exponent{}$ yields a permutation on $\FFx{\rCURVE}$). We note that the term cancellation happening with exponents of the form $\exponent{} = 2^t+1$ does not immediatelly translate to the context where $\mimc{}$ is carried out over prime fields of large odd characteristic. In fact, in the case of $\FFx{\rCURVE}$, where $\rCURVE > \binom{\exponent}{\lfloor \exponent / 2
+  \rfloor}$, polynomials $(x + y)^{\exponent}$ are not sparse. This comes from the \emph{Binomial Theorem}
+\[
+  (x + y)^\exponent = \sum_{i = 0}^{\exponent} \binom{\exponent}{i} x^{i}y^{\exponent - i}
+\]
+and the obervation that if $\binom{\exponent}{i} < \rCURVE$ then $\binom{\exponent}{i} \bmod \rCURVE = \binom{\exponent}{i}$, hence ensuring that all the polynomial coefficients are greater than $0$, and thus that the polynomial is dense.
 
+To achieve a security of $\secpar$, we require that $\rounds \geq \secpar \log_{\exponent}(2)$.
 Importantly, since we use $\mimc{}$ over prime fields $\FFx{\rCURVE}$ which are large (where $\rCURVE$ is the prime characteristic of the scalar field of an elliptic curve group, such that $\ceil{\log_2(\rCURVE)} > \secpar$ (i.e.~longer elements are needed in ECC to resist algebraic attacks such that NFS-based attacks on discrete logs for instance)), then, picking $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil > \secpar \log_{\exponent}(2)$ provides a margin of safety on the number of rounds selected to instantiate $\mimc{}$ with security parameter $\secpar$.
 
 We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
