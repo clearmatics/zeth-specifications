@@ -19,7 +19,7 @@ In this section we describe the instantiation of $\mkhash$ with a compression fu
 \end{figure*}
 
 \mimcEnc{} can be defined on both binary and prime fields, and as such the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}.
-For general prime $p$ (resp.~ positive integer $n$), we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). In this document, we only consider \mimc{} defined over prime fields (in particular, the field $\FFx{\rCURVE}$ with elements written over $\secpar$ bits, over which \zksnark~operates).
+For general prime $p$ (resp.~positive integer $n$), we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). In this document, we only consider \mimc{} defined over prime fields (in particular, the field $\FFx{\rCURVE}$ with elements written over $\secpar$ bits, over which \zksnark~operates).
 
 Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. We thereby consider an instantiation of $\mimc{}$ with signature
 \begin{align*}
