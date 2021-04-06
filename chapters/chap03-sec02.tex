@@ -19,12 +19,7 @@ In this section we describe the instantiation of $\mkhash$ with a compression fu
 \end{figure*}
 
 \mimcEnc{} can be defined on both binary and prime fields, and as such the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}.
-For general prime $p$ (resp.~positive integer $n$), we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). In this document, we only consider \mimc{} defined over prime fields (in particular, the field $\FFx{\rCURVE}$ with elements written over $\secpar$ bits, over which \zksnark~operates).
-
-Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. We thereby consider an instantiation of $\mimc{}$ with signature
-\begin{align*}
-    \mimcPrime{\rCURVE} &: \FFx{\rCURVE} \times \FFx{\rCURVE} \to \FFx{\rCURVE}
-\end{align*}
+For general prime $p$ (resp.~positive integer $n$), we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}).
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
@@ -42,26 +37,27 @@ Overall, for $\mimc{}$ to be considered secure, it is important that no attack i
 
 \paragraph{Statistical attacks.}
 
-In the ``Security Analysis'' section~\cite[Section 4.2]{albrecht2016mimc}, the authors explain that since the cubic function is an APN, linear attacks pose no threat to $\mimc{}$.
+In the ``Security Analysis'' section~\cite[Section 4.2]{albrecht2016mimc}, the authors explain that since the cubic function is an Almost Perfect Nonlinear map (APN)\footnote{A function $f(x) = x^{\exponent{}}$ over $\FFx{p^n}$ is said to be differentially $k$-uniform if $k$ is the maximum number of solutions $x \in \FFx{p^n}$ of $f(x + d) - f (x) = D$ where $d, D \in \FFx{p^n}$ and $d \neq 0$. If $f$ is a 2-uniform mapping, we say that $f$ is almost perfect nonlinear. See e.g.~\cite{DBLP:journals/tit/HellesethRS99} for more information.}, linear attacks pose no threat to $\mimc{}$.
 
 We observe that this claim aligns with~\cite[Theorem 2]{DBLP:journals/tit/HellesethRS99}. In fact if $\mimc{}$ is operated over $\FFx{2^n}$, it is easy to see that the degree of the cubic map can be expressed as $3 = 2^t + 1$, where $t = 1$, and where $n$ and $1$ are trivially coprime. This case is covered by~\cite[Theorem 2]{DBLP:journals/tit/HellesethRS99} which confirms that the cubic function $S(x) = x^3$ over $\FFx{2^n}$ is an APN/2-uniform mapping, as desired for differential and linear cryptanalysis resistance.
 
 Likewise, in~\cite[Section 5.1]{albrecht2016mimc} the authors claim that, provided that the cubic map is a permutation over the prime field of interest, $\mimc{}$ can be used to operate over prime fields of odd characteristic. In this case too, $S(x) = x^3$ is an APN, provided $p \neq 3$ (as reported by~\cite[Theorem 3, item 3]{DBLP:journals/tit/HellesethRS99}).
 
-In~\cite[Section 5.3]{albrecht2016mimc} proposes to relax the choice of the map degree to be of the general form $2^t \pm 1$. Unfortunately, the authors showed that the case $\exponent{} = 2^t + 1$ is not as good as it initially seems in $\FFx{2^n}$, due to term cancellation in fields of characteristic 2 that renders the resulting polynomial sparse\footnote{Since the round function is a polynomial, the whole scheme can be seen as a polynomial which overall degree and ``sparsity'' depend on the underlying field characteristic, degree of the round function and number of rounds.}. More precisely the degree of the polynomial will be bounded by $3^r$, $r$ being the number of rounds, which does not constitute an improvement on the case of $\exponent{} = 3$. For this very reason, exponents of the form $2^t + 1, t > 1$, may not be of interest (sparse polynomial and more expensive arithmetic in the round function).
+In~\cite[Section 5.3]{albrecht2016mimc} the choice of the map degree is relaxed to be of the general form $2^t \pm 1$. Unfortunately, the authors showed that the case $\exponent{} = 2^t + 1$ is not as good as it initially seems in $\FFx{2^n}$, due to term cancellation in fields of characteristic 2 that renders the resulting polynomial sparse\footnote{Since the round function is a polynomial, the whole scheme can be seen as a polynomial which overall degree and ``sparsity'' depend on the underlying field characteristic, degree of the round function and number of rounds.}. More precisely the degree of the polynomial will be bounded by $3^r$, $r$ being the number of rounds, which does not constitute an improvement on the case of $\exponent{} = 3$. For this very reason, exponents of the form $2^t + 1, t > 1$, may not be of interest (sparse polynomial and more expensive arithmetic in the round function).
 
 Likewise, if the map degree $\exponent{}$ is chosen to be of the form $2^t + 1$, with $\gcd(\exponent{}, 2^n - 1) = 1$ in the context of $\mimc{}$ over $\FFx{2^n}$, it is necessary to bear in mind that, without the extra requirement that $t$ needs to be coprime with $n$, then this case is not covered by~\cite[Theorem 2]{DBLP:journals/tit/HellesethRS99}, and $S(x) = x^\exponent{}$ does not have differential 2-uniformity anymore - violating the claim made in~\cite[Section 4.2]{albrecht2016mimc} paragraph ``Linear Attacks'' about optimal resistance against linear and differential cryptanalysis. (In fact, depending on the value of $g = \gcd(n, t)$, the map $S(x) = x^{2^t + 1}$ would be differentially $2^g$-uniform~\cite{DBLP:conf/eurocrypt/Nyberg93} - contrasting with the setting considered in paragraph ``Linear attacks'' where $\exponent{} = 3$).
 The case $\exponent{} = 2^t - 1$ does not yield an APN over $\FFx{2^n}$ either (except in the case $t = 2$ which reduces to the case $2^{t'} + 1$ for $t' = 1$). Similar observations show that picking round function degrees of the form $2^t \pm 1$ in the context where $\mimc{}$ is defined over prime fields $\FFx{p}$, $p$ odd prime, does not yield APNs.
 
 \medskip
 
-Overall, when studying the resistance of $\mimc{}$ against statistical attacks, we are interested in the probability that an input difference ($d$) is mapped into an output difference ($D$). That is, we are studying the probability that:
+Overall, when studying the resistance of $\mimc{}$ against statistical attacks, we are interested in the probability that an input difference ($d$) is mapped into an output difference ($D$). That is, we are studying the probability of the following event:
 \[
     F(x + d) - F(x) = D
 \]
+, where $F$ is a function that may either represent a single round, a set of rounds, or the full cipher.
 
-Over a single round of $\mimc{}$, this probability is bounded by $(\exponent{}-1)/p$ \emph{provided that the exponent $\exponent{}$ is ``small''} (i.e.~small compared to the size of the field).
-By assuming that the different rounds of the scheme are independent, the probability that an input difference gets mapped to an output difference becomes bounded as $\Pr[F(x + d) - F(x) = D] \leq ((\exponent{}-1)/p)^\rounds$ .
+Over a single round of $\mimc{}$ (i.e.~$F(x) = S(x)$), this probability is bounded by $(\exponent{}-1)/p$ \emph{provided that the exponent $\exponent{}$ is ``small''} (i.e.~small compared to the size of the field).
+By assuming that the different rounds of the scheme are independent, the probability that an input difference gets mapped to an output difference, when $F$ represents the full cipher, becomes bounded as $\Pr[F(x + d) - F(x) = D] \leq ((\exponent{}-1)/p)^\rounds$.
 
 For security, we want $((\exponent{}-1)/p)^\rounds$ to be bounded by $2^{-\secpar}$, where $\secpar$ is the security level (e.g.~128). Hence, we need
 \[
@@ -78,7 +74,7 @@ As such, if the exponent is much smaller than the size of the field, few rounds 
 
 While permutation monomials of degree $\exponent{} = 2^t \pm 1$ may not constitute APNs in the various $\mimc{}$ settings, it is important to note (as highlighted by Grassi in~\cite{mimc-security-communications}) that when working over finite fields $\FFx{p}$ of \emph{large} prime characteristic $p$ or extension fields $\FFx{2^n}$ of large extension degrees $n$, the algebraic attacks (exploiting the low-degree of the cipher) are much more efficient than the statistical attacks (i.e.~they can break a much higher number of rounds).
 
-In fact, when considering security against algebraic attacks, we want (roughly speaking) the polynomial that defines the cipher to be of maximum degree and full (or at least, very dense). That is we want the degree of the polynomial to be higher than $2^{\secpar}$. Since in $\mimc{}$ the S-box is defined as $S(x) = x^{\exponent{}}$, then after $\rounds$ rounds the degree of the polynomial describing the cipher is $\exponent{}^{\rounds}$. Hence, we need
+In fact, when considering security against algebraic attacks, we want (roughly speaking) the polynomial that defines the cipher to be of maximum degree and full (or at least, dense). That is we want the degree of the polynomial to be higher than $2^{\secpar}$. Since in $\mimc{}$ the S-box is defined as $S(x) = x^{\exponent{}}$, then after $\rounds$ rounds the degree of the polynomial describing the cipher is $\exponent{}^{\rounds}$. Hence, we need
 
 \[
     \exponent{}^{\rounds} \geq 2^{\secpar}
@@ -100,15 +96,22 @@ It is important to note that the security analysis related to algebraic attacks 
 
 \medskip
 
-In the sections below, and as in ~\cite{albrecht2016mimc}, we will consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$ . We note that the term cancellation happening with exponents of the form $\exponent{} = 2^t+1$ does not immediatelly translate to the context where $\mimc{}$ is carried out over prime fields of large odd characteristic. In fact, in the case of $\FFx{\rCURVE}$, where $\rCURVE > \binom{\exponent}{\lfloor \exponent / 2
-  \rfloor}$, polynomials $(x + y)^{\exponent}$ are not sparse. This comes from the \emph{Binomial Theorem}
+In this document, we only consider \mimc{} defined over prime fields (in particular, the field $\FFx{\rCURVE}$ over which \zksnark~operates).
+
+Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. We thereby consider an instantiation of $\mimc{}$ with signature
+\begin{align*}
+    \mimcPrime{\rCURVE} &: \FFx{\rCURVE} \times \FFx{\rCURVE} \to \FFx{\rCURVE}
+\end{align*}
+
+In the sections below, and as in ~\cite{albrecht2016mimc}, we will consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$. We note that the term cancellation happening with exponents of the form $\exponent{} = 2^t+1$ does not immediatelly translate to the context where $\mimc{}$ is carried out over prime fields of large odd characteristic. In fact, in the case of $\FFx{\rCURVE}$, where $\rCURVE > \binom{\exponent}{\lfloor \exponent / 2 \rfloor}$, polynomials $(x + y)^{\exponent}$ are not sparse.
+This comes from the \emph{Binomial Theorem}
 \[
   (x + y)^\exponent = \sum_{i = 0}^{\exponent} \binom{\exponent}{i} x^{i}y^{\exponent - i}
 \]
 and the observation that if $\binom{\exponent}{i} < \rCURVE$ then $\binom{\exponent}{i} \bmod \rCURVE = \binom{\exponent}{i}$, hence ensuring that all the polynomial coefficients are greater than $0$, and that the polynomial is dense.
 
 To achieve a security of $\secpar$, we require that $\rounds \geq \secpar \log_{\exponent}(2)$.
-Importantly, since we use $\mimc{}$ over prime fields $\FFx{\rCURVE}$ which are large (where $\rCURVE$ is the prime characteristic of the scalar field of an elliptic curve group, such that $\ceil{\log_2(\rCURVE)} > \secpar$ (i.e.~longer elements are needed in ECC to resist algebraic attacks such that NFS-based attacks on discrete logs for instance)), then, picking $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil > \secpar \log_{\exponent}(2)$ provides a margin of safety on the number of rounds selected to instantiate $\mimc{}$ with desired security level $\secpar$.
+Importantly, since we use $\mimc{}$ over prime fields $\FFx{\rCURVE}$ which are large (where $\rCURVE$ is the prime characteristic of the scalar field of an elliptic curve group, such that $\ceil{\log_2(\rCURVE)} > \secpar$ (i.e.~longer elements are needed in Elliptic Curve Cryptography (ECC) to resist algebraic attacks such that Number Field Sieve (NFS)-based attacks on discrete logs~\cite{DBLP:journals/siamdm/Gordon93} for instance)), then, picking $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil > \secpar \log_{\exponent}(2)$ provides a margin of safety on the number of rounds selected to instantiate $\mimc{}$ with desired security level $\secpar$.
 
 We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
 
