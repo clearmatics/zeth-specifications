@@ -39,7 +39,7 @@ In order for $\zparty{U}$ to transact via \zeth, $\zparty{U}$ needs to create an
     \end{enumerate}
 \item Generate a signature $\otsSigma$ on the inputs of the \mix~function, in order to prevent any malleability attacks~(c.f.~\cref{appendix:trnm}), using the desired signature scheme $\otsigscheme$ (see~\cref{instantiation:otsig}):
     \begin{enumerate}
-        \item Using the one-time signature keypair generated in~\cref{zeth-protocol:otsig-generation}, do:
+        \item\label{zeth-protocol:mix-inp:create-otsig} Using the one-time signature keypair generated in~\cref{zeth-protocol:otsig-generation}, do:
             \begin{align*}
                 & \datatobesigned = \eparty{S}.\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\zkp \concat \inp{\mix}.\ciphers \\
                 & \otsSigma = \otsigscheme.\sig(\sk_{\otsig}, \crhots{\datatobesigned})
@@ -49,3 +49,11 @@ In order for $\zparty{U}$ to transact via \zeth, $\zparty{U}$ needs to create an
     \end{enumerate}
     Here, $\eparty{S}.\addr$ represents the address of the $\ethereum{}$ user $\eparty{S}$ who must sign the transaction (see~\cref{zeth-protocol:create-tx}). In general, this is likely to be owned by the holder $\zparty{U}$ of the $\zeth{}$ notes to be spent, but this is not a requirement.
 \end{enumerate}
+
+\begin{remark}\label{zeth-protocol:mix-inp:otsig-for-dispatch-call}
+  \cref{zeth-protocol:process-tx:dispatch-call} describes a situation in which the proof data $\inp{\mix}.\zkp$ is not available (having been verified by some external mechanism). In such cases, $\datatobesigned$ in \cref{zeth-protocol:mix-inp:create-otsig} \MAY{} be replaced with:
+  \[
+  \datatobesigned = \eparty{S}.\addr \concat \inp{\mix}.\primInp \concat \inp{\mix}.\ciphers
+  \]
+  This modification, mentioned here for completeness, \MUSTNOT{} be used except as described in \cref{zeth-protocol:process-tx:dispatch-call}.
+\end{remark}
