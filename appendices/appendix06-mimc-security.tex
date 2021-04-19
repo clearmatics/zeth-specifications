@@ -33,7 +33,7 @@ Overall, when studying the resistance of $\mimc{}$ against statistical attacks, 
 \[
     F(x + d) - F(x) = D
 \]
-, where $F$ is a function that may either represent a single round, a set of rounds, or the full cipher.
+where $F$ is a function that may either represent a single round, a set of rounds, or the full cipher.
 
 Over a single round of $\mimc{}$ (i.e.~$F(x) = S(x)$), this probability is bounded by $(\exponent{}-1)/p$ \emph{provided that the exponent $\exponent{}$ is ``small''} (i.e.~small compared to the size of the field).
 By assuming that the different rounds of the scheme are independent, the probability that an input difference gets mapped to an output difference, when $F$ represents the full cipher, becomes bounded as $\Pr[F(x + d) - F(x) = D] \leq ((\exponent{}-1)/p)^\rounds$.
