@@ -18,19 +18,29 @@ In this section we describe the instantiation of $\mkhash$ with a compression fu
     \caption{\mimc{} Encryption function.}\label{instantiation:fig:mimc}
 \end{figure*}
 
-\mimcEnc{} can be defined on both binary and prime fields. As such, the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}. For general prime $p$, we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}). Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. The function signatures thus become,
-\begin{align*}
-    \mimcPrime{p} &: \FFx{p} \times \FFx{p} \to \FFx{p} \\
-    \mimc{}_{2^n} &: \FFx{2^n} \times \FFx{2^n} \to \FFx{2^n}
-\end{align*}
-
-From now on, we only consider \mimc{} defined over prime fields. In particular, the field $\FFx{\rCURVE}$ with elements written over $\secpar$ bits, over which \zksnark~operates.
+\mimcEnc{} can be defined on both binary and prime fields, and as such the $\mathsf{OP}$ operation corresponds to either $\oplus$ or $+ \pmod{p}$~\cite{albrecht2016mimc, grassi2016mpc}.
+For general prime $p$ (resp.~positive integer $n$), we denote by $\mimcPrime{p}$ (resp.~$\mimc{}_{2^n}$) the \mimcEnc{} function defined over \FFx{p} (resp.~\FFx{2^n}).
 
 \subsubsection{Security parameters and analysis}\label{instantiation:mkhash:mimc-encryption:security}
 
-To ensure that the exponentiation leads to a permutation in $\FFx{\rCURVE}$, $\exponent{}$ of the form $\exponent{} = 2^t-1$ such that $\gcd(\exponent{}, \rCURVE-1) = 1$. To achieve a security of $\secpar$, we require $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil. $\footnote{We do not consider exponents of type $2^t+1$ since the polynomial representing $\mimcEnc$ would be sparse and as such, the number of rounds becomes constant (see~\cite[Section 5.3]{albrecht2016mimc}).}
+In this document, we only consider \mimc{} defined over prime fields (in particular, the field $\FFx{\rCURVE}$ over which \zksnark~operates).
 
-We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} for more details on the security analysis and attacks on the scheme. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
+Since block ciphers are usually defined over the product space of keys and messages, we consider the variables $c$, \rounds{} and \exponent{} as fixed. We thereby consider an instantiation of $\mimc{}$ with signature
+\begin{align*}
+    \mimcPrime{\rCURVE} &: \FFx{\rCURVE} \times \FFx{\rCURVE} \to \FFx{\rCURVE}
+\end{align*}
+
+In the sections below, and as in ~\cite{albrecht2016mimc}, we will consider exponents of the form $\exponent{} = 2^t-1$ and $\exponent{} = 2^t+1$ where $\gcd(\exponent{}, \rCURVE-1) = 1$. We note that the term cancellation happening with exponents of the form $\exponent{} = 2^t+1$ does not immediatelly translate to the context where $\mimc{}$ is carried out over prime fields of large odd characteristic. In fact, in the case of $\FFx{\rCURVE}$, where $\rCURVE > \binom{\exponent}{\lfloor \exponent / 2 \rfloor}$, polynomials $(x + y)^{\exponent}$ are not sparse.
+This comes from the \emph{Binomial Theorem}
+\[
+  (x + y)^\exponent = \sum_{i = 0}^{\exponent} \binom{\exponent}{i} x^{i}y^{\exponent - i}
+\]
+and the observation that if $\binom{\exponent}{i} < \rCURVE$ then $\binom{\exponent}{i} \bmod \rCURVE = \binom{\exponent}{i}$, hence ensuring that all the polynomial coefficients are greater than $0$, and that the polynomial is dense.
+
+To achieve a security of $\secpar$, we require that $\rounds \geq \secpar \log_{\exponent}(2)$.
+Importantly, since we use $\mimc{}$ over prime fields $\FFx{\rCURVE}$ which are large (where $\rCURVE$ is the prime characteristic of the scalar field of an elliptic curve group, such that $\ceil{\log_2(\rCURVE)} > \secpar$\footnote{Longer elements are needed in Elliptic Curve Cryptography (\ecc) to resist algebraic attacks such as Number Field Sieve (\acrnfs)-based attacks on discrete logs~\cite{DBLP:journals/siamdm/Gordon93} for instance}), then, picking $\rounds = \left\lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \right\rceil > \secpar \log_{\exponent}(2)$ provides a margin of safety on the number of rounds selected to instantiate $\mimc{}$ with desired security level $\secpar$.
+
+We refer to the $\mimc{}$ paper~\cite[Section 4.2 and 5.1]{albrecht2016mimc} and to~\cref{appendix:mimc-security} for more details on the security analysis and attacks on the scheme in the different settings. Note that $\mimcPrime{\rCURVE}$ does not suffer from \emph{inversion subfield attacks} as there are no proper subfields of $\FFx{\rCURVE}$.
 
 \subsection{\mimc{}-based compression function}\label{instantiation:mkhash:mimc-compressionf}
 
@@ -124,11 +134,12 @@ The number of constraints of \mimcMPPrime{} for several exponents $\exponent{}$ 
 \[
     \constraints = \rounds \cdot \mults + 1
 \]
-where $\rounds = \lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \rceil$, $\mults$ is the number of multiplications required for exponentiation and the additional constraint (corresponding to $+1$ in the above formula) is a result of the final message and key addition. Note that for $\exponent = 2^t - 1$ we have $\mults = 2 \cdot t - 2$ using the \emph{square-and-multiply} algorithm~\cite{menezes1996handbook}.
+where $\rounds = \lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \rceil$, $\mults$ is the number of multiplications required for exponentiation and the additional constraint (corresponding to $+1$ in the above formula) is a result of the final message and key addition. Note that for $\exponent = 2^t - 1$ we have $\mults = 2 \cdot t - 2$, using the \emph{square-and-multiply} algorithm~\cite{menezes1996handbook}, and for $\exponent = 2^t + 1$ we have $mults = t + 1$.
 % TODO: Check if this final constraint can be removed.
 
 For several concrete values of $\exponent{}$, the number of $\rounds$ required to attain the desired security level, along with the number of constraints, are shown in~\cref{table:mimc-exp-analysis}.
 
+\definecolor{Gray}{gray}{0.9}
 \begin{table}
   \centering
     \begin{minipage}[t]{0.50\textwidth}
@@ -138,23 +149,33 @@ For several concrete values of $\exponent{}$, the number of $\rounds$ required t
             \multirow{2}{*}{$\exponent{}$} & \multicolumn{2}{c}{\BNCurve} & \multicolumn{2}{c}{\BLSCurve} \\ [0.5ex]
             & $\rounds$ & $\constraints$ & $\rounds$ & $\constraints$ \\ [0.5ex]
             \midrule
+            \rowcolor{Gray}
+            5 & 110 & 331 & & \\
             7 & 91 & 365 & & \\
+            \rowcolor{Gray}
+            17 & 65 & 316 & 62 & 311 \\
             31 & 52 & 417 & 51 & 409 \\
             127 & 37 & 445 & 37 & 445 \\
+            \rowcolor{Gray}
+            257 & 32 & 289 & 32 & 289 \\
             511 & 29 & 465 & & \\
             2047 & 24 & 481 & 23 & 461 \\
             8191 & 20 & 481 & 20 & 481 \\
             32676 & 17 & 477 & & \\
+            \rowcolor{Gray}
+            65537 & 16 & 273 & 16 & 273 \\
             131071 & 15 & 481 & 15 & 481 \\
             524287 & 14 & 505 & 14 & 505 \\
+            \rowcolor{Gray}
+            1048577 & 13 & 274 & 13 & 274 \\
             2097151 & 13 & 521 & & \\
             \bottomrule
         \end{tabular}
     \end{minipage}%
-    \caption{Arithmetic constraints required to represent \mimcMP{} as an R1CS program, for different exponents $\exponent{}$ and curves. Missing entries where $\gcd(\exponent{},\rCURVE - 1) \neq 1$}\label{table:mimc-exp-analysis}
+    \caption{Arithmetic constraints required to represent \mimcMP{} as an R1CS program, for different exponents $\exponent{}$ and curves. Grey (resp.~white) lines represent exponents of shape $2^t + 1$ (resp.~$2^t - 1$). Missing entries where $\gcd(\exponent{},\rCURVE - 1) \neq 1$}\label{table:mimc-exp-analysis}
 \end{table}
 
-In conclusion, for the case of \BNCurve~we set $\exponent{} = 7$ and $\rounds{} = 91$, targetting a $254$-bit security level. Similarly, for \BLSCurve~we set $\exponent{} = 31$ and $\rounds{} = 51$, targetting a $253$-bit security level. These values are chosen such that they satisfy the requirement that $\gcd(\exponent{},\rCURVE - 1) = 1$ and give a good balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract.
+For the case of \BNCurve~we set $\exponent{} = 7$ and $\rounds{} = 91$, targetting a $254$-bit security level. For \BLSCurve~we set $\exponent{} = 31$ and $\rounds{} = 51$, targetting a $253$-bit security level. These values are chosen such that they satisfy the requirement that $\gcd(\exponent{},\rCURVE - 1) = 1$ and give a good balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract.
 
 \subsection{Security requirements satisfaction}\label{instantiation:mkhash:security}
 
@@ -167,7 +188,7 @@ After presenting the state of the art of MiMC cryptanalysis, we present the secu
 The first attack on \mimc{} was an interpolation attack~\cite{li2019improved} which targets a reduced-round version for a scenario in which the attacker has only limited memory.
 An attack on Feistel-based \mimc{}~\cite{bonnetain2019collisions} was discovered shortly after, by using generic properties of the used Feistel construction (instead of exploiting properties of the primitive itself).
 Additionally,~\cite{albrecht2019algebraic} proposes an attack based on Gr\"{o}bner basis. The authors state that by introducing a new intermediate variable in each round, the resulting multivariate system of equations is a Gr\"{o}bner basis. As such, the first step of a Gr\"{o}bner basis attack can be obtained for free. However, the following steps of the attack are so computationally demanding that the attack becomes infeasible in practice.
-A recent work~\cite{cryptoeprint:2020:182} targets \mimc{} on binary fields, and achieves a full-round break of the scheme. While, the attack presented does not apply to prime fields, the authors note that it ``can be generalized to include ciphers over $\FFx{p}$'', and that only the lack of efficient distinguishers over prime fields precludes this.
+A recent work~\cite{DBLP:conf/asiacrypt/Eichlseder0LORS20} targets \mimc{} on binary fields, and achieves a full-round break of the scheme. While, the attack presented does not apply to prime fields, the authors note that it ``can be generalized to include ciphers over $\FFx{p}$'', and that only the lack of efficient distinguishers over prime fields precludes this.
 Another attack from Beyne et al~\cite{cryptoeprint:2020:188} uses a low complexity distinguisher against full \mimc{} permutation leading to a practical collision attack on reduced round sponge-based \mimc{} hash defined with security of 128 bits.
 
 \subsubsection{Security proof of \mimcMPPrime{} collision resistance}\label{instantiation:mkhash:security:colres-proof}
