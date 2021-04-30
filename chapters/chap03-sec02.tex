@@ -124,18 +124,11 @@ We define $\mkhash$ to be $\mimcMPPrime{}$ over $\FFx{\rCURVE}$. Thereby, for in
     \mkhash(\msg_0, \msg_1) = \mimcMPPrime{\rCURVE}(m_0, m_1)
 \end{equation}
 
-For specific values of $\rCURVE$ (such as $\rBN$ for $\BNCurve$ or $\rBLS$ for $\BLSCurve$), it remains to choose concrete values of $\exponent{}$ and $\rounds{}$.
-
 \newcommand{\constraints}{\varstyle{constraints}}
 
-Note that small exponents $\exponent{}$ result in fewer constraints in the arithmetic circuit (see~\cref{zeth-protocol:statement}), while larger exponents can reduce the cost of Merkle tree operations on the contract (see~\cref{zeth-protocol:process-tx}). This is due to two factors, namely that exponentiation is cheaper to execute on a contract than in an arithmetic circuit, and that the number of rounds decreases with higher $\exponent{}$. For instance, choosing $\exponent{} = 7$ results in $365$ constraints and $\approx 20k$ gas while $\exponent{} = 31$ corresponds to $417$ constraints ($+15\%$) and $\approx 17k$ ($-10\%$) in gas consumption. Repeating the same process for different exponents, we observe roughly the same order of magnitude gain on the gas consumption and loss on the number of constraints.
+For specific values of $\rCURVE$ (such as $\rBN$ for $\BNCurve$ or $\rBLS$ for $\BLSCurve$), it remains to select concrete values of $\exponent{}$ and rounds, where $\rounds = \lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \rceil$).  These values influence the number of constraints in the arithmetic circuit (see~\cref{zeth-protocol:statement} for details of the statement) and the gas cost of Merkle tree operations on the contract (see~\cref{zeth-protocol:process-tx} for details of the specific operations).
 
-The number of constraints of \mimcMPPrime{} for several exponents $\exponent{}$ is given by the formula
-\[
-    \constraints = \rounds \cdot \mults + 1
-\]
-where $\rounds = \lceil \frac{\log_2 \rCURVE}{\log_2 \exponent{}} \rceil$, $\mults$ is the number of multiplications required for exponentiation and the additional constraint (corresponding to $+1$ in the above formula) is a result of the final message and key addition. Note that for $\exponent = 2^t - 1$ we have $\mults = 2 \cdot t - 2$, using the \emph{square-and-multiply} algorithm~\cite{menezes1996handbook}, and for $\exponent = 2^t + 1$ we have $mults = t + 1$.
-% TODO: Check if this final constraint can be removed.
+In the arithmetic circuit, an invocation of $\mimcMPPrime{}$ requires $\rounds \cdot \mults$ constraints, where $\mults$ is the number of multiplications required for exponentiation. For exponents of the form $\exponent = 2^t - 1$, we have $\mults = 2 \cdot t - 2$, (using the \emph{square-and-multiply} algorithm~\cite{menezes1996handbook}), and for $\exponent = 2^t + 1$ we have $mults = t + 1$. Thus we expect that exponents of the latter form are more optimal. The implementation in the contract performs a very similar set of arithmetic operations (exponentiation in the field through a series of multiplications and modulo reductions), and so the cost is dominated by the same number $\rounds \cdot \mults$ as for the circuit.  Hence, values of $\exponent$ and $\rounds$ that are optimal for the circuit will also result in gas-efficient implementations in the contract.
 
 For several concrete values of $\exponent{}$, the number of $\rounds$ required to attain the desired security level, along with the number of constraints, are shown in~\cref{table:mimc-exp-analysis}.
 
@@ -175,7 +168,7 @@ For several concrete values of $\exponent{}$, the number of $\rounds$ required t
     \caption{Arithmetic constraints required to represent \mimcMP{} as an R1CS program, for different exponents $\exponent{}$ and curves. Grey (resp.~white) lines represent exponents of shape $2^t + 1$ (resp.~$2^t - 1$). Missing entries where $\gcd(\exponent{},\rCURVE - 1) \neq 1$}\label{table:mimc-exp-analysis}
 \end{table}
 
-For the case of \BNCurve~we set $\exponent{} = 7$ and $\rounds{} = 91$, targetting a $254$-bit security level. For \BLSCurve~we set $\exponent{} = 31$ and $\rounds{} = 51$, targetting a $253$-bit security level. These values are chosen such that they satisfy the requirement that $\gcd(\exponent{},\rCURVE - 1) = 1$ and give a good balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract.
+For the case of \BNCurve~we set $\exponent{} = 17$ with $\rounds{} = 65$, to achieve a $254$-bit security level. For \BLSCurve~we set $\exponent{} = 17$ with $\rounds{} = 62$, to achieve $253$-bit security. These values are chosen such that they satisfy the requirement that $\gcd(\exponent{},\rCURVE - 1) = 1$, and give a balance between the number of constraints in the arithmetic circuit and the gas cost of hashing on the contract.
 
 \subsection{Security requirements satisfaction}\label{instantiation:mkhash:security}
 
