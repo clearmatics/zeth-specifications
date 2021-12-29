@@ -4,6 +4,19 @@ This repository contains:
 - the source code of the Zeth protocol specifications
 - the source code of the Zeth transaction relay document (see [here](relay)).
 
+## Motivations
+
+These specification documents are the interface between Zeth protocol researchers/designers and implementers.
+
+The motivation for such work is very well summarized in "Lessons Learned in Implementing and Deploying Crypto Software" by Peter Gutmann, an excerpt of which is quoted below:
+
+> Most crypto software is written with the assumption that the user knows what they're doing, and will choose the most appropriate algorithm and mode of operation, carefully manage key generation and secure key storage, employ the crypto in a suitably safe manner, and do a great many other things that require fairly detailed crypto knowledge.
+> However, since most implementers are everyday programmers whose motivation for working with crypto is defined by "the boss said do it", the inevitable result is the creation of products with genuine naugahyde crypto.
+
+As Schneier says "the weak points had nothing to do with mathematics [...] Beautiful pieces of mathematics were made irrelevant through bad programming".
+
+These specification documents aim to document the protocols' design decisions as well as provide implementation guidelines/pitfalls to avoid, to implementers of the protocols.
+
 ## Dependencies
 
 On Debian-type systems, run:
